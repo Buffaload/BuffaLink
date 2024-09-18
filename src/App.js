@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -12,6 +12,16 @@ import Vehicles from "./components/Vehicles";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister(); // Unregister the service worker
+        }
+      });
+    }
+  }, []);
 
   const handleLogin = (userToken) => {
     setToken(userToken);

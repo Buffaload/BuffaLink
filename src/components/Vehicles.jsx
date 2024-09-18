@@ -13,6 +13,10 @@ const Vehicles = () => {
       // Get the token from localStorage
       const token = localStorage.getItem("token");
 
+      if (!token) {
+        throw new Error("No token found. Please log in.");
+      }
+
       // Set the authorization header
       const config = {
         headers: {
