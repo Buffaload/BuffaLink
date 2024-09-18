@@ -57,7 +57,10 @@ const Vehicles = () => {
       <h1>Vehicles</h1>
       <ul className="vehicle-list">
         {vehicles.map((vehicle) => (
-          <li key={vehicle.id} className="vehicle-card">
+          <li
+            key={vehicle.id || vehicle.assetRegistration}
+            className="vehicle-card"
+          >
             <h2>{vehicle.assetRegistration}</h2>
             <p>Location: {vehicle.locationName}</p>
             <p>Event Type: {vehicle.eventType}</p>
