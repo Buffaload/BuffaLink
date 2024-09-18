@@ -4,10 +4,10 @@ import {
   Route,
   Routes,
   Navigate,
-} from "react-router-dom"; // Use 'Routes' and 'Navigate'
-import Login from "./components/Login"; // Ensure this is correctly imported
-import ProtectedRoute from "./components/ProtectedRoute"; // Ensure this is correctly imported
-import Dashboard from "./components/Dashboard"; // Ensure this exists or comment it out if not ready
+} from "react-router-dom";
+import Login from "./components/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from "./components/Dashboard";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -42,11 +42,9 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute
-                component={Dashboard}
-                token={token}
-                handleLogout={handleLogout}
-              />
+              <ProtectedRoute token={token}>
+                <Dashboard handleLogout={handleLogout} />
+              </ProtectedRoute>
             }
           />
 

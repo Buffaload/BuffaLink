@@ -14,8 +14,13 @@ const Login = ({ setToken }) => {
         username,
         password,
       });
+
       setToken(res.data.token);
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("username", username);
+      localStorage.setItem("role", res.data.role);
+      setError(null);
+      console.log(res.data);
     } catch (err) {
       setError("Invalid credentials");
     }
@@ -39,6 +44,7 @@ const Login = ({ setToken }) => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+        {error && <p style={{ color: "red" }}>{error}</p>}
         <button type="submit" className="login-button">
           Login
         </button>
