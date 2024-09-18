@@ -20,7 +20,6 @@ const Login = ({ setToken }) => {
       localStorage.setItem("username", username);
       localStorage.setItem("role", res.data.role);
       setError(null);
-      console.log(res.data);
     } catch (err) {
       setError("Invalid credentials");
     }

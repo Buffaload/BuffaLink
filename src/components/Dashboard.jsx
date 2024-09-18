@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../css/Dashboard.css";
 import Sidebar from "./Sidebar";
 import ProfileButton from "./ProfileButton";
+import Vehicles from "./Vehicles";
 
 const Dashboard = () => {
   const [username, setUsername] = useState("");
@@ -27,8 +28,8 @@ const Dashboard = () => {
       </div>
       <Sidebar />
       <div className="dashboard-content">
-        <h1>Welcome to the Dashboard</h1>
         {/* Dashboard content here */}
+        <Vehicles />
       </div>
     </div>
   );

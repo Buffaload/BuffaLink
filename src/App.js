@@ -8,6 +8,7 @@ import {
 import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
+import Vehicles from "./components/Vehicles";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -44,6 +45,16 @@ function App() {
             element={
               <ProtectedRoute token={token}>
                 <Dashboard handleLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Route for Vehicles */}
+          <Route
+            path="/vehicles"
+            element={
+              <ProtectedRoute token={token}>
+                <Vehicles />
               </ProtectedRoute>
             }
           />
