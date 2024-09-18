@@ -1,0 +1,22 @@
+/* Basic layout to position the sidebar and dashboard content */
+.dashboard-container {
+  padding: 20px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between; /* Space between the title and the profile button */
+  align-items: center;
+  margin-left: 200px;
+}
+
+.dashboard-content {
+  margin-left: 200px; /* Space for the sidebar */
+  padding-top: 20px;
+  flex: 1;
+  background-color: #f4f4f4;
+  min-height: 100vh;
+}
