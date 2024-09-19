@@ -20,6 +20,7 @@ const Login = ({ setToken }) => {
       localStorage.setItem("username", username);
       localStorage.setItem("role", res.data.role);
       setError(null);
+      window.location.href = "/dashboard";
     } catch (err) {
       setError("Invalid credentials");
     }

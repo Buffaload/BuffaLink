@@ -1,3 +1,13 @@
+.dashboard-content {
+  padding: 20px;
+}
+
+@media screen and (min-width: 769px) {
+  .dashboard-content {
+    margin-left: 280px;
+  }
+}
+
 /* Sidebar container */
 .sidebar {
   width: 260px;
@@ -14,6 +24,15 @@
   flex-direction: column;
   justify-content: space-between;
   z-index: 1000;
+  transition: transform 0.3 ease;
+}
+
+.sidebar.open {
+  transform: translateX(0); /*Slide in the sidebar */
+}
+
+.sidebar.closed {
+  transform: translateX(-100%); /*Slide out the sidebar */
 }
 
 /* Sidebar Header */
@@ -49,7 +68,7 @@
   border: none;
   text-align: left;
   cursor: pointer;
-  transition: all 0.5s ease;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -71,7 +90,7 @@
   height: 300%;
   background-color: #28a745;
   z-index: -1;
-  transition: all 0.5s ease;
+  transition: all 0.3s ease;
   transform: translate(-50%, -50%);
   border-radius: 50%;
 }
@@ -105,4 +124,42 @@
 .contact-button:hover {
   background-color: #218838; /* Slightly darker green on hover */
   text-decoration: none; /* No underline */
+}
+/* Sidebar toggle button for mobile */
+.hamburger-menu {
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: 40px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  z-index: 1100;
+}
+
+/* Mobile specific adjustments */
+@media screen and (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%); /* Sidebar hidden by default */
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* Slide in the sidebar on mobile */
+  }
+
+  /* Show toggle button on mobile */
+  .hamburger-menu {
+    display: block;
+  }
+
+  /* Hide or display the sidebar toggle */
+  .sidebar-toggle {
+    display: none;
+  }
+
+  .dashboard-content {
+    margin-left: 0;
+  }
 }
