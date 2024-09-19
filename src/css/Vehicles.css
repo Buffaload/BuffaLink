@@ -42,6 +42,15 @@
   color: #555;
 }
 
+.debrief-container {
+  padding: 20px;
+}
+
+.debrief-container iframe {
+  width: 100%;
+  height: 800px;
+  border: none;
+}
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .vehicle-list {

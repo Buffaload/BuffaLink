@@ -2,6 +2,20 @@ import React from "react";
 import "../css/Vehicles.css";
 
 const Vehicles = ({ vehicles, filterOption }) => {
+  //If filterOption is "Debrief", show the form instead of vehicle cards
+  if (filterOption === "Debrief") {
+    return (
+      <div className="debrief-container">
+        <iframe
+          src="https://forms.office.com/Pages/ResponsePage.aspx?id=KG0LOI9UKUqEzF1Dxrj5ABC_RfvJHCFIpuo_68d2P49UMlUwNkpaNTJXTDlORU9KRklXSFVaVE84My4u&embed=true"
+          title="Debrief form"
+          width="100%"
+          height="700px"
+          allowFullScreen
+        ></iframe>
+      </div>
+    );
+  }
   const now = Date.now();
   const filteredVehicles = vehicles.filter((vehicle) => {
     const lastUpdate = new Date(vehicle.date).getTime();

@@ -76,6 +76,16 @@ const Sidebar = ({ onFilterChange }) => {
               Maintenance
             </button>
           </li>
+          <li>
+            <button
+              className={`sidebar-link ${
+                activeButton === "Debrief" ? "active" : ""
+              }`}
+              onClick={() => handleButtonClick("Debrief")}
+            >
+              Debrief
+            </button>
+          </li>
           {userRole === "admin" && (
             <li>
               <button
