@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import "../css/Sidebar.css"; // Import the CSS file for styling
+import "../css/Sidebar.css";
 
-const Sidebar = () => {
+const Sidebar = ({ onFilterChange }) => {
   const [userRole, setUserRole] = useState("");
+  const [activeButton, setActiveButton] = useState("HGVs"); // Default active button
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -11,27 +12,75 @@ const Sidebar = () => {
     }
   }, []);
 
+  const handleButtonClick = (filter) => {
+    setActiveButton(filter);
+    onFilterChange(filter);
+  };
+
   return (
     <div className="sidebar">
-      <ul className="sidebar-list">
-        <li className="sidebar-item">
-          <a href="/hgvs">HGVs</a>
+      <div className="sidebar-header">
+        <h2>Buffaload Logistics</h2>
+      </div>
+      <ul className="sidebar-nav">
+        <li>
+          <button
+            className={`sidebar-link ${
+              activeButton === "HGVs" ? "active" : ""
+            }`}
+            onClick={() => handleButtonClick("HGVs")}
+          >
+            HGVs
+          </button>
         </li>
-        <li className="sidebar-item">
-          <a href="/services">Services</a>
+        <li>
+          <button
+            className={`sidebar-link ${
+              activeButton === "Services" ? "active" : ""
+            }`}
+            onClick={() => handleButtonClick("Services")}
+          >
+            Services
+          </button>
         </li>
-        <li className="sidebar-item">
-          <a href="/depots">Depots</a>
+        <li>
+          <button
+            className={`sidebar-link ${
+              activeButton === "Depots" ? "active" : ""
+            }`}
+            onClick={() => handleButtonClick("Depots")}
+          >
+            Depots
+          </button>
         </li>
-        <li className="sidebar-item">
-          <a href="/maintenance">Maintenance</a>
+        <li>
+          <button
+            className={`sidebar-link ${
+              activeButton === "Maintenance" ? "active" : ""
+            }`}
+            onClick={() => handleButtonClick("Maintenance")}
+          >
+            Maintenance
+          </button>
         </li>
         {userRole === "admin" && (
-          <li className="sidebar-item">
-            <a href="/tippers">Tippers</a>
+          <li>
+            <button
+              className={`sidebar-link ${
+                activeButton === "Tippers" ? "active" : ""
+              }`}
+              onClick={() => handleButtonClick("Tippers")}
+            >
+              Tippers
+            </button>
           </li>
         )}
       </ul>
+      <div className="sidebar-footer">
+        <a href="" className="contact-button">
+          Contacts
+        </a>
+      </div>
     </div>
   );
 };

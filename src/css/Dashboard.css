@@ -1,6 +1,6 @@
 /* Basic layout to position the sidebar and dashboard content */
 .dashboard-container {
-  padding: 20px;
+  padding: 30px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -10,7 +10,8 @@
   display: flex;
   justify-content: space-between; /* Space between the title and the profile button */
   align-items: center;
-  margin-left: 200px;
+  margin-left: 260px;
+  font-size: small;
 }
 
 .dashboard-content {

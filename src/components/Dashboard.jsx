@@ -6,6 +6,24 @@ import Vehicles from "./Vehicles";
 
 const Dashboard = () => {
   const [username, setUsername] = useState("");
+  const [vehicles, setVehicles] = useState([]);
+  const [filterOption, setFilterOption] = useState("HGVs");
+
+  // Fetch vehicles once when the component mounts
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const response = await fetch("http://localhost:5050/api/vehicles");
+        const data = await response.json();
+        setVehicles(data); //Stores fetched vehicles
+      } catch (err) {
+        console.error("Failed to fetch vehicles:", err);
+      }
+    };
+
+    fetchVehicles(); //Fetches vehicles
+  }, []);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -13,6 +31,11 @@ const Dashboard = () => {
       setUsername(storedUsername);
     }
   }, []);
+
+  // Handle filter changes
+  const handleFilterChange = (option) => {
+    setFilterOption(option); //Update the filter option
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("username");
@@ -23,13 +46,12 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Dashboard</h1>
+        <h2>Dashboard</h2>
         <ProfileButton username={username} handleLogout={handleLogout} />
       </div>
-      <Sidebar />
+      <Sidebar onFilterChange={handleFilterChange} />
       <div className="dashboard-content">
-        {/* Dashboard content here */}
-        <Vehicles />
+        <Vehicles vehicles={vehicles} filterOption={filterOption} />
       </div>
     </div>
   );

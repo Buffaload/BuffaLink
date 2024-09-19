@@ -1,72 +1,66 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
 import "../css/Vehicles.css";
 
-const Vehicles = () => {
-  const [vehicles, setVehicles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const Vehicles = ({ vehicles, filterOption }) => {
+  const now = Date.now();
+  const filteredVehicles = vehicles.filter((vehicle) => {
+    const lastUpdate = new Date(vehicle.date).getTime();
+    const timeStopped = now - lastUpdate;
 
-  // Function to fetch vehicle data
-  const fetchVehicles = async () => {
-    try {
-      // Get the token from localStorage
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        throw new Error("No token found. Please log in.");
-      }
-
-      // Set the authorization header
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      // Make the API request
-      const res = await axios.get("http://localhost:5050/api/vehicles", config);
-
-      setVehicles(res.data);
-      setLoading(false);
-    } catch (err) {
-      setError("Failed to fetch vehicle data");
-      setLoading(false);
+    if (filterOption === "HGVs") {
+      // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
+      return vehicle.locationName && timeStopped > 1.5 * 60 * 60 * 1000;
+    } else if (filterOption === "Services") {
+      //Services: Show vehicles stoppped for more than 5 minutes with no location name
+      return !vehicle.locationName && timeStopped > 5 * 60 * 1000;
+    } else if (filterOption === "Depots") {
+      //Depots: Show vehicles in depot locations
+      return vehicle.locationGroupName === "Buffaload";
+    } else if (filterOption === "Maintenance") {
+      //Maintenance: Show vehicles in Maintenance
+      return vehicle.locationGroupName === "Maintenance";
+    } else if (filterOption === "Tippers") {
+      //Tippers: filter only tippers for admin
+      return vehicle.assetGroupName === "Buffaload Ely Tippers";
     }
-  };
-
-  useEffect(() => {
-    // Fetch vehicles immediately when the component mounts
-    fetchVehicles();
-
-    // Set up polling to fetch vehicles every 30 seconds
-    const intervalId = setInterval(() => {
-      fetchVehicles();
-    }, 30000); // 30 seconds
-
-    // Cleanup the interval when the component unmounts
-    return () => clearInterval(intervalId);
-  }, []); // Empty dependency array ensures this effect runs once
-
-  // Loading and error states
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
+    return true; // Default: show all vehicles if no filter matches
+  });
 
   return (
     <div className="vehicle-container">
-      <h1>Vehicles</h1>
+      <h1>{filterOption}</h1>
       <ul className="vehicle-list">
-        {vehicles.map((vehicle) => (
-          <li
-            key={vehicle.id || vehicle.assetRegistration}
-            className="vehicle-card"
-          >
-            <h2>{vehicle.assetRegistration}</h2>
-            <p>Location: {vehicle.locationName}</p>
-            <p>Event Type: {vehicle.eventType}</p>
-            <p>Last Updated: {new Date(vehicle.localDate).toLocaleString()}</p>
-          </li>
-        ))}
+        {filteredVehicles.length > 0 ? (
+          filteredVehicles.map((vehicle) => (
+            <li
+              key={vehicle.id || vehicle.assetRegistration}
+              className="vehicle-card"
+            >
+              <h2>{vehicle.assetName}</h2>
+              <p>
+                Location:
+                <br />
+                {vehicle.locationName ||
+                  vehicle.formattedAddress ||
+                  "undefined"}
+              </p>
+              <br />
+              <p>
+                Event:
+                <br />
+                {vehicle.eventType}
+              </p>
+              <br />
+              <p>
+                Last Updated:
+                <br />
+                {new Date(vehicle.date).toLocaleString()}
+              </p>
+            </li>
+          ))
+        ) : (
+          <p>No vehicles found for {filterOption}.</p>
+        )}
       </ul>
     </div>
   );
