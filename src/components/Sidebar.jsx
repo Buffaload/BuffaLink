@@ -99,11 +99,11 @@ const Sidebar = ({ onFilterChange }) => {
             </li>
           )}
         </ul>
-        <div className="sidebar-footer">
+        {/* <div className="sidebar-footer">
           <a href="" className="contact-button">
             Contacts
           </a>
-        </div>
+        </div> */}
       </div>
     </>
   );
