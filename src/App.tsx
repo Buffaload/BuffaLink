@@ -23,7 +23,7 @@ function App() {
     }
   }, []);
 
-  const handleLogin = (userToken) => {
+  const handleLogin = (userToken: string) => {
     setToken(userToken);
     localStorage.setItem("token", userToken);
   };
@@ -64,7 +64,7 @@ function App() {
             path="/vehicles"
             element={
               <ProtectedRoute token={token}>
-                <Vehicles />
+                <Vehicles vehicles={[]} filterOption={""} />
               </ProtectedRoute>
             }
           />

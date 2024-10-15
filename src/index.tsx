@@ -13,8 +13,12 @@ const queryClient = new QueryClient();
 // Get the root element from the HTML
 const rootElement = document.getElementById("root");
 
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
 // Create a root and render the App component using the new API
-const root = ReactDOM.createRoot(rootElement);
+const root = ReactDOM.createRoot(rootElement as HTMLElement);
 root.render(
   <React.StrictMode>
     {/* Provide the QueryClient instance to the whole app */}

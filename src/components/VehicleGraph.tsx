@@ -2,9 +2,22 @@ import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import "chart.js/auto";
 
-const VehicleGraph = ({ vehicles }) => {
-  const [stoppedVehicles, setStoppedVehicles] = useState(0);
-  const [servicesVehicles, setServicesVehicles] = useState(0);
+// Define the type for a single vehicle object
+interface Vehicle {
+  id?: string;
+  assetName: string;
+  eventType: string;
+  date: string;
+  locationGroupName?: string;
+}
+
+interface VehicleGraphProps {
+  vehicles: Vehicle[];
+}
+
+const VehicleGraph: React.FC<VehicleGraphProps> = ({ vehicles }) => {
+  const [stoppedVehicles, setStoppedVehicles] = useState<number>(0);
+  const [servicesVehicles, setServicesVehicles] = useState<number>(0);
 
   useEffect(() => {
     const now = Date.now();

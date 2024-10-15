@@ -1,8 +1,26 @@
 import React from "react";
 import "../css/Vehicles.css";
 
-const Vehicles = ({ vehicles, filterOption }) => {
-  //If filterOption is "Debrief", show the form instead of vehicle cards
+// Define the type for a single vehicle object
+interface Vehicle {
+  id?: string;
+  assetName: string;
+  assetRegistration?: string;
+  locationName?: string;
+  formattedAddress?: string;
+  eventType: string;
+  date: string;
+  locationGroupName?: string;
+  assetGroupName?: string;
+}
+
+interface VehiclesProps {
+  vehicles: Vehicle[];
+  filterOption: string;
+}
+
+const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
+  // If filterOption is "Debrief", show the form instead of vehicle cards
   if (filterOption === "Debrief") {
     return (
       <div className="debrief-container">
@@ -16,6 +34,7 @@ const Vehicles = ({ vehicles, filterOption }) => {
       </div>
     );
   }
+
   const now = Date.now();
   const filteredVehicles = vehicles.filter((vehicle) => {
     const lastUpdate = new Date(vehicle.date).getTime();
@@ -25,17 +44,17 @@ const Vehicles = ({ vehicles, filterOption }) => {
       // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
       return vehicle.locationName && timeStopped > 1.5 * 60 * 60 * 1000;
     } else if (filterOption === "Services") {
-      //Services: Show vehicles stoppped for more than 5 minutes with no location name
+      // Services: Show vehicles stopped for more than 5 minutes with no location name
       return !vehicle.locationName && timeStopped > 5 * 60 * 1000;
     } else if (filterOption === "Depots") {
-      //Depots: Show vehicles in depot locations
+      // Depots: Show vehicles in depot locations
       return vehicle.locationGroupName === "Buffaload";
     } else if (filterOption === "Maintenance") {
-      //Maintenance: Show vehicles in Maintenance
+      // Maintenance: Show vehicles in Maintenance
       return vehicle.locationGroupName === "Maintenance";
     } else if (filterOption === "Tippers") {
-      //Tippers: filter only tippers for admin
-      return vehicle.assetGroupName === "Buffaload Ely Tippers";
+      // Tippers: Filter only tippers for admin
+      return vehicle.assetGroupName === "Ely Tipper Operation";
     }
     return true; // Default: show all vehicles if no filter matches
   });

@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
 import "../css/Sidebar.css";
 
-const Sidebar = ({ onFilterChange }) => {
-  const [userRole, setUserRole] = useState("");
-  const [activeButton, setActiveButton] = useState("HGVs"); // Default active button
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to toggle sidebar
+// Define props interface for Sidebar
+interface SidebarProps {
+  onFilterChange: (filter: string) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onFilterChange }) => {
+  const [userRole, setUserRole] = useState<string>("");
+  const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -13,9 +18,9 @@ const Sidebar = ({ onFilterChange }) => {
     }
   }, []);
 
-  const handleButtonClick = (filter) => {
+  const handleButtonClick = (filter: string) => {
     setActiveButton(filter);
-    onFilterChange(filter);
+    onFilterChange(filter); // Pass the filter as a string
   };
 
   const toggleSidebar = () => {
@@ -99,11 +104,6 @@ const Sidebar = ({ onFilterChange }) => {
             </li>
           )}
         </ul>
-        {/* <div className="sidebar-footer">
-          <a href="" className="contact-button">
-            Contacts
-          </a>
-        </div> */}
       </div>
     </>
   );
