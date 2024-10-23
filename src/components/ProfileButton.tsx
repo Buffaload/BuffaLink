@@ -1,7 +1,15 @@
 import React, { useState } from "react";
 import "../css/ProfileButton.css";
 
-const ProfileButton = ({ username, handleLogout }) => {
+interface ProfileButtonProps {
+  username: string;
+  handleLogout: () => void;
+}
+
+const ProfileButton: React.FC<ProfileButtonProps> = ({
+  username,
+  handleLogout,
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const toggleDropdown = () => {

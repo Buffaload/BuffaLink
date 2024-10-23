@@ -3,20 +3,17 @@ import "../css/Dashboard.css";
 import Sidebar from "./Sidebar";
 import ProfileButton from "./ProfileButton";
 import Vehicles from "./Vehicles";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  handleLogout: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
   const username = localStorage.getItem("username") || "";
   const token = localStorage.getItem("token");
-
-  // Function to handle logout and redirect
-  const handleLogout = () => {
-    localStorage.removeItem("username");
-    localStorage.removeItem("token");
-    window.location.href = "/login"; // Redirect to login page
-  };
 
   // Hook to fetch vehicles
   const fetchVehicles = async () => {
@@ -69,7 +66,7 @@ const Dashboard: React.FC = () => {
 
   // If no token, redirect to login immediately
   if (!token) {
-    window.location.href = "/login";
+    handleLogout();
     return null; // Prevent rendering of the component
   }
 

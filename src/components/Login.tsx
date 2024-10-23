@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import axios from "axios";
 import "../css/Login.css";
 
-const Login = ({ setToken }) => {
+const Login = ({ setToken }: { setToken: (token: string) => void }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await axios.post("http://localhost:5050/api/auth/login", {
