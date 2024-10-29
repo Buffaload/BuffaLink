@@ -12,12 +12,39 @@ interface Vehicle {
   date: string;
   locationGroupName?: string;
   assetGroupName?: string;
+  // New fields from BlueCrystal API
+  ServiceDueDate?: string;
+  MotDueDate?: string;
+  IsVor?: boolean;
+  LiveDefects?: boolean;
 }
 
 interface VehiclesProps {
   vehicles: Vehicle[];
   filterOption: string;
 }
+
+// Helper function to format date from BlueCrystal data
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0"); // Ensure day is always two digits
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is zero-based, so add 1
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+// Helper function to check if the date is older than today
+const isDatePast = (dateString: string) => {
+  if (!dateString) return false;
+
+  const date = new Date(dateString.trim());
+  if (isNaN(date.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to start of today to avoid time issues
+
+  return date < today; // Returns true if the date is in the past
+};
 
 const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
   // If filterOption is "Debrief", show the form instead of vehicle cards
@@ -65,30 +92,61 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
       <ul className="vehicle-list">
         {filteredVehicles.length > 0 ? (
           filteredVehicles.map((vehicle) => (
-            <li
-              key={vehicle.id || vehicle.assetRegistration}
-              className="vehicle-card"
-            >
+            <li key={vehicle.id || vehicle.assetName} className="vehicle-card">
               <h2>{vehicle.assetName}</h2>
+              <br />
               <p>
-                Location:
+                <b>Last Updated:</b>
+                <br />
+                {new Date(vehicle.date).toLocaleString()}
+              </p>
+              <p>
+                <br />
+                <b>{vehicle.eventType}</b>
+              </p>
+              <br />
+              <p
+                style={{
+                  color: isDatePast(vehicle.ServiceDueDate ?? "")
+                    ? "red"
+                    : "#555",
+                }}
+              >
+                <b>Service Due:</b>{" "}
+                {vehicle.ServiceDueDate
+                  ? formatDate(vehicle.ServiceDueDate)
+                  : "N/A"}
+              </p>
+              <br />
+              <p
+                style={{
+                  color: isDatePast(vehicle.MotDueDate ?? "") ? "red" : "#555",
+                }}
+              >
+                <b>Mot Due:</b>{" "}
+                {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+              </p>
+              <br />
+              {/* Conditionally show VOR and Live Defects only if true */}
+              {vehicle.IsVor && (
+                <p style={{ color: "red" }}>
+                  <b>VOR</b>
+                </p>
+              )}
+              {vehicle.LiveDefects && (
+                <p style={{ color: "red" }}>
+                  <b>Live Defects</b>
+                </p>
+              )}
+              <br />
+              <p>
+                <b>Location:</b>
                 <br />
                 {vehicle.locationName ||
                   vehicle.formattedAddress ||
                   "undefined"}
               </p>
               <br />
-              <p>
-                Event:
-                <br />
-                {vehicle.eventType}
-              </p>
-              <br />
-              <p>
-                Last Updated:
-                <br />
-                {new Date(vehicle.date).toLocaleString()}
-              </p>
             </li>
           ))
         ) : (
