@@ -11,7 +11,7 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "https://buffalink.vercel.app/api/auth/login",
+        "https://buffa-link-backend.vercel.app/api/auth/login",
         {
           username,
           password,

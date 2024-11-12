@@ -30,7 +30,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       };
 
       const res = await axios.get(
-        "https://buffalink.vercel.app/api/vehicles",
+        "https://buffa-link-backend.vercel.app/api/vehicles",
         config
       );
 
