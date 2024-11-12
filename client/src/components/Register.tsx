@@ -12,11 +12,14 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5050/api/auth/register", {
-        username,
-        password,
-        role, // Include role in the registration
-      });
+      const res = await axios.post(
+        "https://buffalink.vercel.app/api/auth/register",
+        {
+          username,
+          password,
+          role, // Include role in the registration
+        }
+      );
 
       setSuccess("User registered successfully!");
       setError(null);

@@ -29,7 +29,10 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
         },
       };
 
-      const res = await axios.get("http://localhost:5050/api/vehicles", config);
+      const res = await axios.get(
+        "https://buffalink.vercel.app/api/vehicles",
+        config
+      );
 
       if (res.status === 200 && Array.isArray(res.data)) {
         return res.data;

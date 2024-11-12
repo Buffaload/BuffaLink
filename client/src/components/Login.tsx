@@ -10,10 +10,13 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5050/api/auth/login", {
-        username,
-        password,
-      });
+      const res = await axios.post(
+        "https://buffalink.vercel.app/api/auth/login",
+        {
+          username,
+          password,
+        }
+      );
 
       setToken(res.data.token);
       localStorage.setItem("token", res.data.token);
