@@ -1,0 +1,165 @@
+.dashboard-content {
+  padding: 20px;
+}
+
+@media screen and (min-width: 769px) {
+  .dashboard-content {
+    margin-left: 280px;
+  }
+}
+
+/* Sidebar container */
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    /* Apply the dark tint */ url("/public/truck.jpg") no-repeat center center; /* Background image */
+  background-size: cover; /* Ensure background image covers the entire sidebar */
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15); /* Drop shadow */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 1000;
+  transition: transform 0.3 ease;
+}
+
+.sidebar.open {
+  transform: translateX(0); /*Slide in the sidebar */
+}
+
+.sidebar.closed {
+  transform: translateX(-100%); /*Slide out the sidebar */
+}
+
+/* Sidebar Header */
+.sidebar-header {
+  padding: 20px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: white;
+}
+
+/* Sidebar Buttons */
+.sidebar-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.sidebar-nav li {
+  margin-bottom: 15px;
+}
+
+/* Button styling */
+.sidebar-link {
+  display: block;
+  width: 100%; /* Full width */
+  padding: 15px 20px;
+  color: white;
+  text-decoration: none;
+  font-size: 16px;
+  background-color: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Background color transition for selected buttons */
+.sidebar-link.active {
+  background-color: #28a745; /* Dark green background */
+  color: white;
+}
+
+/* Animation to color from middle to outside */
+.sidebar-link::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 300%;
+  background-color: #28a745;
+  z-index: -1;
+  transition: all 0.3s ease;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+/* Active state animation */
+.sidebar-link.active::before {
+  width: 300%;
+  height: 300%;
+  border-radius: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* Upgrade contact styling */
+.contact-button {
+  display: block;
+  width: 200px;
+  margin: 10px 10px;
+  padding: 15px 20px;
+  background-color: #28a745; /* Dark green background */
+  color: white;
+  text-align: center;
+  font-size: 16px;
+  text-decoration: none;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+}
+
+/* Hover effect for the contact button */
+.contact-button:hover {
+  background-color: #218838; /* Slightly darker green on hover */
+  text-decoration: none; /* No underline */
+}
+/* Sidebar toggle button for mobile */
+.hamburger-menu {
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: 40px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  z-index: 1100;
+}
+
+/* Mobile specific adjustments */
+@media screen and (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%); /* Sidebar hidden by default */
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* Slide in the sidebar on mobile */
+  }
+
+  /* Show toggle button on mobile */
+  .hamburger-menu {
+    display: block;
+  }
+
+  /* Hide or display the sidebar toggle */
+  .sidebar-toggle {
+    display: none;
+  }
+
+  .dashboard-content {
+    margin-left: 0;
+  }
+}
