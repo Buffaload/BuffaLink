@@ -122,8 +122,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
           filteredVehicles.map((vehicle) => (
             <li key={vehicle.id || vehicle.assetName} className="vehicle-card">
               <h2>{vehicle.assetName}</h2>
-              <br />
-              {/* <p>
+              {/* <br />
+              <p>
                 <b>Last Updated:</b>
                 <br />
                 {new Date(vehicle.date).toLocaleString()}
