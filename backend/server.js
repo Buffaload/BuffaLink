@@ -9,8 +9,16 @@ import vehicleRoutes from "./routes/vehicles.js";
 
 dotenv.config();
 
+const allowedOrigins = ["https://buffalink.vercel.app"];
+
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 // Connect to MongoDB
