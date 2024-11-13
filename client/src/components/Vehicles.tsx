@@ -12,6 +12,7 @@ interface Vehicle {
   date: string;
   locationGroupName?: string;
   assetGroupName?: string;
+  assetType?: string;
   // New fields from BlueCrystal API
   ServiceDueDate?: string;
   MotDueDate?: string;
@@ -69,10 +70,18 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
 
     if (filterOption === "HGVs") {
       // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
-      return vehicle.locationName && timeStopped > 1.5 * 60 * 60 * 1000;
+      return (
+        vehicle.assetType === "HGV" &&
+        vehicle.locationName &&
+        timeStopped > 1.5 * 60 * 60 * 1000
+      );
     } else if (filterOption === "Services") {
       // Services: Show vehicles stopped for more than 5 minutes with no location name
-      return !vehicle.locationName && timeStopped > 5 * 60 * 1000;
+      return (
+        vehicle.assetType === "HGV" &&
+        !vehicle.locationName &&
+        timeStopped > 5 * 60 * 1000
+      );
     } else if (filterOption === "Depots") {
       // Depots: Show vehicles in depot locations
       return vehicle.locationGroupName === "Buffaload";
