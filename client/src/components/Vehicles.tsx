@@ -53,10 +53,17 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
   const lastUpdate = new Date(lastUpdated).getTime();
   const duration = now - lastUpdate;
 
-  const hours = Math.floor(duration / (1000 * 60 * 60));
+  const days = Math.floor(duration / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(
+    (duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+  );
   const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
 
-  return `${hours} hours, ${minutes} minutes ago`;
+  let result = "";
+  if (days > 0) result += `${days} days, `;
+  result += `${hours} hours, ${minutes} minutes ago`;
+
+  return result;
 };
 
 const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
@@ -116,16 +123,16 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
             <li key={vehicle.id || vehicle.assetName} className="vehicle-card">
               <h2>{vehicle.assetName}</h2>
               <br />
-              <p>
+              {/* <p>
                 <b>Last Updated:</b>
                 <br />
                 {new Date(vehicle.date).toLocaleString()}
-              </p>
+              </p> */}
               <p>
                 <br />
                 <b>{vehicle.eventType}</b>
                 <br />
-                <span> - {getTimeSinceUpdate(vehicle.date)}</span>
+                <span>{getTimeSinceUpdate(vehicle.date)}</span>
               </p>
               <br />
               <p
