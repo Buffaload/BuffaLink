@@ -22,7 +22,7 @@ router.post(
       return;
     }
 
-    const { username, password, role } = req.body;
+    const { username, password, role, depot } = req.body;
 
     try {
       let user = await User.findOne({ username });
@@ -31,7 +31,7 @@ router.post(
         return;
       }
 
-      user = new User({ username, password, role });
+      user = new User({ username, password, role, depot });
 
       // Hash the password
       const salt = await bcrypt.genSalt(10);
