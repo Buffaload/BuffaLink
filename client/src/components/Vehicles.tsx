@@ -47,6 +47,18 @@ const isDatePast = (dateString: string) => {
   return date < today; // Returns true if the date is in the past
 };
 
+// Helper function to calculate duration since last status change
+const getTimeSinceUpdate = (lastUpdated: string) => {
+  const now = new Date().getTime();
+  const lastUpdate = new Date(lastUpdated).getTime();
+  const duration = now - lastUpdate;
+
+  const hours = Math.floor(duration / (1000 * 60 * 60));
+  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+
+  return `${hours} hours, ${minutes} minutes ago`;
+};
+
 const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
   // If filterOption is "Debrief", show the form instead of vehicle cards
   if (filterOption === "Debrief") {
@@ -112,6 +124,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
               <p>
                 <br />
                 <b>{vehicle.eventType}</b>
+                <br />
+                <span> - {getTimeSinceUpdate(vehicle.date)}</span>
               </p>
               <br />
               <p
