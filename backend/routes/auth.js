@@ -42,7 +42,7 @@ router.post(
       // Generate JWT token
       const payload = { user: { id: user.id, role: user.role } };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "24h",
       });
 
       res.json({ token });
@@ -85,7 +85,7 @@ router.post(
       // Generate JWT token
       const payload = { user: { id: user.id, role: user.role } };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "24h",
       });
 
       res.json({
