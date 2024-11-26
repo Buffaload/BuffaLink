@@ -73,10 +73,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
 }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [hideNightOut, setHideNightOut] = useState(false);
 
+  // Merges the backend data with any local updates
   useEffect(() => {
-    setVehicles(initialVehicles);
+    setVehicles((prevVehicles) => {
+      return initialVehicles.map((vehicle) => {
+        const localVehicle = prevVehicles.find(
+          (v) => v.assetName === vehicle.assetName
+        );
+        return localVehicle
+          ? { ...vehicle, isNightOut: localVehicle.isNightOut }
+          : vehicle;
+      });
+    });
   }, [initialVehicles]);
 
   // If filterOption is "Debrief", show the form instead of vehicle cards
@@ -95,9 +104,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }
   const now = Date.now();
   const filteredVehicles = vehicles.filter((vehicle) => {
-    // Exclude Night-out vehicles if hideNightOut is true
-    if (hideNightOut && vehicle.isNightOut) return false;
-
     if (filterOption === "Night-Out") {
       return vehicle.isNightOut;
     }
@@ -125,7 +131,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
         timeStopped > 5 * 60 * 1000 &&
         vehicle.locationGroupName !== "Buffaload" && //Exclude depots
         vehicle.locationGroupName !== "Maintenance" && //Exclude maintenance
-        vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
+        vehicle.assetGroupName !== "Ely Tipper Operation" && //Exclude tippers
+        !vehicle.isNightOut //Exclude Night-Out vehicles
       );
     } else if (filterOption === "Depots") {
       // Depots: Show vehicles in depot locations
@@ -156,7 +163,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     try {
       const response = await fetch(
-        `/api/vehicles/${encodeURIComponent(normalisedAssetName)}/night-out`,
+        `http://localhost:5050/api/vehicles/${encodeURIComponent(
+          normalisedAssetName
+        )}/night-out`,
         {
           method: "PATCH",
           headers: {
@@ -206,7 +215,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
               >
                 <div
                   className={`vehicle-card-header ${
-                    filterOption === "Services" ? "with-toggle" : "centered"
+                    filterOption === "Services" || filterOption === "Night-Out"
+                      ? "with-toggle"
+                      : "centered"
                   }`}
                 >
                   <h2>{vehicle.assetName}</h2>
@@ -216,16 +227,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <br />
                   {new Date(vehicle.date).toLocaleString()}
                 </p> */}
-                  {filterOption === "Services" && (
+                  {filterOption === "Services" ||
+                  filterOption === "Night-Out" ? (
                     <label className="toggle-container">
                       <input
                         type="checkbox"
-                        checked={vehicle.isNightOut}
+                        checked={!!vehicle.isNightOut}
                         onChange={() => toggleNightOut(vehicle)}
                       />
                       <span className="toggle-slider"></span>
                     </label>
-                  )}
+                  ) : null}
                 </div>
                 <p>
                   <br />

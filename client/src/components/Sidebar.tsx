@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../css/Sidebar.css";
 
-// Define props interface for Sidebar
-interface SidebarProps {
-  onFilterChange: (filter: string) => void;
-}
-
 const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
   onFilterChange,
 }) => {

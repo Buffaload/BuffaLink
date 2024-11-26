@@ -89,7 +89,9 @@ router.get("/", auth, async (req, res) => {
           );
 
     // Get assetNames to fetch Night-Out status from MongoDB
-    const assetNames = filteredVehicles.map((vehicle) => vehicle.assetName);
+    const assetNames = filteredVehicles.map((vehicle) =>
+      vehicle.assetName.toLowerCase()
+    );
     const metadata = await VehicleMetadata.find({
       assetName: { $in: assetNames },
     });
@@ -98,7 +100,7 @@ router.get("/", auth, async (req, res) => {
 
     // Create a Lookup map for Night-Out metadata
     const metadataMap = metadata.reduce((acc, item) => {
-      acc[item.assetName] = item.isNightOut; // Store isNightOut directly
+      acc[item.assetName] = true; // Only store vehicles currently marked as Night-Out
       return acc;
     }, {});
 
@@ -107,7 +109,7 @@ router.get("/", auth, async (req, res) => {
     //Add Night-Out status to the merged vehicle data
     const finalVehicles = filteredVehicles.map((vehicle) => ({
       ...vehicle,
-      isNightOut: metadataMap[vehicle.assetName] || false, // Retrieve from metadataMap
+      isNightOut: metadataMap[vehicle.assetName] || false,
     }));
 
     console.log("Final vehicles with isNightOut:", finalVehicles); // Log final merged data
@@ -126,12 +128,9 @@ router.patch("/:assetName/night-out", async (req, res) => {
   const { assetName } = req.params;
   const { isNightOut } = req.body;
 
-  console.log("Asset Name received:", assetName);
-  console.log("Request body received:", req.body);
-
   try {
-    //Update or insert document with new Night-Out status
     const normalisedAssetName = assetName.trim().toLowerCase();
+
     if (isNightOut) {
       const result = await VehicleMetadata.updateOne(
         { assetName: normalisedAssetName },
@@ -139,17 +138,17 @@ router.patch("/:assetName/night-out", async (req, res) => {
         { upsert: true } // Create a new document if it doesn't exist
       );
 
-      console.log("Toggle On result:", result);
+      console.log("Night-Out enabled:", result);
       res
         .status(200)
-        .json({ message: `Night-Out status updated for ${assetName}` });
+        .json({ message: `Night-Out status set for ${assetName}.` });
     } else {
       const result = await VehicleMetadata.deleteOne({
         assetName: normalisedAssetName,
       });
 
-      console.log("Toggle Off result:", result);
       if (result.deletedCount > 0) {
+        console.log("Night-Out disabled:", result);
         res
           .status(200)
           .json({ message: `Night-Out status removed for ${assetName}` });
@@ -157,9 +156,9 @@ router.patch("/:assetName/night-out", async (req, res) => {
         res.status(404).json({ message: "Vehicle not found" });
       }
     }
-  } catch (err) {
-    console.error("Error updating Night-Out status:", err);
-    res.status(500).json({ message: "Failed to update Night-Out status" });
+  } catch (error) {
+    console.error("Error updating Night-Out status:", error);
+    res.status(500).json({ message: "Failed to update Night-Out status." });
   }
 });
 
