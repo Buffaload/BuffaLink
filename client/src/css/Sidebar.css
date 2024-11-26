@@ -54,6 +54,7 @@
 
 .sidebar-nav li {
   margin-bottom: 15px;
+  list-style-type: none;
 }
 
 /* Button styling */
