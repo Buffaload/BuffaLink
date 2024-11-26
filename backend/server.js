@@ -12,13 +12,14 @@ dotenv.config();
 const allowedOrigins = [
   "https://buffalink.vercel.app",
   "http://localhost:3000",
+  "http://localhost:5050",
 ];
 
 const app = express();
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
