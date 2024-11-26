@@ -139,6 +139,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return true; // Default: show all vehicles if no filter matches
   });
 
+  const getBackgroundColour = (timeStopped: number) => {
+    if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
+    if (timeStopped >= 30 * 60 * 1000) return "pastel-orange"; // Orange for >= 30min
+    if (timeStopped >= 15 * 60 * 1000) return "pastel-yellow"; // Yellow for >= 15min
+    return ""; // Default: no special colour
+  };
+
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
     const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
@@ -173,7 +180,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   return (
     <div className="vehicle-container">
-      <h1>{filterOption}</h1>
+      {/* <h1>{filterOption}</h1> */}
 
       {/* Hide Night-Out Vehicles Checkbox */}
       {filterOption === "Services" && (
@@ -189,87 +196,100 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
       <ul className="vehicle-list">
         {filteredVehicles.length > 0 ? (
-          filteredVehicles.map((vehicle) => (
-            <li
-              key={vehicle.id || vehicle.assetName}
-              className={`vehicle-card ${
-                vehicle.isNightOut ? "night-out" : ""
-              }`}
-            >
-              <div
-                className={`vehicle-card-header ${
-                  filterOption === "Services" ? "with-toggle" : "centered"
-                }`}
+          filteredVehicles.map((vehicle) => {
+            const lastUpdate = new Date(vehicle.date).getTime();
+            const timeStopped = now - lastUpdate;
+
+            //Aply conditional formatting only for "Services"
+            const BackgroundColourClass =
+              filterOption === "Services"
+                ? getBackgroundColour(timeStopped)
+                : "";
+
+            return (
+              <li
+                key={vehicle.id || vehicle.assetName}
+                className={`vehicle-card ${
+                  vehicle.isNightOut ? "night-out" : ""
+                } ${BackgroundColourClass}`} //Adding background colour to the className
               >
-                <h2>{vehicle.assetName}</h2>
-                {/* <br />
+                <div
+                  className={`vehicle-card-header ${
+                    filterOption === "Services" ? "with-toggle" : "centered"
+                  }`}
+                >
+                  <h2>{vehicle.assetName}</h2>
+                  {/* <br />
                 <p>
                   <b>Last Updated:</b>
                   <br />
                   {new Date(vehicle.date).toLocaleString()}
                 </p> */}
-                {filterOption === "Services" && (
-                  <label className="toggle-container">
-                    <input
-                      type="checkbox"
-                      checked={vehicle.isNightOut}
-                      onChange={() => toggleNightOut(vehicle)}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
+                  {filterOption === "Services" && (
+                    <label className="toggle-container">
+                      <input
+                        type="checkbox"
+                        checked={vehicle.isNightOut}
+                        onChange={() => toggleNightOut(vehicle)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  )}
+                </div>
+                <p>
+                  <br />
+                  <b>{vehicle.eventType}</b>
+                  <br />
+                  <span>{getTimeSinceUpdate(vehicle.date)}</span>
+                </p>
+                <br />
+                <p
+                  style={{
+                    color: isDatePast(vehicle.ServiceDueDate ?? "")
+                      ? "red"
+                      : "#555",
+                  }}
+                >
+                  <b>Service Due:</b>{" "}
+                  {vehicle.ServiceDueDate
+                    ? formatDate(vehicle.ServiceDueDate)
+                    : "N/A"}
+                </p>
+                <br />
+                <p
+                  style={{
+                    color: isDatePast(vehicle.MotDueDate ?? "")
+                      ? "red"
+                      : "#555",
+                  }}
+                >
+                  <b>Mot Due:</b>{" "}
+                  {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+                </p>
+                <br />
+                {/* Conditionally show VOR and Live Defects only if true */}
+                {vehicle.IsVor && (
+                  <p style={{ color: "red" }}>
+                    <b>VOR</b>
+                  </p>
                 )}
-              </div>
-              <p>
+                {vehicle.LiveDefects && (
+                  <p style={{ color: "red" }}>
+                    <b>Live Defects</b>
+                  </p>
+                )}
                 <br />
-                <b>{vehicle.eventType}</b>
-                <br />
-                <span>{getTimeSinceUpdate(vehicle.date)}</span>
-              </p>
-              <br />
-              <p
-                style={{
-                  color: isDatePast(vehicle.ServiceDueDate ?? "")
-                    ? "red"
-                    : "#555",
-                }}
-              >
-                <b>Service Due:</b>{" "}
-                {vehicle.ServiceDueDate
-                  ? formatDate(vehicle.ServiceDueDate)
-                  : "N/A"}
-              </p>
-              <br />
-              <p
-                style={{
-                  color: isDatePast(vehicle.MotDueDate ?? "") ? "red" : "#555",
-                }}
-              >
-                <b>Mot Due:</b>{" "}
-                {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
-              </p>
-              <br />
-              {/* Conditionally show VOR and Live Defects only if true */}
-              {vehicle.IsVor && (
-                <p style={{ color: "red" }}>
-                  <b>VOR</b>
+                <p>
+                  <b>Location:</b>
+                  <br />
+                  {vehicle.locationName ||
+                    vehicle.formattedAddress ||
+                    "undefined"}
                 </p>
-              )}
-              {vehicle.LiveDefects && (
-                <p style={{ color: "red" }}>
-                  <b>Live Defects</b>
-                </p>
-              )}
-              <br />
-              <p>
-                <b>Location:</b>
                 <br />
-                {vehicle.locationName ||
-                  vehicle.formattedAddress ||
-                  "undefined"}
-              </p>
-              <br />
-            </li>
-          ))
+              </li>
+            );
+          })
         ) : (
           <p>No vehicles found in {filterOption}.</p>
         )}

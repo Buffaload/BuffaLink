@@ -126,6 +126,19 @@
   color: #555;
 }
 
+/* Services card format */
+.vehicle-card.pastel-yellow {
+  background-color: #fffacd; /* Pastel Yellow */
+}
+
+.vehicle-card.pastel-orange {
+  background-color: #ffdab9; /* Pastel Orange */
+}
+
+.vehicle-card.pastel-red {
+  background-color: #ffcccb; /* Light Red */
+}
+
 .debrief-container {
   padding: 20px;
 }
