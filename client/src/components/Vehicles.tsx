@@ -98,6 +98,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
     // Exclude Night-out vehicles if hideNightOut is true
     if (hideNightOut && vehicle.isNightOut) return false;
 
+    if (filterOption === "Night-Out") {
+      return vehicle.isNightOut;
+    }
+
     const lastUpdate = new Date(vehicle.date).getTime();
     const timeStopped = now - lastUpdate;
 
@@ -163,7 +167,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       );
 
       if (response.ok) {
-        setVehicles((prevVehicles: Vehicle[]) =>
+        setVehicles((prevVehicles) =>
           prevVehicles.map((v) =>
             v.assetName === vehicle.assetName
               ? { ...v, isNightOut: !v.isNightOut }
@@ -181,19 +185,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   return (
     <div className="vehicle-container">
       {/* <h1>{filterOption}</h1> */}
-
-      {/* Hide Night-Out Vehicles Checkbox */}
-      {filterOption === "Services" && (
-        <div className="filter-container">
-          <input
-            type="checkbox"
-            checked={hideNightOut}
-            onChange={(e) => setHideNightOut(e.target.checked)}
-          />
-          <label>Hide Night-Out Vehicles</label>
-        </div>
-      )}
-
       <ul className="vehicle-list">
         {filteredVehicles.length > 0 ? (
           filteredVehicles.map((vehicle) => {

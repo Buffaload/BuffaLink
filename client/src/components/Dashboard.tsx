@@ -20,6 +20,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     HGVs: "HGVs stopped for more than 1.5 hours in known locations",
     Services:
       "Vehicles stopped in Services and Truckstops as well as Unknown locations",
+    "Night-Out": "Vehicles flagged as Night-Out",
     Depots: "Vehicles located in Depots",
     Maintenance: "Vehicles in Maintenance locations",
     Tippers: "Vehicles from the Ely Tipper Operation",

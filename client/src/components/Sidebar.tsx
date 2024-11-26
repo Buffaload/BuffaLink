@@ -6,10 +6,13 @@ interface SidebarProps {
   onFilterChange: (filter: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onFilterChange }) => {
+const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
+  onFilterChange,
+}) => {
   const [userRole, setUserRole] = useState<string>("");
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
+  const [showSubTabs, setShowSubTabs] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -21,6 +24,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange }) => {
   const handleButtonClick = (filter: string) => {
     setActiveButton(filter);
     onFilterChange(filter); // Pass the filter as a string
+
+    // Show sub tab only for Services
+    setShowSubTabs(filter === "Services" || filter === "Night-Out");
   };
 
   const toggleSidebar = () => {
@@ -54,13 +60,43 @@ const Sidebar: React.FC<SidebarProps> = ({ onFilterChange }) => {
           <li>
             <button
               className={`sidebar-link ${
-                activeButton === "Services" ? "active" : ""
+                activeButton === "Services" || activeButton === "Night-Out"
+                  ? "active"
+                  : ""
               }`}
               onClick={() => handleButtonClick("Services")}
             >
               Services
             </button>
           </li>
+          {/* Sub-tab for "Services" */}
+          {showSubTabs && (
+            <ul className="sidebar-nav">
+              <li>
+                <button
+                  className={`sidebar-link ${
+                    activeButton === "Night-Out" ? "active" : ""
+                  }`}
+                  onClick={() => handleButtonClick("Night-Out")}
+                  style={{
+                    fontSize: "14px", // Smaller font size
+                    paddingLeft: "50px", // Left indentation
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      transform: "scaleX(-1)", // Flip horizontally
+                      marginRight: "8px",
+                    }}
+                  >
+                    ↩
+                  </span>
+                  Night-Out
+                </button>
+              </li>
+            </ul>
+          )}
           <li>
             <button
               className={`sidebar-link ${
