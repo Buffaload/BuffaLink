@@ -40,7 +40,9 @@ router.post(
       await user.save();
 
       // Generate JWT token
-      const payload = { user: { id: user.id, role: user.role } };
+      const payload = {
+        user: { id: user.id, role: user.role, depot: user.depot },
+      };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
         expiresIn: "24h",
       });
@@ -83,7 +85,9 @@ router.post(
       }
 
       // Generate JWT token
-      const payload = { user: { id: user.id, role: user.role } };
+      const payload = {
+        user: { id: user.id, role: user.role, depot: user.depot },
+      };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
         expiresIn: "24h",
       });
@@ -92,6 +96,7 @@ router.post(
         token,
         username: user.username,
         role: user.role,
+        depot: user.depot,
       });
     } catch (err) {
       console.error(err.message);
