@@ -15,6 +15,20 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const username = localStorage.getItem("username") || "";
   const token = localStorage.getItem("token");
 
+  // Map filter options to their respective titles
+  const filterTitles: { [key: string]: string } = {
+    HGVs: "HGVs stopped for more than 1.5 hours in known locations",
+    Services:
+      "Vehicles stopped in Services and Truckstops as well as Unknown locations",
+    Depots: "Vehicles located in Depots",
+    Maintenance: "Vehicles in Maintenance locations",
+    Tippers: "Vehicles from the Ely Tipper Operation",
+    Debrief: "Driver Debrief form",
+    default: "Dashboard", // Default title if filterOption is not recognised
+  };
+
+  const getTitle = () => filterTitles[filterOption] || filterTitles.default;
+
   // Hook to fetch vehicles
   const fetchVehicles = async () => {
     if (!token) {
@@ -87,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h2>Dashboard</h2>
+        <h2>{getTitle()}</h2>
         <ProfileButton username={username} handleLogout={handleLogout} />
       </div>
       <Sidebar onFilterChange={handleFilterChange} />
