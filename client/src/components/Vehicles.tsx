@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "../css/Vehicles.css";
 
 // Define the type for a single vehicle object
@@ -18,6 +18,7 @@ interface Vehicle {
   MotDueDate?: string;
   IsVor?: boolean;
   LiveDefects?: boolean;
+  isNightOut?: boolean;
 }
 
 interface VehiclesProps {
@@ -60,13 +61,24 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
   const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
 
   let result = "";
-  if (days > 0) result += `${days} days, `;
-  result += `${hours} hours, ${minutes} minutes ago`;
+  if (days > 0) result += `${days} days, `; // Include days only if > 0
+  if (hours > 0) result += `${hours} hours, `; // Include hours only if > 0
+  result += `${minutes} minutes ago`;
 
   return result;
 };
 
-const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
+const Vehicles: React.FC<VehiclesProps> = ({
+  vehicles: initialVehicles,
+  filterOption,
+}) => {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [hideNightOut, setHideNightOut] = useState(false);
+
+  useEffect(() => {
+    setVehicles(initialVehicles);
+  }, [initialVehicles]);
+
   // If filterOption is "Debrief", show the form instead of vehicle cards
   if (filterOption === "Debrief") {
     return (
@@ -81,9 +93,11 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
       </div>
     );
   }
-
   const now = Date.now();
   const filteredVehicles = vehicles.filter((vehicle) => {
+    // Exclude Night-out vehicles if hideNightOut is true
+    if (hideNightOut && vehicle.isNightOut) return false;
+
     const lastUpdate = new Date(vehicle.date).getTime();
     const timeStopped = now - lastUpdate;
 
@@ -91,19 +105,30 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
       // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
       return (
         vehicle.assetType === "HGV" &&
-        vehicle.locationName &&
-        timeStopped > 1.5 * 60 * 60 * 1000
+        vehicle.locationName && // Must have a known location
+        timeStopped > 1.5 * 60 * 60 * 1000 && // Stopped for more than 1.5 hours
+        vehicle.locationGroupName !== "Buffaload" && // Exclude depots
+        vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
+        vehicle.assetGroupName !== "Ely Tipper Operation" && // Exclude tippers
+        vehicle.locationGroupName !== "Services and Truckstops" // Exclude Services
       );
     } else if (filterOption === "Services") {
-      // Services: Show vehicles stopped for more than 5 minutes with no location name
+      // Services: Show vehicles stopped for more than 5 minutes with no location name and in Services and Truck stops
       return (
         vehicle.assetType === "HGV" &&
-        !vehicle.locationName &&
-        timeStopped > 5 * 60 * 1000
+        (vehicle.locationGroupName === "Services and Truckstops" ||
+          !vehicle.locationGroupName) &&
+        timeStopped > 5 * 60 * 1000 &&
+        vehicle.locationGroupName !== "Buffaload" && //Exclude depots
+        vehicle.locationGroupName !== "Maintenance" && //Exclude maintenance
+        vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
       );
     } else if (filterOption === "Depots") {
       // Depots: Show vehicles in depot locations
-      return vehicle.locationGroupName === "Buffaload";
+      return (
+        vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
+        vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
+      );
     } else if (filterOption === "Maintenance") {
       // Maintenance: Show vehicles in Maintenance
       return vehicle.locationGroupName === "Maintenance";
@@ -114,20 +139,86 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
     return true; // Default: show all vehicles if no filter matches
   });
 
+  // Function to toggle the Night-Out status of a vehicle
+  const toggleNightOut = async (vehicle: Vehicle) => {
+    const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
+
+    try {
+      const response = await fetch(
+        `/api/vehicles/${encodeURIComponent(normalisedAssetName)}/night-out`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ isNightOut: !vehicle.isNightOut }),
+        }
+      );
+
+      if (response.ok) {
+        setVehicles((prevVehicles: Vehicle[]) =>
+          prevVehicles.map((v) =>
+            v.assetName === vehicle.assetName
+              ? { ...v, isNightOut: !v.isNightOut }
+              : v
+          )
+        );
+      } else {
+        console.error("Failed to toggle Night-Out status");
+      }
+    } catch (error) {
+      console.error("Error toggling Night-Out status:", error);
+    }
+  };
+
   return (
     <div className="vehicle-container">
       <h1>{filterOption}</h1>
+
+      {/* Hide Night-Out Vehicles Checkbox */}
+      {filterOption === "Services" && (
+        <div className="filter-container">
+          <input
+            type="checkbox"
+            checked={hideNightOut}
+            onChange={(e) => setHideNightOut(e.target.checked)}
+          />
+          <label>Hide Night-Out Vehicles</label>
+        </div>
+      )}
+
       <ul className="vehicle-list">
         {filteredVehicles.length > 0 ? (
           filteredVehicles.map((vehicle) => (
-            <li key={vehicle.id || vehicle.assetName} className="vehicle-card">
-              <h2>{vehicle.assetName}</h2>
-              {/* <br />
-              <p>
-                <b>Last Updated:</b>
-                <br />
-                {new Date(vehicle.date).toLocaleString()}
-              </p> */}
+            <li
+              key={vehicle.id || vehicle.assetName}
+              className={`vehicle-card ${
+                vehicle.isNightOut ? "night-out" : ""
+              }`}
+            >
+              <div
+                className={`vehicle-card-header ${
+                  filterOption === "Services" ? "with-toggle" : "centered"
+                }`}
+              >
+                <h2>{vehicle.assetName}</h2>
+                {/* <br />
+                <p>
+                  <b>Last Updated:</b>
+                  <br />
+                  {new Date(vehicle.date).toLocaleString()}
+                </p> */}
+                {filterOption === "Services" && (
+                  <label className="toggle-container">
+                    <input
+                      type="checkbox"
+                      checked={vehicle.isNightOut}
+                      onChange={() => toggleNightOut(vehicle)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                )}
+              </div>
               <p>
                 <br />
                 <b>{vehicle.eventType}</b>
@@ -180,7 +271,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ vehicles, filterOption }) => {
             </li>
           ))
         ) : (
-          <p>No vehicles found for {filterOption}.</p>
+          <p>No vehicles found in {filterOption}.</p>
         )}
       </ul>
     </div>
