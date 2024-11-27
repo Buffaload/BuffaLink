@@ -24,6 +24,7 @@ interface Vehicle {
 interface VehiclesProps {
   vehicles: Vehicle[];
   filterOption: string;
+  selectedDepots: string[];
 }
 
 // Helper function to format date from BlueCrystal data
@@ -71,6 +72,7 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
 const Vehicles: React.FC<VehiclesProps> = ({
   vehicles: initialVehicles,
   filterOption,
+  selectedDepots,
 }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
@@ -135,11 +137,36 @@ const Vehicles: React.FC<VehiclesProps> = ({
         !vehicle.isNightOut //Exclude Night-Out vehicles
       );
     } else if (filterOption === "Depots") {
-      // Depots: Show vehicles in depot locations
-      return (
-        vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
-        vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
-      );
+      if (selectedDepots.length === 0) {
+        // Depots: Show vehicles in depot locations
+        return (
+          vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
+          vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
+        );
+      }
+
+      // show vehicles for the selected depots
+      return selectedDepots.some((depot) => {
+        switch (depot) {
+          case "Ellington":
+            return (
+              vehicle.locationGroupName === "Buffaload" &&
+              vehicle.locationName === "BUFFALOAD ELLINGTON"
+            );
+          case "Crewe":
+            return (
+              vehicle.locationGroupName === "Buffaload" &&
+              vehicle.locationName === "BUFFALOAD CREWE"
+            );
+          case "Skelmersdale":
+            return (
+              vehicle.locationGroupName === "Buffaload" &&
+              vehicle.locationName === "BUFFALOAD SKELMERSDALE"
+            );
+          default:
+            return false;
+        }
+      });
     } else if (filterOption === "Maintenance") {
       // Maintenance: Show vehicles in Maintenance
       return vehicle.locationGroupName === "Maintenance";

@@ -58,7 +58,7 @@
 }
 
 /* Button styling */
-.sidebar-link {
+.sidebar-nav .sidebar-link {
   display: block;
   width: 100%; /* Full width */
   padding: 15px 20px;
@@ -76,13 +76,13 @@
 }
 
 /* Background color transition for selected buttons */
-.sidebar-link.active {
+.sidebar-nav .sidebar-link.active {
   background-color: #28a745; /* Dark green background */
   color: white;
 }
 
 /* Animation to color from middle to outside */
-.sidebar-link::before {
+.sidebar-nav .sidebar-link::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -97,7 +97,7 @@
 }
 
 /* Active state animation */
-.sidebar-link.active::before {
+.sidebar-nav .sidebar-link.active::before {
   width: 300%;
   height: 300%;
   border-radius: 0;

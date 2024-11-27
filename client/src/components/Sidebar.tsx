@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import "../css/Sidebar.css";
 
-const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
-  onFilterChange,
-}) => {
+const Sidebar: React.FC<{
+  onFilterChange: (filter: string) => void;
+  onDepotChange: (depots: string[]) => void;
+  filterOption: string;
+}> = ({ onFilterChange, onDepotChange, filterOption }) => {
   const [userRole, setUserRole] = useState<string>("");
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
-  const [showSubTabs, setShowSubTabs] = useState(false);
+  const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -16,13 +18,28 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
     }
   }, []);
 
+  // function for Night-out subtab
   const handleButtonClick = (filter: string) => {
     setActiveButton(filter);
     onFilterChange(filter); // Pass the filter as a string
-
-    // Show sub tab only for Services
-    setShowSubTabs(filter === "Services" || filter === "Night-Out");
   };
+
+  const handleSubTabClick = (subTab: string) => {
+    setActiveButton(subTab); // keep Parent as active
+    onFilterChange(subTab); // Pass the subtab as the active filter
+  };
+
+  // function for depots subtab
+  const handleDepotClick = (depot: string) => {
+    const updatedDepots = selectedDepots.includes(depot)
+      ? selectedDepots.filter((item) => item !== depot)
+      : [...selectedDepots, depot];
+
+    setSelectedDepots(updatedDepots); // Update local state
+    onDepotChange(updatedDepots); // Pass updated depots to parent
+  };
+
+  const showDepotSubTabs = filterOption === "Depots";
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
@@ -45,7 +62,7 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
           <li>
             <button
               className={`sidebar-link ${
-                activeButton === "HGVs" ? "active" : ""
+                filterOption === "HGVs" ? "active" : ""
               }`}
               onClick={() => handleButtonClick("HGVs")}
             >
@@ -55,7 +72,7 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
           <li>
             <button
               className={`sidebar-link ${
-                activeButton === "Services" || activeButton === "Night-Out"
+                filterOption === "Services" || filterOption === "Night-Out"
                   ? "active"
                   : ""
               }`}
@@ -65,14 +82,14 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
             </button>
           </li>
           {/* Sub-tab for "Services" */}
-          {showSubTabs && (
+          {(filterOption === "Services" || filterOption === "Night-Out") && (
             <ul className="sidebar-nav">
               <li>
                 <button
                   className={`sidebar-link ${
                     activeButton === "Night-Out" ? "active" : ""
                   }`}
-                  onClick={() => handleButtonClick("Night-Out")}
+                  onClick={() => handleSubTabClick("Night-Out")}
                   style={{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
@@ -95,17 +112,98 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
           <li>
             <button
               className={`sidebar-link ${
-                activeButton === "Depots" ? "active" : ""
+                filterOption === "Depots" && selectedDepots.length === 0
+                  ? "active"
+                  : ""
               }`}
-              onClick={() => handleButtonClick("Depots")}
+              onClick={() => {
+                // Clear all subtabs when clicking "Depots"
+                handleButtonClick("Depots");
+                setSelectedDepots([]);
+                onDepotChange([]); // Notify parent about cleared depots
+              }}
             >
               Depots
             </button>
           </li>
+          {/* Sub-tab for "Depots" */}
+          {showDepotSubTabs && (
+            <ul className="sidebar-nav">
+              <li>
+                <button
+                  className={`sidebar-link ${
+                    selectedDepots.includes("Ellington") ? "active" : ""
+                  }`}
+                  onClick={() => handleDepotClick("Ellington")}
+                  style={{
+                    fontSize: "14px", // Smaller font size
+                    paddingLeft: "50px", // Left indentation
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      transform: "scaleX(-1)", // Flip horizontally
+                      marginRight: "8px",
+                    }}
+                  >
+                    ↩
+                  </span>
+                  Ellington
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`sidebar-link ${
+                    selectedDepots.includes("Crewe") ? "active" : ""
+                  }`}
+                  onClick={() => handleDepotClick("Crewe")}
+                  style={{
+                    fontSize: "14px", // Smaller font size
+                    paddingLeft: "50px", // Left indentation
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      transform: "scaleX(-1)", // Flip horizontally
+                      marginRight: "8px",
+                    }}
+                  >
+                    ↩
+                  </span>
+                  Crewe
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`sidebar-link ${
+                    selectedDepots.includes("Skelmersdale") ? "active" : ""
+                  }`}
+                  onClick={() => handleDepotClick("Skelmersdale")}
+                  style={{
+                    fontSize: "14px", // Smaller font size
+                    paddingLeft: "50px", // Left indentation
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      transform: "scaleX(-1)", // Flip horizontally
+                      marginRight: "8px",
+                    }}
+                  >
+                    ↩
+                  </span>
+                  Skelmersdale
+                </button>
+              </li>
+            </ul>
+          )}
           <li>
             <button
               className={`sidebar-link ${
-                activeButton === "Maintenance" ? "active" : ""
+                filterOption === "Maintenance" ? "active" : ""
               }`}
               onClick={() => handleButtonClick("Maintenance")}
             >
@@ -115,7 +213,7 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
           <li>
             <button
               className={`sidebar-link ${
-                activeButton === "Debrief" ? "active" : ""
+                filterOption === "Debrief" ? "active" : ""
               }`}
               onClick={() => handleButtonClick("Debrief")}
             >
@@ -126,7 +224,7 @@ const Sidebar: React.FC<{ onFilterChange: (filter: string) => void }> = ({
             <li>
               <button
                 className={`sidebar-link ${
-                  activeButton === "Tippers" ? "active" : ""
+                  filterOption === "Tippers" ? "active" : ""
                 }`}
                 onClick={() => handleButtonClick("Tippers")}
               >
