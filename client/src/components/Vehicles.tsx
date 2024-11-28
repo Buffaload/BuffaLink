@@ -74,21 +74,23 @@ const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
 }) => {
-  const token = localStorage.getItem("token");
   const queryClient = useQueryClient();
 
   const fetchVehicles = async () => {
-    //handle token
-    if (!token) throw new Error("No token found. Please log in.");
+    const token = localStorage.getItem("token"); //fetch token locally
+    if (!token) throw new Error("No token found. Please log in."); // Ensures token exists
+
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     };
+
     const response = await axios.get(
       "https://buffa-link-backend.vercel.app/api/vehicles",
       config
     );
+
     if (response.status === 200 && Array.isArray(response.data)) {
       return response.data;
     } else {
@@ -221,19 +223,18 @@ const Vehicles: React.FC<VehiclesProps> = ({
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ isNightOut: !vehicle.isNightOut }),
         }
       );
 
       if (response.ok) {
-        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); // Invalidate query to refresh data
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); // Refresh vehicles
       } else {
         throw new Error("Failed to toggle Night-Out status");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error toggling Night-Out status:", error);
     }
   };
 
@@ -241,7 +242,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
   if (isLoading) return <p>Loading vehicles...</p>;
 
   // Error state
-  if (isError) return <p>{String(error) || "Failed to fetch vehicles."}</p>;
+  if (isError) {
+    return <p>{String(error) || "Failed to fetch vehicles."}</p>;
+  }
 
   return (
     <div className="vehicle-container">
