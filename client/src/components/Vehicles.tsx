@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../css/Vehicles.css";
@@ -229,7 +229,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
       );
 
       if (response.ok) {
-        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); // Refresh vehicles
+        // Optimistically update the state
+        queryClient.setQueryData(["vehicles"], (old: Vehicle[] | undefined) =>
+          old
+            ? old.map((v) =>
+                v.assetName === vehicle.assetName
+                  ? { ...v, isNightOut: !v.isNightOut }
+                  : v
+              )
+            : []
+        );
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); // Still refetch for accuracy
       } else {
         throw new Error("Failed to toggle Night-Out status");
       }
