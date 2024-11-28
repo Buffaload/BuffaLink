@@ -211,15 +211,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
+    const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
     try {
       const response = await fetch(
         `https://buffa-link-backend.vercel.app/api/vehicles/${encodeURIComponent(
-          vehicle.assetName.trim().toLowerCase()
+          normalisedAssetName
         )}/night-out`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ isNightOut: !vehicle.isNightOut }),
         }
