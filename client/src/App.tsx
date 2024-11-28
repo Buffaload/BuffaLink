@@ -66,7 +66,6 @@ function App() {
             element={
               <ProtectedRoute token={token}>
                 <Vehicles
-                  vehicles={[]}
                   filterOption={""}
                   selectedDepots={selectedDepots} // Pass the selected depots state
                 />

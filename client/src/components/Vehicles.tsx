@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
+import axios from "axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../css/Vehicles.css";
 
 // Define the type for a single vehicle object
@@ -72,57 +74,55 @@ const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
 }) => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const token = localStorage.getItem("token");
+  const queryClient = useQueryClient();
 
   const fetchVehicles = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        "https://buffa-link-backend.vercel.app/api/vehicles"
-      );
-      const data = await response.json();
-      setVehicles(data);
-    } catch (err) {
-      console.error("Failed to fetch vehicles:", err);
-      setError("Failed to load vehicles. Please try again later.");
-    } finally {
-      setLoading(false);
+    //handle token
+    if (!token) throw new Error("No token found. Please log in.");
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+    const response = await axios.get(
+      "https://buffa-link-backend.vercel.app/api/vehicles",
+      config
+    );
+    if (response.status === 200 && Array.isArray(response.data)) {
+      return response.data;
+    } else {
+      throw new Error("Unexpected response format");
     }
   };
 
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
+  // useQuery hook for fetching vehicles
+  const {
+    data: vehicles = [], //Default to an empty array
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: fetchVehicles,
+    refetchInterval: 30000, // Poll every 30 sec
+    staleTime: 60000, // Data is fresh for 1 minute
+  });
 
-  // If filterOption is "Debrief", show the form instead of vehicle cards
-  if (filterOption === "Debrief") {
-    return (
-      <div className="debrief-container">
-        <iframe
-          src="https://forms.office.com/Pages/ResponsePage.aspx?id=KG0LOI9UKUqEzF1Dxrj5ABC_RfvJHCFIpuo_68d2P49UMlUwNkpaNTJXTDlORU9KRklXSFVaVE84My4u&embed=true"
-          title="Debrief form"
-          width="100%"
-          height="700px"
-          allowFullScreen
-        ></iframe>
-      </div>
-    );
-  }
   const now = Date.now();
+  const calculateTimeStopped = (lastUpdate: string): number => {
+    return now - new Date(lastUpdate).getTime();
+  };
+
   const filteredVehicles = useMemo(() => {
     return vehicles.filter((vehicle) => {
       if (filterOption === "Night-Out") {
         return vehicle.isNightOut;
       }
 
-      const lastUpdate = new Date(vehicle.date).getTime();
-      const timeStopped = now - lastUpdate;
-
       if (filterOption === "HGVs") {
         // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
+        const timeStopped = calculateTimeStopped(vehicle.date);
         return (
           vehicle.assetType === "HGV" &&
           vehicle.locationName && // Must have a known location
@@ -134,6 +134,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         );
       } else if (filterOption === "Services") {
         // Services: Show vehicles stopped for more than 5 minutes with no location name and in Services and Truck stops
+        const timeStopped = calculateTimeStopped(vehicle.date);
         return (
           vehicle.assetType === "HGV" &&
           (vehicle.locationGroupName === "Services and Truckstops" ||
@@ -184,7 +185,22 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
       return true; // Default: show all vehicles if no filter matches
     });
-  }, [vehicles, filterOption, selectedDepots]);
+  }, [vehicles, filterOption, selectedDepots, calculateTimeStopped]);
+
+  // If filterOption is "Debrief", show the form instead of vehicle cards
+  if (filterOption === "Debrief") {
+    return (
+      <div className="debrief-container">
+        <iframe
+          src="https://forms.office.com/Pages/ResponsePage.aspx?id=KG0LOI9UKUqEzF1Dxrj5ABC_RfvJHCFIpuo_68d2P49UMlUwNkpaNTJXTDlORU9KRklXSFVaVE84My4u&embed=true"
+          title="Debrief form"
+          width="100%"
+          height="700px"
+          allowFullScreen
+        ></iframe>
+      </div>
+    );
+  }
 
   const getBackgroundColour = (timeStopped: number) => {
     if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
@@ -195,11 +211,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
-    const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
     try {
       const response = await fetch(
         `https://buffa-link-backend.vercel.app/api/vehicles/${encodeURIComponent(
-          normalisedAssetName
+          vehicle.assetName.trim().toLowerCase()
         )}/night-out`,
         {
           method: "PATCH",
@@ -211,24 +226,23 @@ const Vehicles: React.FC<VehiclesProps> = ({
       );
 
       if (response.ok) {
-        fetchVehicles(); // Re-fetch data after toggling
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); // Invalidate query to refresh data
       } else {
-        console.error("Failed to toggle Night-Out status");
-        setError("Failed to update Night-Out status. Please try again.");
+        throw new Error("Failed to toggle Night-Out status");
       }
     } catch (error) {
-      console.error("Error toggling Night-Out status:", error);
-      setError("Failed to update Night-Out status. Please try again.");
+      console.error(error);
     }
   };
 
+  // Loading state
+  if (isLoading) return <p>Loading vehicles...</p>;
+
+  // Error state
+  if (isError) return <p>{String(error) || "Failed to fetch vehicles."}</p>;
+
   return (
     <div className="vehicle-container">
-      {loading && <p>Loading vehicles...</p>}
-      {error && <p>{error}</p>}
-      {!loading && filteredVehicles.length === 0 && (
-        <p>No vehicles found in {filterOption}</p>
-      )}
       <ul className="vehicle-list">
         {filteredVehicles.map((vehicle) => {
           const lastUpdate = new Date(vehicle.date).getTime();
