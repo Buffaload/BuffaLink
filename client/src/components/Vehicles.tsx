@@ -78,17 +78,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Merges the backend data with any local updates
   useEffect(() => {
-    setVehicles((prevVehicles) => {
-      return initialVehicles.map((vehicle) => {
-        const localVehicle = prevVehicles.find(
-          (v) => v.assetName === vehicle.assetName
+    const fetchVehicles = async () => {
+      try {
+        const response = await fetch(
+          "https://buffa-link-backend.vercel.app/api/vehicles"
         );
-        return localVehicle
-          ? { ...vehicle, isNightOut: localVehicle.isNightOut }
-          : vehicle;
-      });
-    });
-  }, [initialVehicles]);
+        const data = await response.json();
+        setVehicles(data); // Update state with fetched vehicles
+      } catch (error) {
+        console.error("Failed to fetch vehicles:", error);
+      }
+    };
+
+    fetchVehicles();
+  }, []);
 
   // If filterOption is "Debrief", show the form instead of vehicle cards
   if (filterOption === "Debrief") {
