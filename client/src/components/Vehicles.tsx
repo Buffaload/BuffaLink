@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "../css/Vehicles.css";
 
 // Define the type for a single vehicle object
@@ -22,7 +22,6 @@ interface Vehicle {
 }
 
 interface VehiclesProps {
-  vehicles: Vehicle[];
   filterOption: string;
   selectedDepots: string[];
 }
@@ -70,26 +69,31 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
 };
 
 const Vehicles: React.FC<VehiclesProps> = ({
-  vehicles: initialVehicles,
   filterOption,
   selectedDepots,
 }) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Merges the backend data with any local updates
+  const fetchVehicles = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        "https://buffa-link-backend.vercel.app/api/vehicles"
+      );
+      const data = await response.json();
+      setVehicles(data);
+    } catch (err) {
+      console.error("Failed to fetch vehicles:", err);
+      setError("Failed to load vehicles. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await fetch(
-          "https://buffa-link-backend.vercel.app/api/vehicles"
-        );
-        const data = await response.json();
-        setVehicles(data); // Update state with fetched vehicles
-      } catch (error) {
-        console.error("Failed to fetch vehicles:", error);
-      }
-    };
-
     fetchVehicles();
   }, []);
 
@@ -108,77 +112,79 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
   }
   const now = Date.now();
-  const filteredVehicles = vehicles.filter((vehicle) => {
-    if (filterOption === "Night-Out") {
-      return vehicle.isNightOut;
-    }
-
-    const lastUpdate = new Date(vehicle.date).getTime();
-    const timeStopped = now - lastUpdate;
-
-    if (filterOption === "HGVs") {
-      // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
-      return (
-        vehicle.assetType === "HGV" &&
-        vehicle.locationName && // Must have a known location
-        timeStopped > 1.5 * 60 * 60 * 1000 && // Stopped for more than 1.5 hours
-        vehicle.locationGroupName !== "Buffaload" && // Exclude depots
-        vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
-        vehicle.assetGroupName !== "Ely Tipper Operation" && // Exclude tippers
-        vehicle.locationGroupName !== "Services and Truckstops" // Exclude Services
-      );
-    } else if (filterOption === "Services") {
-      // Services: Show vehicles stopped for more than 5 minutes with no location name and in Services and Truck stops
-      return (
-        vehicle.assetType === "HGV" &&
-        (vehicle.locationGroupName === "Services and Truckstops" ||
-          !vehicle.locationGroupName) &&
-        timeStopped > 5 * 60 * 1000 &&
-        vehicle.locationGroupName !== "Buffaload" && //Exclude depots
-        vehicle.locationGroupName !== "Maintenance" && //Exclude maintenance
-        vehicle.assetGroupName !== "Ely Tipper Operation" && //Exclude tippers
-        !vehicle.isNightOut //Exclude Night-Out vehicles
-      );
-    } else if (filterOption === "Depots") {
-      if (selectedDepots.length === 0) {
-        // Depots: Show vehicles in depot locations
-        return (
-          vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
-          vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
-        );
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((vehicle) => {
+      if (filterOption === "Night-Out") {
+        return vehicle.isNightOut;
       }
 
-      // show vehicles for the selected depots
-      return selectedDepots.some((depot) => {
-        switch (depot) {
-          case "Ellington":
-            return (
-              vehicle.locationGroupName === "Buffaload" &&
-              vehicle.locationName === "BUFFALOAD ELLINGTON"
-            );
-          case "Crewe":
-            return (
-              vehicle.locationGroupName === "Buffaload" &&
-              vehicle.locationName === "BUFFALOAD CREWE"
-            );
-          case "Skelmersdale":
-            return (
-              vehicle.locationGroupName === "Buffaload" &&
-              vehicle.locationName === "BUFFALOAD SKELMERSDALE"
-            );
-          default:
-            return false;
+      const lastUpdate = new Date(vehicle.date).getTime();
+      const timeStopped = now - lastUpdate;
+
+      if (filterOption === "HGVs") {
+        // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
+        return (
+          vehicle.assetType === "HGV" &&
+          vehicle.locationName && // Must have a known location
+          timeStopped > 1.5 * 60 * 60 * 1000 && // Stopped for more than 1.5 hours
+          vehicle.locationGroupName !== "Buffaload" && // Exclude depots
+          vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
+          vehicle.assetGroupName !== "Ely Tipper Operation" && // Exclude tippers
+          vehicle.locationGroupName !== "Services and Truckstops" // Exclude Services
+        );
+      } else if (filterOption === "Services") {
+        // Services: Show vehicles stopped for more than 5 minutes with no location name and in Services and Truck stops
+        return (
+          vehicle.assetType === "HGV" &&
+          (vehicle.locationGroupName === "Services and Truckstops" ||
+            !vehicle.locationGroupName) &&
+          timeStopped > 5 * 60 * 1000 &&
+          vehicle.locationGroupName !== "Buffaload" && //Exclude depots
+          vehicle.locationGroupName !== "Maintenance" && //Exclude maintenance
+          vehicle.assetGroupName !== "Ely Tipper Operation" && //Exclude tippers
+          !vehicle.isNightOut //Exclude Night-Out vehicles
+        );
+      } else if (filterOption === "Depots") {
+        if (selectedDepots.length === 0) {
+          // Depots: Show vehicles in depot locations
+          return (
+            vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
+            vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
+          );
         }
-      });
-    } else if (filterOption === "Maintenance") {
-      // Maintenance: Show vehicles in Maintenance
-      return vehicle.locationGroupName === "Maintenance";
-    } else if (filterOption === "Tippers") {
-      // Tippers: Filter only tippers for admin
-      return vehicle.assetGroupName === "Ely Tipper Operation";
-    }
-    return true; // Default: show all vehicles if no filter matches
-  });
+
+        // show vehicles for the selected depots
+        return selectedDepots.some((depot) => {
+          switch (depot) {
+            case "Ellington":
+              return (
+                vehicle.locationGroupName === "Buffaload" &&
+                vehicle.locationName === "BUFFALOAD ELLINGTON"
+              );
+            case "Crewe":
+              return (
+                vehicle.locationGroupName === "Buffaload" &&
+                vehicle.locationName === "BUFFALOAD CREWE"
+              );
+            case "Skelmersdale":
+              return (
+                vehicle.locationGroupName === "Buffaload" &&
+                vehicle.locationName === "BUFFALOAD SKELMERSDALE"
+              );
+            default:
+              return false;
+          }
+        });
+      } else if (filterOption === "Maintenance") {
+        // Maintenance: Show vehicles in Maintenance
+        return vehicle.locationGroupName === "Maintenance";
+      } else if (filterOption === "Tippers") {
+        // Tippers: Filter only tippers for admin
+        return vehicle.assetGroupName === "Ely Tipper Operation";
+      }
+      return true; // Default: show all vehicles if no filter matches
+    });
+  }, [vehicles, filterOption, selectedDepots]);
 
   const getBackgroundColour = (timeStopped: number) => {
     if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
@@ -190,7 +196,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
     const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
-
     try {
       const response = await fetch(
         `https://buffa-link-backend.vercel.app/api/vehicles/${encodeURIComponent(
@@ -206,126 +211,117 @@ const Vehicles: React.FC<VehiclesProps> = ({
       );
 
       if (response.ok) {
-        setVehicles((prevVehicles) =>
-          prevVehicles.map((v) =>
-            v.assetName === vehicle.assetName
-              ? { ...v, isNightOut: !v.isNightOut }
-              : v
-          )
-        );
+        fetchVehicles(); // Re-fetch data after toggling
       } else {
         console.error("Failed to toggle Night-Out status");
+        setError("Failed to update Night-Out status. Please try again.");
       }
     } catch (error) {
       console.error("Error toggling Night-Out status:", error);
+      setError("Failed to update Night-Out status. Please try again.");
     }
   };
 
   return (
     <div className="vehicle-container">
-      {/* <h1>{filterOption}</h1> */}
+      {loading && <p>Loading vehicles...</p>}
+      {error && <p>{error}</p>}
+      {!loading && filteredVehicles.length === 0 && (
+        <p>No vehicles found in {filterOption}</p>
+      )}
       <ul className="vehicle-list">
-        {filteredVehicles.length > 0 ? (
-          filteredVehicles.map((vehicle) => {
-            const lastUpdate = new Date(vehicle.date).getTime();
-            const timeStopped = now - lastUpdate;
+        {filteredVehicles.map((vehicle) => {
+          const lastUpdate = new Date(vehicle.date).getTime();
+          const timeStopped = now - lastUpdate;
 
-            //Aply conditional formatting only for "Services"
-            const BackgroundColourClass =
-              filterOption === "Services"
-                ? getBackgroundColour(timeStopped)
-                : "";
+          //Aply conditional formatting only for "Services"
+          const BackgroundColourClass =
+            filterOption === "Services" ? getBackgroundColour(timeStopped) : "";
 
-            return (
-              <li
-                key={vehicle.id || vehicle.assetName}
-                className={`vehicle-card ${
-                  vehicle.isNightOut ? "night-out" : ""
-                } ${BackgroundColourClass}`} //Adding background colour to the className
+          return (
+            <li
+              key={vehicle.id || vehicle.assetName}
+              className={`vehicle-card ${
+                vehicle.isNightOut ? "night-out" : ""
+              } ${BackgroundColourClass}`} //Adding background colour to the className
+            >
+              <div
+                className={`vehicle-card-header ${
+                  filterOption === "Services" || filterOption === "Night-Out"
+                    ? "with-toggle"
+                    : "centered"
+                }`}
               >
-                <div
-                  className={`vehicle-card-header ${
-                    filterOption === "Services" || filterOption === "Night-Out"
-                      ? "with-toggle"
-                      : "centered"
-                  }`}
-                >
-                  <h2>{vehicle.assetName}</h2>
-                  {/* <br />
+                <h2>{vehicle.assetName}</h2>
+                {/* <br />
                 <p>
                   <b>Last Updated:</b>
                   <br />
                   {new Date(vehicle.date).toLocaleString()}
                 </p> */}
-                  {filterOption === "Services" ||
-                  filterOption === "Night-Out" ? (
-                    <label className="toggle-container">
-                      <input
-                        type="checkbox"
-                        checked={!!vehicle.isNightOut}
-                        onChange={() => toggleNightOut(vehicle)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  ) : null}
-                </div>
-                <p>
-                  <br />
-                  <b>{vehicle.eventType}</b>
-                  <br />
-                  <span>{getTimeSinceUpdate(vehicle.date)}</span>
+                {filterOption === "Services" || filterOption === "Night-Out" ? (
+                  <label className="toggle-container">
+                    <input
+                      type="checkbox"
+                      checked={!!vehicle.isNightOut}
+                      onChange={() => toggleNightOut(vehicle)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                ) : null}
+              </div>
+              <p>
+                <br />
+                <b>{vehicle.eventType}</b>
+                <br />
+                <span>{getTimeSinceUpdate(vehicle.date)}</span>
+              </p>
+              <br />
+              <p
+                style={{
+                  color: isDatePast(vehicle.ServiceDueDate ?? "")
+                    ? "red"
+                    : "#555",
+                }}
+              >
+                <b>Service Due:</b>{" "}
+                {vehicle.ServiceDueDate
+                  ? formatDate(vehicle.ServiceDueDate)
+                  : "N/A"}
+              </p>
+              <br />
+              <p
+                style={{
+                  color: isDatePast(vehicle.MotDueDate ?? "") ? "red" : "#555",
+                }}
+              >
+                <b>Mot Due:</b>{" "}
+                {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+              </p>
+              <br />
+              {/* Conditionally show VOR and Live Defects only if true */}
+              {vehicle.IsVor && (
+                <p style={{ color: "red" }}>
+                  <b>VOR</b>
                 </p>
-                <br />
-                <p
-                  style={{
-                    color: isDatePast(vehicle.ServiceDueDate ?? "")
-                      ? "red"
-                      : "#555",
-                  }}
-                >
-                  <b>Service Due:</b>{" "}
-                  {vehicle.ServiceDueDate
-                    ? formatDate(vehicle.ServiceDueDate)
-                    : "N/A"}
+              )}
+              {vehicle.LiveDefects && (
+                <p style={{ color: "red" }}>
+                  <b>Live Defects</b>
                 </p>
+              )}
+              <br />
+              <p>
+                <b>Location:</b>
                 <br />
-                <p
-                  style={{
-                    color: isDatePast(vehicle.MotDueDate ?? "")
-                      ? "red"
-                      : "#555",
-                  }}
-                >
-                  <b>Mot Due:</b>{" "}
-                  {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
-                </p>
-                <br />
-                {/* Conditionally show VOR and Live Defects only if true */}
-                {vehicle.IsVor && (
-                  <p style={{ color: "red" }}>
-                    <b>VOR</b>
-                  </p>
-                )}
-                {vehicle.LiveDefects && (
-                  <p style={{ color: "red" }}>
-                    <b>Live Defects</b>
-                  </p>
-                )}
-                <br />
-                <p>
-                  <b>Location:</b>
-                  <br />
-                  {vehicle.locationName ||
-                    vehicle.formattedAddress ||
-                    "undefined"}
-                </p>
-                <br />
-              </li>
-            );
-          })
-        ) : (
-          <p>No vehicles found in {filterOption}.</p>
-        )}
+                {vehicle.locationName ||
+                  vehicle.formattedAddress ||
+                  "undefined"}
+              </p>
+              <br />
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
