@@ -184,13 +184,26 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return ""; // Default: no special colour
   };
 
+  // Monitor and toggle "Night-Out" status for driving event
+  useEffect(() => {
+    const toggleOffNightOutForDriving = async () => {
+      for (const vehicle of vehicles) {
+        if (vehicle.isNightOut && vehicle.eventType === "driving") {
+          await toggleNightOut(vehicle); // Automatically toggle off
+        }
+      }
+    };
+
+    toggleOffNightOutForDriving(); // Call the function
+  }, [vehicles]);
+
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
     const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
 
     try {
       const response = await fetch(
-        `http://localhost:5050/api/vehicles/${encodeURIComponent(
+        `https://buffa-link-backend.vercel.app/api/vehicles/${encodeURIComponent(
           normalisedAssetName
         )}/night-out`,
         {

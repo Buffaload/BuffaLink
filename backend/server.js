@@ -10,6 +10,7 @@ import vehicleRoutes from "./routes/vehicles.js";
 dotenv.config();
 
 const allowedOrigins = [
+  "https://buffa-link-backend.vercel.app",
   "https://buffalink.vercel.app",
   "http://localhost:3000",
   "http://localhost:5050",
