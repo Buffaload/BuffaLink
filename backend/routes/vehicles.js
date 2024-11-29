@@ -20,107 +20,76 @@ router.get("/", auth, async (req, res) => {
     const blueCrystalApiKey = process.env.BLUECRYSTAL_API_KEY;
 
     // Axios to make the request to the external API
-    const [vehicleResponse, blueCrystalResponse] = await Promise.all([
-      // Fetch data from Michelin
-      axios.get(apiUrl, {
-        auth: {
-          username: apiUsername,
-          password: apiPassword,
-        },
-      }),
+    const [vehicleResponse, blueCrystalResponse, nightOutMetadata] =
+      await Promise.allSettled([
+        // Fetch data from Michelin
+        axios.get(apiUrl, {
+          auth: {
+            username: apiUsername,
+            password: apiPassword,
+          },
+        }),
 
-      // Fetch data from BlueCrystal
-      axios.get(blueCrystalApiUrl, {
-        headers: {
-          "x-api-key": blueCrystalApiKey,
-          "x-end-point": "public.v1",
-        },
-      }),
-    ]);
+        // Fetch data from BlueCrystal
+        axios.get(blueCrystalApiUrl, {
+          headers: {
+            "x-api-key": blueCrystalApiKey,
+            "x-end-point": "public.v1",
+          },
+        }),
 
-    // console.log("Vehicle Data:", vehicleResponse.data);
-    // console.log("BlueCrystal Data:", blueCrystalResponse.data);
+        VehicleMetadata.find({}),
+      ]);
 
-    const user = req.user;
-    console.log("Authenticated request from user:", user);
-
-    //Determin which assetGroupNames the user can access
-    let allowedAssetGroups = []; // Default: no access
-
-    if (user.role === "admin") {
-      //Admin has access to all vehicles
-      allowedAssetGroups = null; // Null means no filter is applied
-    } else if (depotVisibilityRules[user.depot]) {
-      allowedAssetGroups = depotVisibilityRules[user.depot];
-    } else {
-      return res
-        .status(403)
-        .json({ message: "You are not authorised to view these vehicles." });
+    if (vehicleResponse.status !== "fulfilled") {
+      throw new Error("Failed to fetch vehicles data");
+    }
+    if (blueCrystalResponse.status !== "fulfilled") {
+      throw new Error("Failed to fetch BlueCrystal data");
+    }
+    if (nightOutMetadata.status !== "fulfilled") {
+      throw new Error("Failed to fetch Night-Out metadata from MongoDB");
     }
 
-    // Extract vehicle data and maintenance details from responses
-    const vehicles = vehicleResponse.data;
-    const maintenanceDetails = blueCrystalResponse.data;
+    // Data normalization
+    const vehicles = vehicleResponse.value.data;
+    const maintenanceDetails = blueCrystalResponse.value.data;
+    const nightOutMap = nightOutMetadata.value.reduce((acc, item) => {
+      acc[item.assetName.trim().toUpperCase()] = true; // if assetName exits, its a Night-Out
+      return acc;
+    }, {});
 
+    // Merge data
     const mergedVehicles = vehicles.map((vehicle) => {
-      const normalisedAssetName = vehicle.assetName
-        .replace(/\s+/g, "")
-        .toLowerCase();
-      const details = maintenanceDetails.find(
-        (detail) =>
-          detail.VehicleId.replace(/\s+/g, "").toLowerCase() ===
-          normalisedAssetName
+      const normalisedAssetName = vehicle.assetName.trim().toUpperCase();
+
+      // Match BlueCrystal data
+      const maintenance = maintenanceDetails.find(
+        (m) => m.VehicleId.trim().toUpperCase() === normalisedAssetName
       );
 
       return {
         ...vehicle,
-        ServiceDueDate: details?.ServiceDueDate || "N/A",
-        MotDueDate: details?.MotDueDate || "N/A",
-        IsVor: details?.IsVor ?? false,
-        LiveDefects: details?.LiveDefects ?? false,
+        ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
+        MotDueDate: maintenance?.MotDueDate || "N/A",
+        IsVor: maintenance?.IsVor ?? false,
+        LiveDefects: maintenance?.LiveDefects ?? false,
+        isNightOut: !!nightOutMap[normalisedAssetName],
       };
     });
 
+    const user = req.user;
     const filteredVehicles =
-      allowedAssetGroups === null // Admin case
-        ? mergedVehicles // No filter for admin
+      user.role === "admin"
+        ? mergedVehicles // admin sees all vehicles
         : mergedVehicles.filter((vehicle) =>
-            allowedAssetGroups.includes(vehicle.assetGroupName)
+            depotVisibilityRules[user.depot]?.includes(vehicle.assetGroupName)
           );
 
-    // Get assetNames to fetch Night-Out status from MongoDB
-    const assetNames = filteredVehicles.map((vehicle) =>
-      vehicle.assetName.toLowerCase()
-    );
-    const metadata = await VehicleMetadata.find({
-      assetName: { $in: assetNames },
-    });
-
-    console.log("Fetched Night-Out metadata from MongoDB:", metadata); // Log the fetched metadata
-
-    // Create a Lookup map for Night-Out metadata
-    const metadataMap = metadata.reduce((acc, item) => {
-      acc[item.assetName] = true; // Only store vehicles currently marked as Night-Out
-      return acc;
-    }, {});
-
-    console.log("Constructed metadataMap:", metadataMap); // Log the constructed metadata map
-
-    //Add Night-Out status to the merged vehicle data
-    const finalVehicles = filteredVehicles.map((vehicle) => ({
-      ...vehicle,
-      isNightOut: metadataMap[vehicle.assetName] || false,
-    }));
-
-    console.log("Final vehicles with isNightOut:", finalVehicles); // Log final merged data
-
-    // Return the final merged vehicle data to the frontend
-    res.json(finalVehicles);
+    res.json(filteredVehicles);
   } catch (err) {
-    console.error(err.message);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch vehicle data from external API" });
+    console.error("Error fetching vehicles:", err.message);
+    res.status(500).json({ message: "Failed to fetch vehicle data." });
   }
 });
 
@@ -129,7 +98,7 @@ router.patch("/:assetName/night-out", async (req, res) => {
   const { isNightOut } = req.body;
 
   try {
-    const normalisedAssetName = assetName.trim().toLowerCase();
+    const normalisedAssetName = assetName.trim().toUpperCase();
 
     if (isNightOut) {
       const result = await VehicleMetadata.updateOne(

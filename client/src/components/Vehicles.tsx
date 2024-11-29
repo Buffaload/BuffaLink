@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../css/Vehicles.css";
+import API_BASE_URL from "../config";
 
 // Define the type for a single vehicle object
 interface Vehicle {
@@ -77,25 +78,22 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const queryClient = useQueryClient();
 
   const fetchVehicles = async () => {
-    const token = localStorage.getItem("token"); //fetch token locally
-    if (!token) throw new Error("No token found. Please log in."); // Ensures token exists
+    const token = localStorage.getItem("token");
 
-    const config = {
+    if (!token) {
+      throw new Error("No token found. Please log in.");
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/vehicles`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    };
+    });
 
-    const response = await axios.get(
-      "https://buffa-link-backend.vercel.app/api/vehicles",
-      config
-    );
-
-    if (response.status === 200 && Array.isArray(response.data)) {
+    if (response.status === 200) {
       return response.data;
-    } else {
-      throw new Error("Unexpected response format");
     }
+    throw new Error("Failed to fetch vehicles");
   };
 
   // useQuery hook for fetching vehicles
@@ -104,7 +102,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isLoading,
     isError,
     error,
-  } = useQuery({
+  } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
     refetchInterval: 30000, // Poll every 30 sec
@@ -213,11 +211,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
-    const normalisedAssetName = vehicle.assetName.trim().toLowerCase();
     try {
       const response = await fetch(
-        `https://buffa-link-backend.vercel.app/api/vehicles/${encodeURIComponent(
-          normalisedAssetName
+        `${API_BASE_URL}/vehicles/${encodeURIComponent(
+          vehicle.assetName
         )}/night-out`,
         {
           method: "PATCH",
@@ -229,22 +226,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
       );
 
       if (response.ok) {
-        // Optimistically update the state
-        queryClient.setQueryData(["vehicles"], (old: Vehicle[] | undefined) =>
-          old
-            ? old.map((v) =>
-                v.assetName === vehicle.assetName
-                  ? { ...v, isNightOut: !v.isNightOut }
-                  : v
-              )
-            : []
-        );
-        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); // Still refetch for accuracy
+        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); //Refetch vehicles after toggle
       } else {
         throw new Error("Failed to toggle Night-Out status");
       }
     } catch (error) {
       console.error("Error toggling Night-Out status:", error);
+      alert("Something went wrong while toggling Night-Out status.");
     }
   };
 
