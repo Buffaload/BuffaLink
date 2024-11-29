@@ -60,26 +60,39 @@ router.get("/", auth, async (req, res) => {
     }, {});
 
     // Merge data
-    const mergedVehicles = vehicles.map((vehicle) => {
-      const normalisedAssetName = vehicle.assetName
-        .replace(/\s+/g, "")
-        .toUpperCase();
+    const mergedVehicles = await Promise.all(
+      vehicles.map(async (vehicle) => {
+        const normalisedAssetName = vehicle.assetName
+          .replace(/\s+/g, "")
+          .toUpperCase();
 
-      // Match BlueCrystal data
-      const maintenance = maintenanceDetails.find(
-        (m) =>
-          m.VehicleId.replace(/\s+/g, "").toUpperCase() === normalisedAssetName
-      );
+        // Match BlueCrystal data
+        const maintenance = maintenanceDetails.find(
+          (m) =>
+            m.VehicleId.replace(/\s+/g, "").toUpperCase() ===
+            normalisedAssetName
+        );
 
-      return {
-        ...vehicle,
-        ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
-        MotDueDate: maintenance?.MotDueDate || "N/A",
-        IsVor: maintenance?.IsVor ?? false,
-        LiveDefects: maintenance?.LiveDefects ?? false,
-        isNightOut: !!nightOutMap[normalisedAssetName],
-      };
-    });
+        // Check if the vehicle is "driving"
+        if (
+          vehicle.eventType === "driving" &&
+          nightOutMap[normalisedAssetName]
+        ) {
+          // Remove Night-Out status in MongoDB
+          await VehicleMetadata.deleteOne({ assetName: normalisedAssetName });
+          nightOutMap[normalisedAssetName] = false; // Update in-memory map
+        }
+
+        return {
+          ...vehicle,
+          ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
+          MotDueDate: maintenance?.MotDueDate || "N/A",
+          IsVor: maintenance?.IsVor ?? false,
+          LiveDefects: maintenance?.LiveDefects ?? false,
+          isNightOut: !!nightOutMap[normalisedAssetName],
+        };
+      })
+    );
 
     const user = req.user;
     const filteredVehicles =
