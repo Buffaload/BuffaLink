@@ -61,11 +61,14 @@ router.get("/", auth, async (req, res) => {
 
     // Merge data
     const mergedVehicles = vehicles.map((vehicle) => {
-      const normalisedAssetName = vehicle.assetName.trim().toUpperCase();
+      const normalisedAssetName = vehicle.assetName
+        .replace(/\s+/g, "")
+        .toUpperCase();
 
       // Match BlueCrystal data
       const maintenance = maintenanceDetails.find(
-        (m) => m.VehicleId.trim().toUpperCase() === normalisedAssetName
+        (m) =>
+          m.VehicleId.replace(/\s+/g, "").toUpperCase() === normalisedAssetName
       );
 
       return {
