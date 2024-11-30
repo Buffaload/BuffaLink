@@ -102,6 +102,8 @@ router.get("/", auth, async (req, res) => {
             depotVisibilityRules[user.depot]?.includes(vehicle.assetGroupName)
           );
 
+    // const filteredVehicles = mergedVehicles; // All users see all vehicles
+
     res.json(filteredVehicles);
   } catch (err) {
     console.error("Error fetching vehicles:", err.message);
