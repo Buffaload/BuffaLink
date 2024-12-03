@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "../css/Vehicles.css";
@@ -76,6 +76,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   selectedDepots,
 }) => {
   const queryClient = useQueryClient();
+  const [isVorFilterActive, setIsVorFilterActive] = useState(false);
 
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
@@ -146,36 +147,40 @@ const Vehicles: React.FC<VehiclesProps> = ({
           !vehicle.isNightOut //Exclude Night-Out vehicles
         );
       } else if (filterOption === "Depots") {
-        if (selectedDepots.length === 0) {
-          // Depots: Show vehicles in depot locations
-          return (
-            vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
-            vehicle.assetGroupName !== "Ely Tipper Operation" //Exclude tippers
-          );
+        // show vehicles for the selected depots
+        const matchesDepot =
+          selectedDepots.length > 0
+            ? selectedDepots.some((depot) => {
+                switch (depot) {
+                  case "Ellington":
+                    return (
+                      vehicle.locationGroupName === "Buffaload" &&
+                      vehicle.assetGroupName !== "Ely Tipper Operation" &&
+                      vehicle.locationName === "BUFFALOAD ELLINGTON"
+                    );
+                  case "Crewe":
+                    return (
+                      vehicle.locationGroupName === "Buffaload" &&
+                      vehicle.locationName === "BUFFALOAD CREWE"
+                    );
+                  case "Skelmersdale":
+                    return (
+                      vehicle.locationGroupName === "Buffaload" &&
+                      vehicle.locationName === "BUFFALOAD SKELMERSDALE"
+                    );
+                  default:
+                    return false;
+                }
+              })
+            : vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
+              vehicle.assetGroupName !== "Ely Tipper Operation"; //Exclude tippers
+
+        // Apply VOR filter if active
+        if (isVorFilterActive) {
+          return matchesDepot && (vehicle.IsVor || vehicle.LiveDefects);
         }
 
-        // show vehicles for the selected depots
-        return selectedDepots.some((depot) => {
-          switch (depot) {
-            case "Ellington":
-              return (
-                vehicle.locationGroupName === "Buffaload" &&
-                vehicle.locationName === "BUFFALOAD ELLINGTON"
-              );
-            case "Crewe":
-              return (
-                vehicle.locationGroupName === "Buffaload" &&
-                vehicle.locationName === "BUFFALOAD CREWE"
-              );
-            case "Skelmersdale":
-              return (
-                vehicle.locationGroupName === "Buffaload" &&
-                vehicle.locationName === "BUFFALOAD SKELMERSDALE"
-              );
-            default:
-              return false;
-          }
-        });
+        return matchesDepot;
       } else if (filterOption === "Maintenance") {
         // Maintenance: Show vehicles in Maintenance
         return vehicle.locationGroupName === "Maintenance";
@@ -183,9 +188,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
         // Tippers: Filter only tippers for admin
         return vehicle.assetGroupName === "Ely Tipper Operation";
       }
+
       return true; // Default: show all vehicles if no filter matches
     });
-  }, [vehicles, filterOption, selectedDepots, calculateTimeStopped]);
+  }, [
+    vehicles,
+    filterOption,
+    selectedDepots,
+    calculateTimeStopped,
+    isVorFilterActive,
+  ]);
 
   // If filterOption is "Debrief", show the form instead of vehicle cards
   if (filterOption === "Debrief") {
@@ -271,6 +283,21 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   return (
     <div className="vehicle-container">
+      {/* Show the VOR checkbox only for Depots and sub-tabs */}
+      {filterOption === "Depots" &&
+      (selectedDepots.length === 0 || selectedDepots.length > 0) ? (
+        <div style={{ marginBottom: "10px" }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={isVorFilterActive}
+              onChange={(e) => setIsVorFilterActive(e.target.checked)}
+            />
+            Show VOR Only
+          </label>
+        </div>
+      ) : null}
+
       {/* Check if there are filtered vehicles */}
       {filteredVehicles.length === 0 ? (
         <p>No vehicles stopped in this category.</p> // Display the message
