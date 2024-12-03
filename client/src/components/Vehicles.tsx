@@ -211,6 +211,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Function to toggle the Night-Out status of a vehicle
   const toggleNightOut = async (vehicle: Vehicle) => {
+    const previousState = vehicle.isNightOut; // Save the previous state
+    const updatedState = !vehicle.isNightOut; // Toggle state
+
+    // Optimistically update the toggle state
+    queryClient.setQueryData(["vehicles"], (old: Vehicle[] | undefined) =>
+      old
+        ? old.map((v) =>
+            v.assetName === vehicle.assetName
+              ? { ...v, isNightOut: updatedState }
+              : v
+          )
+        : []
+    );
+
     try {
       const response = await fetch(
         `${API_BASE_URL}/vehicles/${encodeURIComponent(
@@ -233,6 +247,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
     } catch (error) {
       console.error("Error toggling Night-Out status:", error);
       alert("Something went wrong while toggling Night-Out status.");
+
+      // Revert the optimistic update in case of an error
+      queryClient.setQueryData(["vehicles"], (old: Vehicle[] | undefined) =>
+        old
+          ? old.map((v) =>
+              v.assetName === vehicle.assetName
+                ? { ...v, isNightOut: previousState }
+                : v
+            )
+          : []
+      );
     }
   };
 
