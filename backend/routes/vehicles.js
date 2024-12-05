@@ -94,15 +94,15 @@ router.get("/", auth, async (req, res) => {
       })
     );
 
-    const user = req.user;
-    const filteredVehicles =
-      user.role === "admin"
-        ? mergedVehicles // admin sees all vehicles
-        : mergedVehicles.filter((vehicle) =>
-            depotVisibilityRules[user.depot]?.includes(vehicle.assetGroupName)
-          );
+    // const user = req.user;
+    // const filteredVehicles =
+    //   user.role === "admin"
+    //     ? mergedVehicles // admin sees all vehicles
+    //     : mergedVehicles.filter((vehicle) =>
+    //         depotVisibilityRules[user.depot]?.includes(vehicle.assetGroupName)
+    //       );
 
-    // const filteredVehicles = mergedVehicles; // All users see all vehicles
+    const filteredVehicles = mergedVehicles; // All users see all vehicles
 
     res.json(filteredVehicles);
   } catch (err) {
