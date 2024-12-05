@@ -18,10 +18,29 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
         }
       );
 
-      setToken(res.data.token);
+      const token = res.data.token;
+
+      let expiryTime;
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
+        console.log("Decoded Payload:", payload); // Log to check structure
+        expiryTime = payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+      } catch (err) {
+        console.error("Error decoding token:", err);
+        throw new Error("Invalid token format.");
+      }
+
+      if (!expiryTime) {
+        throw new Error("Token does not contain an expiry time.");
+      }
+
+      setToken(token); // Update token state in app
+
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("tokenExpiry", expiryTime.toString());
       localStorage.setItem("username", username);
       localStorage.setItem("role", res.data.role);
+
       setError(null);
       window.location.href = "/dashboard";
     } catch (err) {

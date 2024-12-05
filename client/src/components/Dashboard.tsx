@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../css/Dashboard.css";
 import Sidebar from "./Sidebar";
 import ProfileButton from "./ProfileButton";
@@ -29,10 +29,15 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
   const getTitle = () => filterTitles[filterOption] || filterTitles.default;
 
-  // If no token, redirect to login immediately
+  useEffect(() => {
+    // If no token, redirect to login immediately
+    if (!token) {
+      handleLogout();
+    }
+  }, [token, handleLogout]);
+
   if (!token) {
-    handleLogout();
-    return null; // Prevent rendering of the component
+    return null;
   }
 
   return (
