@@ -199,20 +199,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
   ]);
 
-  // If filterOption is "Debrief", show the form instead of vehicle cards
-  if (filterOption === "Debrief") {
-    return (
-      <div className="debrief-container">
-        <iframe
-          src="https://forms.office.com/Pages/ResponsePage.aspx?id=KG0LOI9UKUqEzF1Dxrj5ABC_RfvJHCFIpuo_68d2P49UMlUwNkpaNTJXTDlORU9KRklXSFVaVE84My4u&embed=true"
-          title="Debrief form"
-          width="100%"
-          height="700px"
-          allowFullScreen
-        ></iframe>
-      </div>
-    );
-  }
+  // // If filterOption is "Debrief", show the form instead of vehicle cards
+  // if (filterOption === "Debrief") {
+  //   return (
+  //     <div className="debrief-container">
+  //       <iframe
+  //         src="https://forms.office.com/Pages/ResponsePage.aspx?id=KG0LOI9UKUqEzF1Dxrj5ABC_RfvJHCFIpuo_68d2P49UMlUwNkpaNTJXTDlORU9KRklXSFVaVE84My4u&embed=true"
+  //         title="Debrief form"
+  //         width="100%"
+  //         height="700px"
+  //         allowFullScreen
+  //       ></iframe>
+  //     </div>
+  //   );
+  // }
 
   const getBackgroundColour = (timeStopped: number) => {
     if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min

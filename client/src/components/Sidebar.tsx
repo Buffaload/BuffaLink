@@ -210,7 +210,7 @@ const Sidebar: React.FC<{
               Maintenance
             </button>
           </li>
-          <li>
+          {/* <li>
             <button
               className={`sidebar-link ${
                 filterOption === "Debrief" ? "active" : ""
@@ -219,7 +219,7 @@ const Sidebar: React.FC<{
             >
               Debrief
             </button>
-          </li>
+          </li> */}
           {userRole === "admin" && (
             <li>
               <button
