@@ -141,6 +141,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           (vehicle.locationGroupName === "Services and Truckstops" ||
             !vehicle.locationGroupName) &&
           timeStopped > 5 * 60 * 1000 &&
+          vehicle.eventType !== "driving" &&
           vehicle.locationGroupName !== "Buffaload" && //Exclude depots
           vehicle.locationGroupName !== "Maintenance" && //Exclude maintenance
           vehicle.assetGroupName !== "Ely Tipper Operation" && //Exclude tippers
