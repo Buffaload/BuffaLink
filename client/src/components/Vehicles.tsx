@@ -200,6 +200,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
   ]);
 
+  //! Causing issues with automation, do not use
   // // If filterOption is "Debrief", show the form instead of vehicle cards
   // if (filterOption === "Debrief") {
   //   return (
