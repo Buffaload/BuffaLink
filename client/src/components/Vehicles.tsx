@@ -51,10 +51,21 @@ const isDatePast = (dateString: string) => {
   return date < today; // Returns true if the date is in the past
 };
 
+// Flip this to false when BST ends
+const APPLY_BST_FIX = true;
+const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
+
+// Add 1h only for "naive" timestamps (no timezone in the string)
+const adjustedMs = (s: string): number => {
+  if (!s) return NaN;
+  const naive = !/Z$|[+\-]\d\d:?\d\d$/.test(s);
+  return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
+};
+
 // Helper function to calculate duration since last status change
 const getTimeSinceUpdate = (lastUpdated: string) => {
-  const now = new Date().getTime();
-  const lastUpdate = new Date(lastUpdated).getTime();
+  const now = Date.now();
+  const lastUpdate = adjustedMs(lastUpdated);
   const duration = now - lastUpdate;
 
   const days = Math.floor(duration / (1000 * 60 * 60 * 24));
@@ -112,7 +123,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   const now = Date.now();
   const calculateTimeStopped = (lastUpdate: string): number => {
-    return now - new Date(lastUpdate).getTime();
+    return now - adjustedMs(lastUpdate);
   };
 
   const filteredVehicles = useMemo(() => {
@@ -216,11 +227,39 @@ const Vehicles: React.FC<VehiclesProps> = ({
   //   );
   // }
 
+  // Colours for time stopped
   const getBackgroundColour = (timeStopped: number) => {
     if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
     if (timeStopped >= 30 * 60 * 1000) return "pastel-orange"; // Orange for >= 30min
     if (timeStopped >= 15 * 60 * 1000) return "pastel-yellow"; // Yellow for >= 15min
     return ""; // Default: no special colour
+  };
+
+  type TipperAlertMode = "breathe" | "flash";
+  const TIPPER_ALERT_MODE: TipperAlertMode = "breathe";
+
+  const getTipperAlertClass = (
+    vehicle: Vehicle,
+    filterOption: string,
+    now: number
+  ) => {
+    if (filterOption !== "Tippers") return "";
+
+    const isDriving = (vehicle.eventType || "").toLowerCase() === "driving";
+    const timeStopped = now - adjustedMs(vehicle.date);
+    if (!isDriving && timeStopped > 0) {
+      // escalate speed by how long it's been stopped
+      const severity =
+        timeStopped >= 45 * 60 * 1000
+          ? "alert-critical"
+          : timeStopped >= 15 * 60 * 1000
+          ? "alert-elevated"
+          : "";
+
+      // force the red base + pop
+      return `pastel-red ${severity}`;
+    }
+    return "";
   };
 
   // Function to toggle the Night-Out status of a vehicle
@@ -306,7 +345,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       ) : (
         <ul className="vehicle-list">
           {filteredVehicles.map((vehicle) => {
-            const lastUpdate = new Date(vehicle.date).getTime();
+            const lastUpdate = adjustedMs(vehicle.date);
             const timeStopped = now - lastUpdate;
 
             //Aply conditional formatting only for "Services"
@@ -315,13 +354,25 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 ? getBackgroundColour(timeStopped)
                 : "";
 
+            // Apply breathing red effect
+            const animationClass = getTipperAlertClass(
+              vehicle,
+              filterOption,
+              now
+            );
+
             return (
               <li
                 key={vehicle.id || vehicle.assetName}
                 className={`vehicle-card ${
                   vehicle.isNightOut ? "night-out" : ""
-                } ${BackgroundColourClass}`} //Adding background colour to the className
+                } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
               >
+                {/* Ping dot only when alerting */}
+                {animationClass && (
+                  <span className="alert-ping" aria-hidden="true" />
+                )}
+
                 <div
                   className={`vehicle-card-header ${
                     filterOption === "Services" || filterOption === "Night-Out"

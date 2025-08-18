@@ -157,6 +157,134 @@
   margin-left: 5px;
 }
 
+/* Base alert card */
+.alert-red-pop {
+  /* default speeds (will be overridden by severity) */
+  --pop-dur: 1.4s; /* card glow/scale */
+  --pole-dur: 0.9s; /* left stripe */
+  --ping-dur: 1.4s; /* ping ripple */
+  --spine-w: 8px; /* stripe width */
+
+  position: relative;
+  animation: popGlow var(--pop-dur) ease-in-out infinite;
+  will-change: transform, box-shadow;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+/* Card glow */
+@keyframes popGlow {
+  0% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55),
+      0 10px 24px rgba(239, 68, 68, 0.25);
+  }
+  50% {
+    transform: scale(1);
+    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0),
+      0 6px 16px rgba(239, 68, 68, 0.18);
+  }
+  100% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55),
+      0 10px 24px rgba(239, 68, 68, 0.25);
+  }
+}
+
+/* Animated red spine */
+@keyframes pole {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 24px;
+  }
+}
+.alert-red-pop::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--spine-w);
+  border-radius: 12px 0 0 12px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(239, 68, 68, 1) 0 10px,
+    rgba(255, 255, 255, 0.95) 10px 20px
+  );
+  animation: pole var(--pole-dur) linear infinite;
+}
+
+/* STOPPED badge */
+.alert-red-pop::after {
+  content: "STOPPED";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: #ef4444;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+}
+
+/* Ping dot */
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  80%,
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+.alert-ping {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #ef4444;
+}
+.alert-ping::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 3px solid rgba(239, 68, 68, 0.6);
+  animation: ping var(--ping-dur) cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Severity: faster + bolder */
+.alert-elevated {
+  --pop-dur: 1s;
+  --pole-dur: 0.7s;
+  --ping-dur: 1s;
+  --spine-w: 9px;
+}
+.alert-critical {
+  --pop-dur: 0.4s;
+  --pole-dur: 0.45s;
+  --ping-dur: 0.4s;
+  --spine-w: 10px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .alert-red-pop {
+    animation: none !important;
+  }
+  .alert-red-pop::before {
+    animation: none !important;
+  }
+  .alert-ping::before {
+    animation: none !important;
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .vehicle-list {
