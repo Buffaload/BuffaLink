@@ -22,7 +22,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     "Night-Out": "Vehicles flagged as Night-Out",
     Depots: "Vehicles located in Depots",
     Maintenance: "Vehicles in Maintenance locations",
-    Tippers: "Vehicles from the Ely Tipper Operation",
+    Tippers: "Vehicles from the TFP Tipper Operation",
     Debrief: "Driver Debrief form",
     default: "Dashboard", // Default title if filterOption is not recognised
   };

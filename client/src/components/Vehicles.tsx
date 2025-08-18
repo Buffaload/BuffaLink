@@ -187,7 +187,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         return vehicle.locationGroupName === "Maintenance";
       } else if (filterOption === "Tippers") {
         // Tippers: Filter only tippers for admin
-        return vehicle.assetGroupName === "Ely Tipper Operation";
+        return vehicle.assetGroupName === "TFP Tipper Operation";
       }
 
       return true; // Default: show all vehicles if no filter matches
