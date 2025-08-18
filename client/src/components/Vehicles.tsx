@@ -243,23 +243,24 @@ const Vehicles: React.FC<VehiclesProps> = ({
     filterOption: string,
     now: number
   ) => {
+    if (vehicle.IsVor) return ""; //no alert if VOR
     if (filterOption !== "Tippers") return "";
 
     const isDriving = (vehicle.eventType || "").toLowerCase() === "driving";
-    const timeStopped = now - adjustedMs(vehicle.date);
-    if (!isDriving && timeStopped > 0) {
-      // escalate speed by how long it's been stopped
-      const severity =
-        timeStopped >= 45 * 60 * 1000
-          ? "alert-critical"
-          : timeStopped >= 15 * 60 * 1000
-          ? "alert-elevated"
-          : "";
+    const lastMs = adjustedMs
+      ? adjustedMs(vehicle.date)
+      : new Date(vehicle.date).getTime();
+    const timeStopped = now - lastMs;
 
-      // force the red base + pop
-      return `pastel-red ${severity}`;
-    }
-    return "";
+    if (isDriving || timeStopped <= 0) return ""; // moving → nothing
+    if (timeStopped >= 45 * 60 * 1000)
+      // ≥45m → red + faster
+      return "pastel-red alert-red alert-critical";
+    if (timeStopped >= 15 * 60 * 1000)
+      // 15–44m → yellow
+      return "pastel-red alert-yellow";
+
+    return "pastel-red"; // <15m → just red card
   };
 
   // Function to toggle the Night-Out status of a vehicle
@@ -345,31 +346,32 @@ const Vehicles: React.FC<VehiclesProps> = ({
       ) : (
         <ul className="vehicle-list">
           {filteredVehicles.map((vehicle) => {
+            const isVor = !!vehicle.IsVor;
             const lastUpdate = adjustedMs(vehicle.date);
             const timeStopped = now - lastUpdate;
 
             //Aply conditional formatting only for "Services"
             const BackgroundColourClass =
-              filterOption === "Services"
+              !isVor && filterOption === "Services"
                 ? getBackgroundColour(timeStopped)
                 : "";
 
             // Apply breathing red effect
-            const animationClass = getTipperAlertClass(
-              vehicle,
-              filterOption,
-              now
-            );
+            const animationClass = !isVor
+              ? getTipperAlertClass(vehicle, filterOption, now)
+              : "";
+
+            const vorSkin = isVor ? "vor-muted" : "";
 
             return (
               <li
                 key={vehicle.id || vehicle.assetName}
-                className={`vehicle-card ${
+                className={`vehicle-card ${vorSkin} ${
                   vehicle.isNightOut ? "night-out" : ""
                 } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
               >
                 {/* Ping dot only when alerting */}
-                {animationClass && (
+                {!isVor && animationClass && (
                   <span className="alert-ping" aria-hidden="true" />
                 )}
 
