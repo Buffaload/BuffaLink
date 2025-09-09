@@ -1,70 +1,91 @@
-# Getting Started with Create React App
+# 🚛 BuffaLink – Vehicle Tracking Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+BuffaLink is a full-stack web application built during my software development apprenticeship. It was designed to help a logistics company monitor vehicle data in real time, including MOT dates, service schedules, and VOR (Vehicle Off Road) status.
 
-## Available Scripts
+> 🔒 **Note**: This repository showcases the codebase, but the live application is not publicly accessible due to internal company data. However, this README includes screenshots and feature overviews to give you a full picture.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🛠️ Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Frontend**: React, TypeScript
+- **Styling**: CSS Modules
+- **Backend**: Express.js (Node.js)
+- **Database**: MongoDB (via Mongoose)
+- **APIs Used**:
+  - Michelin Connected API (for vehicle tracking data)
+  - BlueCrystal API (for maintenance/service data)
+- **Auth**: Role-based login system (Admin, Depot based view)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🚘 Features
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 🔐 Login & Role-Based Access
+- Secure login system with different access levels
+- Admins can see all vehicles and assign them to night-outs
+- Depot based role can only see vehicles assigned to that depot
 
-### `npm run build`
+### 📋 Vehicle Dashboard
+- Vehicle cards display:
+  - Registration info
+  - MOT and Service Due Dates
+  - VOR (Vehicle Off Road) Status
+  - Live defects
+- Colour-coded statuses for quick identification (e.g. red for overdue)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 🧠 Night-Out Tracker (Custom Filter)
+- Vehicles can be manually flagged as "Night-Out"
+- Automatically removes vehicles from Night-Out view when eventType updates
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 📦 API Integration
+- Matches vehicle data across two APIs using `assetName` and `vehicleId`
+- Merges info like service dates, defects, and MOTs into unified vehicle cards
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 📸 Screenshots
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 🔐 Login Page
+<img width="588" height="431" alt="login" src="https://github.com/user-attachments/assets/30c98169-b535-4664-8990-bc90cc3469fa" />
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- The login screen supports role-based access (Admin, Depot Viewer). Each role sees a different part of the application depending on their permissions.
+  
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 🧾 Vehicle Dashboard
+<img width="1904" height="962" alt="buff - Edited" src="https://github.com/user-attachments/assets/cde5f90e-76f1-4971-be54-b7032bbcf31f" />
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Displays vehicle cards showing registration info, service and MOT due dates, and status indicators for VOR and defects. Cards are colour-coded for quick scanning.
+  
 
-## Learn More
+### 🌙 Night-Out Page
+<img width="1891" height="957" alt="night-out" src="https://github.com/user-attachments/assets/3738209f-bada-43d4-987e-780a6636172c" />
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Shows vehicles manually flagged as “Night-Out”. These are removed automatically from this view when their `eventType` changes from `stopped` to `driving`.
+  
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 🛠️ Services Page (Time Tracking)
+<img width="1888" height="936" alt="colour-coded" src="https://github.com/user-attachments/assets/1208dc0e-6515-40ed-a956-41ff44090bef" />
 
-### Code Splitting
+- Shows real-time tracking of vehicles in known/unknown locations. Colour-coded by time:
+  - **White**: < 15 mins  
+  - **Yellow**: 15–30 mins  
+  - **Orange**: 30–45 mins  
+  - **Red**: > 45 mins  
+  Helps prioritise attention for vehicles waiting too long.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## 🤝 What I Worked On
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+This was a solo-built project, designed to solve real problems within the company's workflow.
 
-### Making a Progressive Web App
+I was responsible for:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- Building the frontend with React and TypeScript, using modular components and hooks
+- Integrating and merging data from two separate APIs
+- Implementing role-based access control to customise the UI based on user roles
+- Creating filtered views like "Night-Out" and live service tracking with dynamic time-based colour indicators
+- UI/UX improvements based on user feedback
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+While I worked independently, I made heavy use of documentation, online resources, and AI tools like ChatGPT to troubleshoot and learn along the way. Every decision and feature was built with a focus on practicality and scalability.
