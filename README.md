@@ -1,6 +1,6 @@
 # 🚛 BuffaLink – Vehicle Tracking Dashboard
 
-BuffaLink is a full-stack web application built during my software development apprenticeship. It was designed to help a logistics company monitor vehicle data in real time, including MOT dates, service schedules, and VOR (Vehicle Off Road) status.
+BuffaLink is a full-stack web application. It was designed to help a logistics company monitor vehicle data in real time, including MOT dates, service schedules, and VOR (Vehicle Off Road) status.
 
 > 🔒 **Note**: This repository showcases the codebase, but the live application is not publicly accessible due to internal company data. However, this README includes screenshots and feature overviews to give you a full picture.
 
