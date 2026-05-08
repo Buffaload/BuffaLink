@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import API_BASE_URL from "../config";
 import "../css/Login.css";
 
 const Login = ({ setToken }: { setToken: (token: string) => void }) => {
@@ -11,7 +12,7 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "https://buffa-link-backend.vercel.app/api/auth/login",
+        `${API_BASE_URL}/auth/login`,
         {
           username,
           password,

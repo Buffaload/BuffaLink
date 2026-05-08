@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import API_BASE_URL from "../config";
 import "../css/Login.css"; // Assuming you want the same styles as the login
 
 const Register = () => {
@@ -13,7 +14,7 @@ const Register = () => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "https://buffalink.vercel.app/api/auth/register",
+        `${API_BASE_URL}/auth/register`,
         {
           username,
           password,

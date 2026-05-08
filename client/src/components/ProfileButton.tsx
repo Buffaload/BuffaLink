@@ -1,4 +1,10 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { 
+  LogOut,
+  Plus,
+  Minus,
+} from "lucide-react";
 import "../css/ProfileButton.css";
 
 interface ProfileButtonProps {
@@ -6,36 +12,174 @@ interface ProfileButtonProps {
   handleLogout: () => void;
 }
 
+const getNumber = (key: string, fallback: number) =>
+  Number(localStorage.getItem(key)) || fallback;
+
+
+const getRoleFromToken = (): string | null => {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const base64 = token.split(".")[1];
+    const json = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json);
+
+    // Support multiple common claim shapes
+    return (
+      payload?.role ??
+      payload?.Role ??
+      payload?.user?.role ??
+      payload?.user?.Role ??
+      (Array.isArray(payload?.roles) ? payload.roles[0] : null)
+    );
+  } catch {
+    return null;
+  }
+};
+
+const isUserAdmin = (): boolean => {
+  const storedRole = localStorage.getItem("role");
+  const role = (storedRole ?? getRoleFromToken() ?? "").toLowerCase();
+  return role === "admin";
+};
+
+const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
+const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
+
 const ProfileButton: React.FC<ProfileButtonProps> = ({
   username,
   handleLogout,
 }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
   // Get the first letter of the username
   const userInitial = username ? username.charAt(0).toUpperCase() : "U";
+  const isAdmin = isUserAdmin();
+
+  const queryClient = useQueryClient();
+
+  const [open, setOpen] = useState(false);
+
+  const [serviceDays, setServiceDays] = useState(() =>
+    getNumber(SERVICE_TIMELINE_DAYS_KEY, 42)
+  );
+  const [motDays, setMotDays] = useState(() =>
+    getNumber(MOT_TIMELINE_DAYS_KEY, 364)
+  );
+
+  const updateValue = (
+    setter: React.Dispatch<React.SetStateAction<number>>,
+    key: string,
+    value: number
+  ) => {
+    if (!Number.isInteger(value) || value <= 0) return;
+    setter(value);
+    localStorage.setItem(key, String(value));
+    queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+  };
 
   return (
     <div className="profile-button-container">
-      <div className="profile-button" onClick={toggleDropdown}>
+      <button
+        className={isAdmin ? "profile-button profile-button--admin" : "profile-button"}
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Admin menu"
+      >
         <span className="profile-initial">{userInitial}</span>
-      </div>
-      {isDropdownOpen && (
-        <div className="dropdown-menu">
-          <ul>
-            <li className="dropdown-item">
-              <button onClick={handleLogout}>Log Out</button>
-            </li>
-            {/*add more options here later */}
-          </ul>
+      </button>
+
+      <button className="logout-button" onClick={handleLogout}>
+        <LogOut size={16} className="logout-icon" />
+        <span>Logout</span>
+      </button>
+
+      {open && isAdmin && (
+        <div className="profile-menu">
+          <p className="profile-menu-title">ADMIN PORTAL</p>
+          <hr />
+          <>
+            <div className="profile-menu-section">
+              <label>Service timeline (days)</label>
+              <div className="number-input">
+                <button
+                  onClick={() =>
+                    updateValue(
+                      setServiceDays,
+                      SERVICE_TIMELINE_DAYS_KEY,
+                      serviceDays - 1
+                    )
+                  }
+                >
+                  <Minus size={16} />
+                </button>
+                <input
+                  type="number"
+                  value={serviceDays}
+                  onChange={(e) =>
+                    updateValue(
+                      setServiceDays,
+                      SERVICE_TIMELINE_DAYS_KEY,
+                      parseInt(e.target.value, 10)
+                    )
+                  }
+                />
+                <button
+                  onClick={() =>
+                    updateValue(
+                      setServiceDays,
+                      SERVICE_TIMELINE_DAYS_KEY,
+                      serviceDays + 1
+                    )
+                  }
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="profile-menu-section">
+              <label>MOT timeline (days)</label>
+              <div className="number-input">
+                <button
+                  onClick={() =>
+                    updateValue(
+                      setMotDays,
+                      MOT_TIMELINE_DAYS_KEY,
+                      motDays - 1
+                    )
+                  }
+                >
+                  <Minus size={16} />
+                </button>
+                <input
+                  type="number"
+                  value={motDays}
+                  onChange={(e) =>
+                    updateValue(
+                      setMotDays,
+                      MOT_TIMELINE_DAYS_KEY,
+                      parseInt(e.target.value, 10)
+                    )
+                  }
+                />
+                <button
+                  onClick={() =>
+                    updateValue(
+                      setMotDays,
+                      MOT_TIMELINE_DAYS_KEY,
+                      motDays + 1
+                    )
+                  }
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+          </>
         </div>
       )}
     </div>
   );
 };
+
 
 export default ProfileButton;

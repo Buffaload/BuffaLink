@@ -68,6 +68,7 @@ function App() {
                 <Vehicles
                   filterOption={""}
                   selectedDepots={selectedDepots} // Pass the selected depots state
+                  isKioskMode={false} // Pass the kiosk mode state
                 />
               </ProtectedRoute>
             }
