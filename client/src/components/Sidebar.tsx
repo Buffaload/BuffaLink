@@ -1,3 +1,4 @@
+import API_BASE_URL from "../config";
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
@@ -28,7 +29,6 @@ interface Vehicle {
   MotDueDate?: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5050/api";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Parse "YYYY-MM-DD" safely as local midnight, also supports ISO strings
