@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef, useState } from "react";
+import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import "../css/DelaysMap.css";
@@ -91,16 +91,18 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
 
   // Add 1h only for "naive" timestamps (no timezone in the string)
-  const adjustedMs = (s: string): number => {
-    if (!s) return NaN;
-    const naive = !/Z$|[+\-]\d\d:?\d\d$/.test(s);
-    return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
-  };
+  const adjustedMs = useCallback(
+    (s: string): number => {
+      if (!s) return NaN;
+      const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
+      return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
+    },
+    [BST_OFFSET_MS]
+  );
 
-  const now = Date.now();
-  const calculateTimeStopped = (lastUpdate: string): number => {
-    return now - adjustedMs(lastUpdate);
-  };
+  // const calculateTimeStopped = (lastUpdate: string): number => {
+  //   return now - adjustedMs(lastUpdate);
+  // };
   
   const getPillClass = (pill: KioskPill) =>
     `figure-pill figure-pill--kiosk ${
@@ -109,25 +111,20 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   
   type VehicleCategory = "nightOut" | "maintenance" | "depot" | "services" | "other";
 
-  const normalise = (value?: string) => (value ?? "").trim();
+  // const normalise = (value?: string) => (value ?? "").trim();
 
-  const getVehicleCategory = (v: Vehicle): VehicleCategory => {
+  const getVehicleCategory = useCallback((v: Vehicle): VehicleCategory => {
     if (v.isNightOut) return "nightOut";
-
     if (v.locationGroupName === "Maintenance") return "maintenance";
-
     if (v.locationGroupName === "Buffaload") return "depot";
-
     if (
       v.assetType === "HGV" &&
-      (v.locationGroupName === "Services and Truckstops" ||
-        !v.locationGroupName)
+      (v.locationGroupName === "Services and Truckstops" || !v.locationGroupName)
     ) {
       return "services";
     }
-
     return "other";
-  };
+  }, []);
 
   const kioskVehicleBuckets = useMemo(() => {
     // Base set for kiosk counts: HGVs only, exclude tipper op (matches your delays exclusions)
@@ -167,12 +164,14 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       base,
       buckets,
     };
-  }, [vehicles]);
+  }, [vehicles, getVehicleCategory]);
 
   // Destructure counts for easy access in the component
   const { counts: kioskCounts } = kioskVehicleBuckets;
 
   const filteredVehicles = useMemo(() => {
+    const now = Date.now();
+
     return vehicles.filter((vehicle) => {
       const vehicleTime = adjustedMs(vehicle.date);
       const timeStopped = now - vehicleTime;
@@ -194,7 +193,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         !vehicle.isNightOut // Exclude Night-Out vehicles
       );
     });
-  }, [vehicles, now, adjustedMs]);
+  }, [vehicles, adjustedMs]);
 
   const vehiclesToPlot = useMemo(() => {
     // Non-kiosk mode remains unchanged: plot the Delays subset only
@@ -223,8 +222,8 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     kioskVehicleBuckets,
   ]);
 
-  const getClusterColor = () => {
-    if (!isKioskMode) return "#991b1b"; // current delays red
+  const getClusterColor = useCallback(() => {
+    if (!isKioskModeRef.current) return "#991b1b"; // current delays red
     switch (activeKioskPillRef.current) {
       case "total":
         return "#4b5563"; // darker grey
@@ -239,9 +238,9 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       default:
         return "#4b5563"
     }
-  };
+  }, []);
 
-  const createClusterIcon = (cluster: L.MarkerCluster) => {
+  const createClusterIcon = useCallback((cluster: L.MarkerCluster) => {
     const count = cluster.getChildCount();
     const color = getClusterColor();
 
@@ -270,7 +269,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       className: "", // important: prevents default green styles
       iconSize: L.point(44, 44),
     });
-  };
+  }, [getClusterColor]);
 
   // Initialize Leaflet map once on component mount
   useEffect(() => {
@@ -308,7 +307,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         clusterLayerRef.current = null;
       }
     };
-  }, []); // Empty dependency array - only run once
+  }, [createClusterIcon]);
 
   useEffect(() => {
     // keep refs in sync with latest React state
@@ -384,7 +383,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         });
 
         // Add popup with vehicle information
-        const stopDuration = calculateTimeStopped(vehicle.date);
+        const stopDuration = Date.now() - adjustedMs(vehicle.date);
         const hours = Math.floor(stopDuration / (1000 * 60 * 60));
         const minutes = Math.floor((stopDuration % (1000 * 60 * 60)) / (1000 * 60));
 
@@ -417,13 +416,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       }
     }
 
-  }, [vehiclesToPlot, isKioskMode, activeKioskPill]); // Only re-run when filteredVehicles changes
+  }, [vehiclesToPlot, isKioskMode, activeKioskPill, adjustedMs]); // Only re-run when filteredVehicles changes
 
   // Map carousel
   const CAROUSEL_MS = 30000;
   const [pillProgressKey, setPillProgressKey] = useState(0);
 
-  const nextPill = (pill: KioskPill): KioskPill => {
+  const nextPill = useCallback((pill: KioskPill): KioskPill => {
     switch (pill) {
       case "services":
         return "nightOut";
@@ -437,7 +436,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       default:
         return "services";
     }
-  };
+  }, []);
 
   const handlePillClick = (pill: KioskPill) => {
     setActiveKioskPill(pill);
@@ -453,7 +452,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     }, CAROUSEL_MS);
 
     return () => window.clearInterval(id);
-  }, [isKioskMode, isCarouselPaused]);
+  }, [isKioskMode, isCarouselPaused, nextPill]);
 
   useEffect(() => {
     // Forces CSS animation to restart

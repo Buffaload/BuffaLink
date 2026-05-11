@@ -108,7 +108,7 @@ const Sidebar: React.FC<{
   // Helper function to parse timestamps with BST fix
   const adjustedMs = (s: string): number => {
     if (!s) return NaN;
-    const naive = !/Z$|[+\-]\d\d:?\d\d$/.test(s);
+    const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
     const BST_OFFSET_MS = 60 * 60 * 1000; // 1 hour for BST
     return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
   };

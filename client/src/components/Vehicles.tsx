@@ -154,7 +154,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // Add 1h only for "naive" timestamps (no timezone in the string)
 const adjustedMs = (s: string): number => {
   if (!s) return NaN;
-  const naive = !/Z$|[+\-]\d\d:?\d\d$/.test(s);
+  const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
   return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
 };
 
@@ -255,12 +255,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
-  const now = Date.now();
-  const calculateTimeStopped = (lastUpdate: string): number => {
-    return now - adjustedMs(lastUpdate);
-  };
-
   const filteredVehicles = useMemo(() => {
+    const now = Date.now();
+    const calculateTimeStopped = (lastUpdate: string): number => {
+      return now - adjustedMs(lastUpdate);
+    };
+
     let list = vehicles.filter((vehicle) => {
       if (filterOption === "Night-Out") {
         return vehicle.isNightOut;
@@ -394,7 +394,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     vehicles,
     filterOption,
     selectedDepots,
-    calculateTimeStopped,
     isVorFilterActive,
     searchTerm,
     sortOption,
@@ -520,8 +519,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return ""; // Default: no special colour
   };
 
-  type TipperAlertMode = "breathe" | "flash";
-  const TIPPER_ALERT_MODE: TipperAlertMode = "breathe";
+  // type TipperAlertMode = "breathe" | "flash";
+  // const TIPPER_ALERT_MODE: TipperAlertMode = "breathe";
 
   const getTipperAlertClass = (
     vehicle: Vehicle,
@@ -733,6 +732,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       ) : (
         <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
           {filteredVehicles.map((vehicle) => {
+            const now = Date.now();
             const isVor = !!vehicle.IsVor;
             const lastUpdate = adjustedMs(vehicle.date);
             const timeStopped = now - lastUpdate;

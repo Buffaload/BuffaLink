@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import "../css/Dashboard.css";
 import Sidebar from "./Sidebar";
 import Vehicles from "./Vehicles";
@@ -63,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     },
   };
 
-  const getTitle = () => filterTitles[filterOption] || filterTitles.default;
+  // const getTitle = () => filterTitles[filterOption] || filterTitles.default;
 
   const toggleKioskMode = () => {
     setIsKioskMode((prevMode) => !prevMode);
@@ -87,21 +87,21 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     };
   }, [isKioskMode]);
 
-  const kioskVehicleFilters = [
-    "HGVs",
-    "Services",
-    "Night-Out",
-    "Depots",
-    "Maintenance",
-    "Tippers",
-  ] as const;
+  // const kioskVehicleFilters = [
+  //   "HGVs",
+  //   "Services",
+  //   "Night-Out",
+  //   "Depots",
+  //   "Maintenance",
+  //   "Tippers",
+  // ] as const;
 
   if (!token) {
     return null;
   }
 
   const title = filterTitles[filterOption] ?? filterTitles.default;
-  const kioskDepots = selectedDepots;
+  // const kioskDepots = selectedDepots;
   
   return (
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>
