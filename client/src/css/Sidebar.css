@@ -10,21 +10,47 @@
 
 /* Sidebar container */
 .sidebar {
-  width: 260px;
-  height: 100vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-    /* Apply the dark tint */ url("/public/truck.jpg") no-repeat center center; /* Background image */
-  background-size: cover; /* Ensure background image covers the entire sidebar */
-  color: white;
   position: fixed;
   top: 0;
   left: 0;
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15); /* Drop shadow */
+  width: 260px;
+  height: 100vh;
+  background-color: #0b1c2d; /* dark navy */
+  color: white;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 1000;
+  overflow: hidden;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15); /* Drop shadow */
+  z-index: 1000;
   transition: transform 0.3 ease;
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 75%;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("/public/truck.jpg") no-repeat center bottom;
+  background-size: cover;
+  z-index: -2;
+}
+
+.sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    #081724 0%,
+    rgba(8, 23, 36, 0.95) 45%,
+    rgba(8, 23, 36, 0.6) 70%,
+    rgba(8, 23, 36, 0.1) 100%
+  );
+  z-index: -1;
 }
 
 .sidebar.open {
@@ -37,11 +63,22 @@
 
 /* Sidebar Header */
 .sidebar-header {
-  padding: 20px;
+  padding: 24px 20px;
   text-align: center;
   font-size: 1.25rem;
   font-weight: bold;
   color: white;
+}
+
+/* Sidebar Logo */
+.sidebar-logo {
+  width: 100%;
+  max-width: 180px;
+  height: auto;
+  padding: 10px 0;
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 /* Sidebar Buttons */
@@ -57,9 +94,33 @@
   list-style-type: none;
 }
 
+.sidebar-section-heading {
+  margin: 20px 0 8px 0;
+  padding-left: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  pointer-events: none;
+}
+
+/* Icons styling */
+.sidebar-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 12px;
+  stroke-width: 1.75;
+  opacity: 0.85;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 /* Button styling */
 .sidebar-nav .sidebar-link {
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   width: 100%; /* Full width */
   padding: 15px 20px;
   color: white;
@@ -73,6 +134,65 @@
   position: relative;
   overflow: hidden;
   z-index: 1;
+}
+
+.sidebar-link:hover {
+  background-color: #21883786;
+}
+
+.sidebar-link-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.sidebar-link-meta {
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background-color: #d32f2f;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.sidebar-nav--submenu {
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-link-meta {
+  display: flex;
+  align-items: center;   /* ✅ vertical centering */
+  justify-content: center;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.sidebar-link-meta svg {
+  display: block;        /* ✅ removes baseline alignment */
+}
+
+.sidebar-value--grey {
+  padding-right: 10px;
+  color: rgba(255, 255, 255, 0.75);
+  background: transparent;
+  font-weight: 600;
+}
+
+.sidebar-chevron {
+  padding-right: 6px;
+  font-size: 16px;
 }
 
 /* Background color transition for selected buttons */
@@ -135,6 +255,7 @@
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   border: none;
+  border-radius: 8px;
   padding: 5px 10px;
   cursor: pointer;
   z-index: 1100;
@@ -162,5 +283,31 @@
 
   .dashboard-content {
     margin-left: 0;
+  }
+}
+
+/* Profile section at bottom of sidebar */
+.sidebar-profile {
+  position: relative;
+  width: 100%;
+  margin-top: auto;
+}
+
+.sidebar-profile .profile-button-container {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media screen and (max-width: 768px) {
+  .sidebar-logo {
+    max-width: 140px;
   }
 }

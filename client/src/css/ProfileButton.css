@@ -1,14 +1,22 @@
-/* Container for the profile button */
+/* Container for the profile button - positioned at bottom of sidebar */
 .profile-button-container {
   position: relative;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Profile button (circular with initial) */
 .profile-button {
   width: 40px;
   height: 40px;
-  background-color: black;
+  background-color: #28a745;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -16,48 +24,111 @@
   color: white;
   font-size: 18px;
   font-weight: bold;
-  cursor: pointer;
   user-select: none;
+  flex-shrink: 0;
 }
 
-/* Dropdown menu */
-.dropdown-menu {
-  position: absolute;
-  top: 50px; /* Adjust based on where you want it */
-  right: 0;
-  background-color: white;
-  border: 1px solid #ddd;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  padding: 0;
-  width: 150px;
-  z-index: 1000;
-}
-
-/* Dropdown list items */
-.dropdown-item {
-  list-style: none;
-  margin: 10px 0;
-}
-
-.dropdown-item button {
-  background: none;
-  border: none;
-  padding: 10px;
-  text-align: left;
-  width: 100%;
-  font-size: 14px;
+.profile-button--admin:hover {
+  background-color: #218838;
   cursor: pointer;
-  color: black;
-}
-
-.dropdown-item button:hover {
-  background-color: #f4f4f4;
-  border-radius: 4px;
 }
 
 /* Profile initial circle styling */
 .profile-initial {
   font-size: 18px;
   font-weight: bold;
+}
+
+/* Profile menu */
+.profile-menu {
+  position: absolute;
+  right: 0;
+  bottom: 60px;
+  background: #218837ef;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  padding: 12px;
+  width: 220px;
+  margin-right: 5px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  z-index: 2000;
+}
+
+.profile-menu p {
+  font-size: 14px;
+}
+
+.profile-menu label {
+  font-size: 12px;
+}
+
+.profile-menu-title {
+  font-weight: 600;
+  margin-top: 0;
+  text-align: right;
+  opacity: 0.85;
+}
+
+.profile-menu-section {
+  margin-bottom: 12px;
+}
+
+.number-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.number-input input {
+  width: 60px;
+  text-align: center;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  background-color: #e5e7eb;
+}
+
+.number-input input::-webkit-outer-spin-button,
+.number-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.number-input button {
+  background: none;
+  border: none;
+  color: white;
+}
+
+.number-input button:hover {
+  cursor: pointer;
+}
+
+/* Logout button */
+.logout-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.logout-button:hover {
+  color: #28a745;
+  text-decoration: none;
+}
+
+.logout-icon {
+  margin-left: 6px;
+  margin-right: 8px;
+  opacity: 1;
+  stroke-width: 3;
 }

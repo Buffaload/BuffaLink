@@ -16,15 +16,34 @@ const allowedOrigins = [
   "http://localhost:5050",
 ];
 
+// Regex to allow all Vercel preview URLs for BuffaLink Staging
+const vercelPreviewRegex = /^https:\/\/buffalink(-[a-z0-9-]+)?\.vercel\.app$/i;
+
 const app = express();
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    origin: (origin, callback) => {
+      // Allow non-browser requests (e.g. server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      if (vercelPreviewRegex.test(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
-app.use(express.json());
+
+app.options("*", cors());
+
 
 // Connect to MongoDB
 mongoose

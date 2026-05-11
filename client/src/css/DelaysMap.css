@@ -1,0 +1,279 @@
+.dashboard-content {
+  padding-top: 110px;
+}
+
+.location-services-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  width: 100%;
+  background: #f9fafb;
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: -10px;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
+  color: #1f2937;
+}
+
+.dashboard-content--kiosk .location-services-container {
+  height: calc(100vh - 100px);  /* kiosk */
+  margin-top: -30px;
+}
+
+.highlight-figures-map {
+  position: fixed;
+  top: 45px;
+  left: 275px;
+  width: calc(100% - 340px);
+  display: flex;
+  justify-content: flex-end;
+  margin: 10px 0 16px;
+  padding: 10px 12px;
+  z-index: 100;
+}
+
+.highlight-figures-kiosk {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-bottom: 24px;
+  text-align: center;
+}
+
+.dashboard-content--kiosk .highlight-figures {
+  flex-grow: 0;
+}
+
+.dashboard-content--kiosk .highlight-figures-kiosk {
+  position: relative;
+  left: auto;
+  width: auto;
+  width: 100%;
+  justify-content: space-between;
+  margin: 0 auto;
+}
+
+.kiosk-figures--row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.figure-pill--control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  padding: 8px 0;
+  margin-bottom: -2px;
+}
+
+.figure-pill--kiosk {
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  cursor: pointer;
+}
+
+/* Progress bar inside active pill */
+.figure-pill-progress {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  z-index: -1;
+  animation: pill-fill linear forwards;
+  animation-duration: 30s;
+}
+
+@keyframes pill-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.figure-pill--grey .figure-pill-progress {
+  background-color: #4b556385; /* darker slate */
+}
+
+.figure-pill--red .figure-pill-progress {
+  background-color: #7f1d1dab;
+}
+
+.figure-pill--blue .figure-pill-progress {
+  background-color: #1e40afa9;
+}
+
+.figure-pill--green .figure-pill-progress {
+  background-color: #1665349d;
+}
+
+.figure-pill--orange .figure-pill-progress {
+  background-color: #d97706a9;
+}
+
+/* Kiosk pill active / inactive states */
+.figure-pill--kiosk.is-inactive {
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.figure-pill--kiosk.is-active {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.figure-pill--kiosk.is-inactive:hover {
+  opacity: 0.8;
+}
+
+.map-container {
+  display: flex;
+}
+
+#map {
+  flex: 1;
+  width: 100%;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  z-index: 0;
+  min-height: 300px;
+}
+
+.location-services-header h3 {
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.location-services-header p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.vehicle-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.location-service-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.location-service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.vehicle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.vehicle-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #111827;
+}
+
+.stop-duration {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.vehicle-details {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+
+.detail-row .label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.detail-row .value {
+  color: #4b5563;
+  text-align: right;
+}
+
+.api-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.api-button {
+  padding: 10px 16px;
+  border-radius: 9999px;
+  background-color: #2563eb;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.api-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+@media screen and (max-width: 768px) {
+  .location-services-container {
+    padding: 18px;
+  }
+
+  .vehicle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tooltip styling for markers */
+.reg-tooltip {
+  background: none !important;
+  border: none !important;
+  border-radius: 50% !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 10px !important;
+  text-align: center !important;
+  box-shadow: none !important;
+  padding: 2px 4px !important;
+  min-width: 32px !important;
+  min-height: 16px !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure Leaflet popup styling is consistent */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-content {
+  margin: 16px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.leaflet-popup-tip {
+  background-color: white !important;
+}

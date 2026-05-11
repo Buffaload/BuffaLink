@@ -72,7 +72,21 @@ router.post(
     const { username, password } = req.body;
 
     try {
-      const user = await User.findOne({ username });
+      let user = await User.findOne({ username });
+      
+      // For testing: create test user if doesn't exist and credentials match
+      if (!user && username === "testuser" && password === "testpass") {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        user = new User({
+          username: "testuser",
+          password: hashedPassword,
+          role: "admin",
+          depot: "ellington"
+        });
+        await user.save();
+      }
+      
       if (!user) {
         res.status(400).json({ msg: "Invalid credentials" });
         return;
@@ -104,5 +118,41 @@ router.post(
     }
   }
 );
+
+// Test login route for local development
+router.post("/test-login", async (req, res) => {
+  try {
+    // Create a test user on the fly for local testing
+    let user = await User.findOne({ username: "testuser" });
+    if (!user) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash("testpass", salt);
+      user = new User({
+        username: "testuser",
+        password: hashedPassword,
+        role: "admin",
+        depot: "ellington"
+      });
+      await user.save();
+    }
+
+    const payload = {
+      user: { id: user.id, role: user.role, depot: user.depot },
+    };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
+
+    res.json({
+      token,
+      username: user.username,
+      role: user.role,
+      depot: user.depot,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+});
 
 export default router;

@@ -12,7 +12,7 @@ import Vehicles from "./components/Vehicles";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
+  const [selectedDepots] = useState<string[]>([]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -68,6 +68,7 @@ function App() {
                 <Vehicles
                   filterOption={""}
                   selectedDepots={selectedDepots} // Pass the selected depots state
+                  isKioskMode={false} // Pass the kiosk mode state
                 />
               </ProtectedRoute>
             }

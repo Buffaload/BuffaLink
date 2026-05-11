@@ -4,27 +4,172 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .dashboard-content {
   flex-grow: 1;
-  overflow-y: auto;
+  overflow: visible;
   padding: 20px;
 }
 
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;                 /* matches design proportion */
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb; /* subtle grey divider */
+  z-index: 1;
+}
+
+.app-header-on {
+  height: 80px;
+}
+
 .dashboard-header {
+  position: fixed;
   display: flex;
-  justify-content: space-between; /* Space between the title and the profile button */
+  justify-content: space-between; /* Space between the title and the toggle */
   align-items: center;
+  width: calc(100% - 340px);
   margin-left: 260px;
   font-size: small;
+  z-index: 1;
+}
+
+.dashboard-header {
+  margin-top: -25px;
+}
+
+.header-on {
+  margin-top: -21px;
+}
+
+.dashboard-title-suffix {
+  color: #28a745;
 }
 
 .dashboard-content {
   margin-left: 200px; /* Space for the sidebar */
-  padding-top: 20px;
+  padding-top: 120px; /* Space for the header */
   flex: 1;
   background-color: #f4f4f4;
   min-height: 100vh;
 }
+
+.dashboard-container.kiosk-mode .dashboard-header,
+.dashboard-container.kiosk-mode .dashboard-content {
+  margin-left: 0;
+}
+
+.kiosk-toggle-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.wrapper-on {
+  margin-right: -260px;
+}
+
+.kiosk-toggle-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: #495057;
+}
+
+.kiosk-toggle {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.kiosk-slider {
+  width: 38px;
+  height: 24px;
+  border-radius: 999px;
+  background: #dee2e6;
+  position: relative;
+  transition: background 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.kiosk-toggle.on .kiosk-slider {
+  background: #28a745;
+}
+
+.kiosk-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  transition: left 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.kiosk-toggle.on .kiosk-thumb {
+  left: calc(100% - 20px);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.kiosk-logo {
+  height: 40px;
+  max-width: 150px;
+  margin-bottom: -10px;
+}
+
+.kiosk-main {
+  display: flex;
+  flex-direction: column;
+}
+
+@media screen and (max-width: 980px) {
+  .dashboard-content {
+    margin-left: 0;
+  }
+
+  .kiosk-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .map-sidebar-link,
+  .kiosk-toggle-wrapper,
+  .vehicles-wizard {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 769px) {
+  .dashboard-header {
+    width: 100%;
+    margin-left: 80px;
+    margin-top: -5px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dashboard-title-suffix {
+    display: none !important;
+  }
+}
+

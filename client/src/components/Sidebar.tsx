@@ -1,11 +1,74 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Truck,
+  Fuel,
+  Moon,
+  Map,
+  Building,
+  Building2,
+  Wrench,
+  TriangleAlert,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import "../css/Sidebar.css";
+import ProfileButton from "./ProfileButton";
+
+interface Vehicle {
+  assetName?: string;
+  assetType?: string;
+  assetGroupName?: string;
+  locationGroupName?: string;
+  locationName?: string;
+  date?: string;
+  ServiceDueDate?: string;
+  MotDueDate?: string;
+}
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5050/api";
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Parse "YYYY-MM-DD" safely as local midnight, also supports ISO strings
+const parseDueMs = (s?: string): number => {
+  if (!s) return NaN;
+  const t = s.trim();
+  if (!t) return NaN;
+  const d = t.includes("T") ? new Date(t) : new Date(`${t}T00:00:00`);
+  return d.getTime();
+};
+
+const daysUntil = (s?: string): number | null => {
+  const dueMs = parseDueMs(s);
+  if (Number.isNaN(dueMs)) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
+};
+
+const isCriticalAlert = (v: Vehicle): boolean => {
+  // "Not in a depot"
+  if (v.locationGroupName === "Buffaload") return false;
+
+  const serviceDays = daysUntil(v.ServiceDueDate);
+  const motDays = daysUntil(v.MotDueDate);
+
+  // Critical if due in <= 5 days (includes overdue negatives)
+  const threshold = 5;
+  const serviceCritical = serviceDays !== null && serviceDays <= threshold;
+  const motCritical = motDays !== null && motDays <= threshold;
+
+  return serviceCritical || motCritical;
+};
 
 const Sidebar: React.FC<{
   onFilterChange: (filter: string) => void;
   onDepotChange: (depots: string[]) => void;
   filterOption: string;
-}> = ({ onFilterChange, onDepotChange, filterOption }) => {
+  handleLogout: () => void;
+}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout }) => {
   const [userRole, setUserRole] = useState<string>("");
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
@@ -17,6 +80,69 @@ const Sidebar: React.FC<{
       setUserRole(role);
     }
   }, []);
+
+  // Fetch vehicles data
+  const fetchVehicles = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No token found. Please log in.");
+    }
+    const response = await axios.get(`${API_BASE_URL}/vehicles`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.data;
+    }
+    throw new Error("Failed to fetch vehicles");
+  };
+
+  const { data: vehicles = [] } = useQuery<Vehicle[]>({
+    queryKey: ["vehicles"],
+    queryFn: fetchVehicles,
+    refetchInterval: 30000, // Poll every 30 sec
+    staleTime: 60000, // Data is fresh for 1 minute
+  });
+
+  // Helper function to parse timestamps with BST fix
+  const adjustedMs = (s: string): number => {
+    if (!s) return NaN;
+    const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
+    const BST_OFFSET_MS = 60 * 60 * 1000; // 1 hour for BST
+    return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
+  };
+
+  // Calculate counts for badges
+  const counts = useMemo(() => {
+    const now = Date.now();
+    
+    const hgvsCount = vehicles.filter((vehicle) => {
+      // HGVs: Must meet specific criteria
+      const timeStopped = now - adjustedMs(vehicle.date || "");
+      return (
+        vehicle.assetType === "HGV" &&
+        vehicle.locationName && // Must have a known location
+        timeStopped > 1.5 * 60 * 60 * 1000 && // Stopped for more than 1.5 hours
+        vehicle.locationGroupName !== "Buffaload" && // Exclude depots
+        vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
+        vehicle.assetGroupName !== "TFP Tipper Operation" && // Exclude tippers
+        vehicle.locationGroupName !== "Services and Truckstops" // Exclude Services
+      );
+    }).length;
+    
+    const maintenanceCount = vehicles.filter(
+      (vehicle) => vehicle.locationGroupName === "Maintenance"
+    ).length;
+    
+    const criticalCount = vehicles.filter(isCriticalAlert).length;
+
+    const tippersCount = vehicles.filter(
+      (vehicle) => vehicle.assetGroupName === "TFP Tipper Operation"
+    ).length;
+
+    return { hgvsCount, maintenanceCount, criticalCount, tippersCount };
+  }, [vehicles]);
 
   // function for Night-out subtab
   const handleButtonClick = (filter: string) => {
@@ -56,9 +182,14 @@ const Sidebar: React.FC<{
 
       <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <h2>Buffaload Logistics</h2>
+          <img
+              src="/buffaload-logo.png"
+              alt="Buffaload Logistics"
+              className="sidebar-logo"
+            />
         </div>
         <ul className="sidebar-nav">
+          <li className="sidebar-section-heading">FLEET</li>
           <li>
             <button
               className={`sidebar-link ${
@@ -66,23 +197,34 @@ const Sidebar: React.FC<{
               }`}
               onClick={() => handleButtonClick("HGVs")}
             >
-              HGVs
+              <span className="sidebar-link-text"><Truck className="sidebar-icon" />HGVs</span>
+              <span className="sidebar-link-meta sidebar-value--grey">{counts.hgvsCount}</span>
             </button>
           </li>
           <li>
             <button
               className={`sidebar-link ${
-                filterOption === "Services" || filterOption === "Night-Out"
+                filterOption === "Services" || filterOption === "Night-Out" || filterOption === "Delays"
                   ? "active"
                   : ""
               }`}
               onClick={() => handleButtonClick("Services")}
-            >
-              Services
+            >            
+              <span className="sidebar-link-text">
+                <Fuel className="sidebar-icon" />
+                Services
+              </span>       
+              <span className="sidebar-link-meta sidebar-chevron">
+                {filterOption === "Services" ? (
+                    <ChevronUp size={16} />
+                   ) : ( 
+                    <ChevronDown size={16} /> 
+                  )}
+              </span>
             </button>
           </li>
           {/* Sub-tab for "Services" */}
-          {(filterOption === "Services" || filterOption === "Night-Out") && (
+          {(filterOption === "Services" || filterOption === "Night-Out" || filterOption === "Delays") && (
             <ul className="sidebar-nav">
               <li>
                 <button
@@ -95,16 +237,45 @@ const Sidebar: React.FC<{
                     paddingLeft: "50px", // Left indentation
                   }}
                 >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      transform: "scaleX(-1)", // Flip horizontally
-                      marginRight: "8px",
-                    }}
-                  >
-                    ↩
+                  <span className="sidebar-nav--submenu"> 
+                    <span
+                      style={{
+                        display: "inline-block",
+                        transform: "scaleX(-1)", // Flip horizontally
+                        marginRight: "8px",
+                      }}
+                    >
+                      ↩
+                    </span>
+                    <Moon className="sidebar-icon" />
+                    Night-Out
+                  </span> 
+                </button>
+              </li>
+              <li className="map-sidebar-link">
+                <button
+                  className={`sidebar-link ${
+                    activeButton === "Delays" ? "active" : ""
+                  }`}
+                  onClick={() => handleSubTabClick("Delays")}
+                  style={{
+                    fontSize: "14px", // Smaller font size
+                    paddingLeft: "50px", // Left indentation
+                  }}
+                >
+                  <span className="sidebar-nav--submenu"> 
+                    <span
+                      style={{
+                        display: "inline-block",
+                        transform: "scaleX(-1)", // Flip horizontally
+                        marginRight: "8px",
+                      }}
+                    >
+                      ↩
+                    </span>
+                    <Map className="sidebar-icon" />
+                    Map
                   </span>
-                  Night-Out
                 </button>
               </li>
             </ul>
@@ -122,8 +293,19 @@ const Sidebar: React.FC<{
                 setSelectedDepots([]);
                 onDepotChange([]); // Notify parent about cleared depots
               }}
-            >
-              Depots
+            >      
+              <span className="sidebar-link-text">
+                <Building2 className="sidebar-icon" />
+                Depots
+              </span>
+
+              <span className="sidebar-link-meta sidebar-chevron">
+                {filterOption === "Depots" ? (
+                  <ChevronUp size={16} />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+              </span>
             </button>
           </li>
           {/* Sub-tab for "Depots" */}
@@ -140,16 +322,19 @@ const Sidebar: React.FC<{
                     paddingLeft: "50px", // Left indentation
                   }}
                 >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      transform: "scaleX(-1)", // Flip horizontally
-                      marginRight: "8px",
-                    }}
-                  >
-                    ↩
+                  <span className="sidebar-nav--submenu">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        transform: "scaleX(-1)", // Flip horizontally
+                        marginRight: "8px",
+                      }}
+                    >
+                      ↩
+                    </span>
+                    <Building className="sidebar-icon" />
+                    Ellington
                   </span>
-                  Ellington
                 </button>
               </li>
               <li>
@@ -163,16 +348,19 @@ const Sidebar: React.FC<{
                     paddingLeft: "50px", // Left indentation
                   }}
                 >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      transform: "scaleX(-1)", // Flip horizontally
-                      marginRight: "8px",
-                    }}
-                  >
-                    ↩
+                  <span className="sidebar-nav--submenu">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        transform: "scaleX(-1)", // Flip horizontally
+                        marginRight: "8px",
+                      }}
+                    >
+                      ↩
+                    </span>
+                    <Building className="sidebar-icon" />
+                    Crewe
                   </span>
-                  Crewe
                 </button>
               </li>
               <li>
@@ -186,16 +374,19 @@ const Sidebar: React.FC<{
                     paddingLeft: "50px", // Left indentation
                   }}
                 >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      transform: "scaleX(-1)", // Flip horizontally
-                      marginRight: "8px",
-                    }}
-                  >
-                    ↩
+                  <span className="sidebar-nav--submenu">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        transform: "scaleX(-1)", // Flip horizontally
+                        marginRight: "8px",
+                      }}
+                    >
+                      ↩
+                    </span>
+                    <Building className="sidebar-icon" />
+                    Skelmersdale
                   </span>
-                  Skelmersdale
                 </button>
               </li>
             </ul>
@@ -207,7 +398,19 @@ const Sidebar: React.FC<{
               }`}
               onClick={() => handleButtonClick("Maintenance")}
             >
-              Maintenance
+              <span className="sidebar-link-text"><Wrench className="sidebar-icon" />Maintenance</span>
+              <span className="sidebar-link-meta sidebar-value--grey">{counts.maintenanceCount}</span>
+            </button>
+          </li>
+          <li>
+            <button
+              className={`sidebar-link ${
+                filterOption === "Critical" ? "active" : ""
+              }`}
+              onClick={() => handleButtonClick("Critical")}
+            >
+              <span className="sidebar-link-text"><TriangleAlert className="sidebar-icon" />Critical Alerts</span>
+              <span className={`sidebar-link-meta ${counts.criticalCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>{counts.criticalCount}</span>
             </button>
           </li>
           {/* <li>
@@ -221,18 +424,30 @@ const Sidebar: React.FC<{
             </button>
           </li> */}
           {userRole === "admin" && (
-            <li>
-              <button
-                className={`sidebar-link ${
-                  filterOption === "Tippers" ? "active" : ""
-                }`}
-                onClick={() => handleButtonClick("Tippers")}
-              >
-                Tippers
-              </button>
-            </li>
+            <>
+              <li className="sidebar-section-heading">CONTRACTS</li>
+              <li>
+                <button
+                  className={`sidebar-link ${
+                    filterOption === "Tippers" ? "active" : ""
+                  }`}
+                  onClick={() => handleButtonClick("Tippers")}
+                >
+                  <span className="sidebar-link-text"><FileText className="sidebar-icon" />Tippers</span>
+                  <span className="sidebar-link-meta sidebar-value--grey">{counts.tippersCount}</span>
+                </button>
+              </li>
+            </>
           )}
         </ul>
+
+        {/* Profile Button at bottom of sidebar */}
+        <div className="sidebar-profile">
+          <ProfileButton
+            username={localStorage.getItem("username") || ""}
+            handleLogout={handleLogout}
+          />
+        </div>
       </div>
     </>
   );
