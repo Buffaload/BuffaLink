@@ -279,6 +279,25 @@ router.get("/", auth, async (req, res) => {
           VehicleMetadata.find({}),
         ]);
 
+      console.log("=== VOLVO RAW RESPONSES ===");
+      console.log("Volvo vehicles status:", volvoVehiclesResponse.status);
+      console.log("Volvo positions status:", volvoPositionsResponse.status);
+
+      // Safe extraction check
+      console.log(
+        "Volvo vehicles length:",
+        volvoVehiclesResponse.status === "fulfilled" && volvoVehiclesResponse.value.data
+          ? volvoVehiclesResponse.value.data.length
+          : "NO DATA"
+      );
+
+      console.log(
+        "Volvo positions length:",
+        volvoPositionsResponse.status === "fulfilled" && volvoPositionsResponse.value.data
+          ? volvoPositionsResponse.value.data.length
+          : "NO DATA"
+      );
+
       if (vehicleResponse.status !== "fulfilled") {
         throw new Error("Failed to fetch vehicles data");
       }
@@ -297,10 +316,18 @@ router.get("/", auth, async (req, res) => {
 
       existingVehicles = vehicleResponse.value.data;
       maintenanceDetails = blueCrystalResponse.value.data;
-      volvoVehicles = volvoVehiclesResponse.value.data;
-      volvoPositions = volvoPositionsResponse.value.data;
+      volvoVehicles = volvoVehiclesResponse.status === "fulfilled" && Array.isArray(volvoVehiclesResponse.value.data)
+        ? volvoVehiclesResponse.value.data
+        : [];
+      volvoPositions = volvoPositionsResponse.status === "fulfilled" && Array.isArray(volvoPositionsResponse.value.data)
+        ? volvoPositionsResponse.value.data
+        : [];
       nightOutMetadata = nightOutMetadataResult.value;
       
+      console.log("=== VOLVO SAMPLE DATA ===");
+      console.log("Volvo Vehicle sample:", volvoVehicles[0]);
+      console.log("Volvo Position sample:", volvoPositions[0]);
+
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
         return volvoVehicles.map(v => {
           const position = volvoPositions.find(
@@ -324,10 +351,17 @@ router.get("/", auth, async (req, res) => {
 
       const volvoMapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
 
+      console.log("=== VOLVO MAPPED ===");
+      console.log("Mapped count:", volvoMapped.length);
+      console.log("Mapped sample:", volvoMapped.slice(0, 3));
+
       vehicles = [
         ...existingVehicles,
         ...volvoMapped
       ];
+
+      console.log("=== VEHICLE MERGE CHECK ===");
+      console.log("Total vehicles after merge:", vehicles.length);
     }
 
     // Data normalization
@@ -380,6 +414,9 @@ router.get("/", auth, async (req, res) => {
     //       );
 
     const filteredVehicles = mergedVehicles; // All users see all vehicles
+
+    console.log("=== FINAL FILTERED OUTPUT ===");
+    console.log("Final vehicle count:", filteredVehicles.length);
 
     res.json(filteredVehicles);
   } catch (err) {
