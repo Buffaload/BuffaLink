@@ -299,30 +299,35 @@ router.get("/", auth, async (req, res) => {
       );
 
       if (vehicleResponse.status !== "fulfilled") {
-        throw new Error("Failed to fetch vehicles data");
+        console.warn("Primary vehicle API failed — continuing");
+        existingVehicles = [];
+      } else {
+        existingVehicles = vehicleResponse.value.data;
       }
       if (blueCrystalResponse.status !== "fulfilled") {
-        throw new Error("Failed to fetch BlueCrystal data");
+        console.warn("BlueCrystal API failed — continuing");
+        maintenanceDetails = [];
+      } else {
+        maintenanceDetails = blueCrystalResponse.value.data;
       }
-      if (volvoVehiclesResponse.status !== "fulfilled") {
-        throw new Error("Failed to fetch Volvo vehicles data");
+      if (volvoVehiclesResponse.status !== "fulfilled" && !Array.isArray(volvoVehiclesResponse.value.data)) {
+        console.warn("Volvo vehicles API failed — continuing");
+        volvoVehicles = [];
+      } else {
+        volvoVehicles = volvoVehiclesResponse.value.data;
       }
-      if (volvoPositionsResponse.status !== "fulfilled") {
-        throw new Error("Failed to fetch Volvo positions data");
+      if (volvoPositionsResponse.status !== "fulfilled" && !Array.isArray(volvoPositionsResponse.value.data)) {
+        console.warn("Volvo positions API failed — continuing");
+        volvoPositions = [];
+      } else {
+        volvoPositions = volvoPositionsResponse.value.data;
       }
       if (nightOutMetadataResult.status !== "fulfilled") {
-        throw new Error("Failed to fetch Night-Out metadata from MongoDB");
+        console.warn("Night-Out metadata from MongoDB API failed — continuing");
+        nightOutMetadata = [];
+      } else {
+        nightOutMetadata = nightOutMetadataResult.value.data;
       }
-
-      existingVehicles = vehicleResponse.value.data;
-      maintenanceDetails = blueCrystalResponse.value.data;
-      volvoVehicles = volvoVehiclesResponse.status === "fulfilled" && Array.isArray(volvoVehiclesResponse.value.data)
-        ? volvoVehiclesResponse.value.data
-        : [];
-      volvoPositions = volvoPositionsResponse.status === "fulfilled" && Array.isArray(volvoPositionsResponse.value.data)
-        ? volvoPositionsResponse.value.data
-        : [];
-      nightOutMetadata = nightOutMetadataResult.value;
       
       console.log("=== VOLVO SAMPLE DATA ===");
       console.log("Volvo Vehicle sample:", volvoVehicles[0]);
