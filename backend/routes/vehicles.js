@@ -249,6 +249,8 @@ router.get("/", auth, async (req, res) => {
       const volvoBaseUrl = "https://api.volvotrucks.com/vehicle";
       const volvoUsername = process.env.VOLVO_USERNAME;
       const volvoPassword = process.env.VOLVO_PASSWORD;
+      const VOLVO_ACCEPT_VEHICLES = "application/x.volvogroup.com.vehicles.v1.0+json, application/json;q=0.9, */*;q=0.8";
+      const VOLVO_ACCEPT_POSITIONS = "application/x.volvogroup.com.vehiclepositions.v1.0+json, application/json;q=0.9, */*;q=0.8";
 
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
         await Promise.allSettled([
@@ -269,34 +271,53 @@ router.get("/", auth, async (req, res) => {
               username: volvoUsername,
               password: volvoPassword,
             },
+            headers: {
+              Accept: VOLVO_ACCEPT_VEHICLES,
+            },
           }),
           axios.get(`${volvoBaseUrl}/vehiclepositions`, {
             auth: {
               username: volvoUsername,
               password: volvoPassword,
             },
+            params: {
+              latestOnly: true,
+            },
+            headers: {
+              Accept: VOLVO_ACCEPT_POSITIONS,
+            },
           }),
           VehicleMetadata.find({}),
         ]);
+    
+      // Catch 401/403/406 errors
+      const logSettled = (name, r) => {
+        if (r.status === "rejected") {
+          const e = r.reason;
+          console.warn(`[${name}] rejected`, {
+            message: e?.message,
+            status: e?.response?.status,
+            data: e?.response?.data,
+          });
+        } else {
+          console.log(`[${name}] fulfilled`, {
+            status: r.value?.status,
+            contentType: r.value?.headers?.["content-type"],
+            topLevelKeys: r.value?.data && typeof r.value.data === "object"
+              ? Object.keys(r.value.data)
+              : null,
+          });
+        }
+      };
 
-      console.log("=== VOLVO RAW RESPONSES ===");
-      console.log("Volvo vehicles status:", volvoVehiclesResponse.status);
-      console.log("Volvo positions status:", volvoPositionsResponse.status);
+      logSettled("VOLVO /vehicles", volvoVehiclesResponse);
+      logSettled("VOLVO /vehiclepositions", volvoPositionsResponse);
 
-      // Safe extraction check
-      console.log(
-        "Volvo vehicles length:",
-        volvoVehiclesResponse.status === "fulfilled" && volvoVehiclesResponse.value.data
-          ? volvoVehiclesResponse.value.data.length
-          : "NO DATA"
-      );
+      const extractVolvoVehicles = (data) =>
+        data?.vehicleResponse?.vehicles ?? [];
 
-      console.log(
-        "Volvo positions length:",
-        volvoPositionsResponse.status === "fulfilled" && volvoPositionsResponse.value.data
-          ? volvoPositionsResponse.value.data.length
-          : "NO DATA"
-      );
+      const extractVolvoPositions = (data) =>
+        data?.vehiclePositionResponse?.vehiclePositions ?? [];
 
       if (vehicleResponse.status !== "fulfilled") {
         console.warn("Primary vehicle API failed — continuing");
@@ -310,92 +331,61 @@ router.get("/", auth, async (req, res) => {
       } else {
         maintenanceDetails = blueCrystalResponse.value.data;
       }
-      if (volvoVehiclesResponse.status === "fulfilled" && Array.isArray(volvoVehiclesResponse.value?.data)) {
-        volvoVehicles = volvoVehiclesResponse.value.data;
+      if (volvoVehiclesResponse.status === "fulfilled") {
+        volvoVehicles = extractVolvoVehicles(volvoVehiclesResponse.value?.data);
       } else {
-        console.warn("Volvo vehicles API failed — continuing");
         volvoVehicles = [];
       }
-      if (volvoPositionsResponse.status === "fulfilled" && Array.isArray(volvoPositionsResponse.value?.data)) {
-        volvoPositions = volvoPositionsResponse.value.data;
+      if (volvoPositionsResponse.status === "fulfilled") {
+        volvoPositions = extractVolvoPositions(volvoPositionsResponse.value?.data);
       } else {
-        console.warn("Volvo positions API failed — continuing");
         volvoPositions = [];
       }
       if (nightOutMetadataResult.status !== "fulfilled") {
         console.warn("Night-Out metadata from MongoDB API failed — continuing");
         nightOutMetadata = [];
       } else {
-        nightOutMetadata = nightOutMetadataResult.value.data;
+        nightOutMetadata = nightOutMetadataResult.value;
       }
-      
-      console.log("=== VOLVO SAMPLE DATA ===");
-      console.log("Volvo Vehicle sample:", volvoVehicles[0]);
-      console.log("Volvo Position sample:", volvoPositions[0]);
 
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
-        return volvoVehicles.map((v, index) => {
-          const position = volvoPositions.find(
-            p =>
-              p.vehicleId === v.vehicleId ||
-              p.id === v.vehicleId ||
-              p.id === v.id
-          );
+        // Build an index for O(1) lookup by VIN
+        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
+        return volvoVehicles
+          .map((v) => {
+            const p = posByVin.get(v.vin);
+            if (!p) return null;
+            const gnss = p.gnssPosition;
+            if (!gnss || gnss.latitude == null || gnss.longitude == null) return null;
+            const speed = Number(p.wheelBasedSpeed ?? gnss.speed ?? 0);
+            const reg = v?.volvoGroupVehicle?.registrationNumber;
+            const name = v.customerVehicleName;
 
-          // If no position, skip the vehicle entirely
-          if (!position) return null;
-          // Extract coordinates (handle nested structure safely)
-          const latitude = position.latitude || position.position?.latitude;
-          const longitude = position.longitude || position.position?.longitude;
-          // If no real coordinates, skip
-          if (latitude === undefined || longitude === undefined) {
-            return null;
-          }
-
-          return {
-            assetName: `[VOLVO] ${v.registrationNumber || v.vehicleId || index}`,
-            assetType: "HGV",
-            assetGroupName: "HGVs",
-            eventType: position?.speed > 0 ? "driving" : "stopped",
-            locationName: position?.address || "Unknown Location",
-            locationGroupName: position?.address ? "Services and Truckstops" : null,
-            latitude,
-            longitude,
-            date: position?.timestamp || new Date().toISOString(),
-            status: position?.speed > 0 ? "In Transit" : "Available",
-          };
-        })
-        .filter(Boolean); // Remove null entries
+            return {
+              assetName: `[VOLVO] ${reg || name || v.vin}`,
+              assetRegistration: reg || undefined,
+              assetType: "HGV",
+              assetGroupName: "HGVs",
+              eventType: speed > 0 ? "driving" : "stopped",
+              status: speed > 0 ? "In Transit" : "Available",
+              latitude: gnss.latitude,
+              longitude: gnss.longitude,
+              // Prefer GNSS timestamp; fallback to received/created times
+              date: gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
+              // Volvo response doesn’t include a human address in this spec
+              locationName: null,
+              locationGroupName: null,
+            };
+          })
+          .filter(Boolean);
       };
 
       const volvoMapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
-
-      console.log("=== VOLVO MAPPED ===");
-      console.log("Mapped count:", volvoMapped.length);
-      console.log("Mapped sample:", volvoMapped.slice(0, 3));
 
       vehicles = [
         ...existingVehicles,
         ...volvoMapped
       ];
-
-      // === TEMP DEBUG ===
-      if (volvoMapped.length > 0) {
-        vehicles.push({
-          assetName: "[VOLVO TEST]",
-          assetType: "HGV",
-          assetGroupName: "HGVs",
-          eventType: "stopped",
-          locationName: "Test Location",
-          latitude: 52.3355,
-          longitude: -0.2945,
-          date: new Date().toISOString(),
-          status: "Available",
-        });
-      }
-
-      console.log("=== VEHICLE MERGE CHECK ===");
-      console.log("Total vehicles after merge:", vehicles.length);
     }
 
     // Data normalization
@@ -453,13 +443,6 @@ router.get("/", auth, async (req, res) => {
     console.log("Final vehicle count:", filteredVehicles.length);
 
     res.json(filteredVehicles);
-    if (filteredVehicles.length > 0) {
-      filteredVehicles[0]._debug = {
-        volvoVehiclesLength: volvoVehicles.length,
-        volvoPositionsLength: volvoPositions.length,
-        volvoMappedLength: (typeof volvoMapped !== "undefined") ? volvoMapped.length : "NOT RUN"
-      };
-    }
   } catch (err) {
     console.error("Error fetching vehicles:", err.message);
     res.status(500).json({ message: "Failed to fetch vehicle data." });

@@ -68,9 +68,6 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     });
 
     if (response.status === 200) {
-      if (response.data?.[0]?._debug) {
-        console.log("🚀 DEBUG:", response.data[0]._debug);
-      }
       return response.data;
     }
     throw new Error("Failed to fetch vehicles");
