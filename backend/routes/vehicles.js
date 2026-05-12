@@ -310,17 +310,17 @@ router.get("/", auth, async (req, res) => {
       } else {
         maintenanceDetails = blueCrystalResponse.value.data;
       }
-      if (volvoVehiclesResponse.status !== "fulfilled" && !Array.isArray(volvoVehiclesResponse.value.data)) {
+      if (volvoVehiclesResponse.status === "fulfilled" && Array.isArray(volvoVehiclesResponse.value?.data)) {
+        volvoVehicles = volvoVehiclesResponse.value.data;
+      } else {
         console.warn("Volvo vehicles API failed — continuing");
         volvoVehicles = [];
-      } else {
-        volvoVehicles = volvoVehiclesResponse.value.data;
       }
-      if (volvoPositionsResponse.status !== "fulfilled" && !Array.isArray(volvoPositionsResponse.value.data)) {
+      if (volvoPositionsResponse.status === "fulfilled" && Array.isArray(volvoPositionsResponse.value?.data)) {
+        volvoPositions = volvoPositionsResponse.value.data;
+      } else {
         console.warn("Volvo positions API failed — continuing");
         volvoPositions = [];
-      } else {
-        volvoPositions = volvoPositionsResponse.value.data;
       }
       if (nightOutMetadataResult.status !== "fulfilled") {
         console.warn("Night-Out metadata from MongoDB API failed — continuing");
@@ -334,24 +334,38 @@ router.get("/", auth, async (req, res) => {
       console.log("Volvo Position sample:", volvoPositions[0]);
 
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
-        return volvoVehicles.map(v => {
+        return volvoVehicles.map((v, index) => {
           const position = volvoPositions.find(
-            p => p.vehicleId === v.vehicleId
+            p =>
+              p.vehicleId === v.vehicleId ||
+              p.id === v.vehicleId ||
+              p.id === v.id
           );
 
+          // If no position, skip the vehicle entirely
+          if (!position) return null;
+          // Extract coordinates (handle nested structure safely)
+          const latitude = position.latitude || position.position?.latitude;
+          const longitude = position.longitude || position.position?.longitude;
+          // If no real coordinates, skip
+          if (latitude === undefined || longitude === undefined) {
+            return null;
+          }
+
           return {
-            assetName: v.registrationNumber || v.vehicleId,
+            assetName: `[VOLVO] ${v.registrationNumber || v.vehicleId || index}`,
             assetType: "HGV",
             assetGroupName: "HGVs",
             eventType: position?.speed > 0 ? "driving" : "stopped",
-            locationName: position?.address || null,
-            locationGroupName: null,
-            latitude: position?.latitude,
-            longitude: position?.longitude,
+            locationName: position?.address || "Unknown Location",
+            locationGroupName: position?.address ? "Services and Truckstops" : null,
+            latitude,
+            longitude,
             date: position?.timestamp || new Date().toISOString(),
             status: position?.speed > 0 ? "In Transit" : "Available",
           };
-        });
+        })
+        .filter(Boolean); // Remove null entries
       };
 
       const volvoMapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
@@ -364,6 +378,21 @@ router.get("/", auth, async (req, res) => {
         ...existingVehicles,
         ...volvoMapped
       ];
+
+      // === TEMP DEBUG ===
+      if (volvoMapped.length > 0) {
+        vehicles.push({
+          assetName: "[VOLVO TEST]",
+          assetType: "HGV",
+          assetGroupName: "HGVs",
+          eventType: "stopped",
+          locationName: "Test Location",
+          latitude: 52.3355,
+          longitude: -0.2945,
+          date: new Date().toISOString(),
+          status: "Available",
+        });
+      }
 
       console.log("=== VEHICLE MERGE CHECK ===");
       console.log("Total vehicles after merge:", vehicles.length);
