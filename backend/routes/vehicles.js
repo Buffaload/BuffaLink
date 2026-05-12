@@ -9,6 +9,7 @@ const router = express.Router();
 // Fetch vehicles from external API
 router.get("/", auth, async (req, res) => {
   console.log("Authenticated request from user:", req.user);
+  const debug = req.query.debug === "1";
 
   try {
     // Environment detection: Use NODE_ENV or check for dummy URLs
@@ -22,222 +23,224 @@ router.get("/", auth, async (req, res) => {
     let volvoVehicles = [];
     let volvoPositions = [];
     let nightOutMetadata = [];
+    let volvoMapped = [];
+    let volvoDebug = {};
 
-    if (useMockData) {
-      // DEVELOPMENT MODE: Return mock data for local development
-      console.log("Using mock data for development");
+    // if (useMockData) {
+    //   // DEVELOPMENT MODE: Return mock data for local development
+    //   console.log("Using mock data for development");
 
-      vehicles = [
-        {
-          assetName: "HGV001",
-          assetType: "HGV",
-          assetGroupName: "HGVs",
-          eventType: "stopped",
-          locationName: "High Street",
-          locationGroupName: "Unknown", // Will show in HGVs filter (not excluded)
-          date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-          status: "Available"
-        },
-        {
-          assetName: "HGV002",
-          assetType: "HGV",
-          assetGroupName: "HGVs",
-          eventType: "stopped",
-          locationName: "Industrial Estate",
-          locationGroupName: "Unknown",
-          date: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
-          status: "In Transit"
-        },
-        {
-          assetName: "SERVICE001",
-          assetType: "HGV",
-          assetGroupName: "Services",
-          eventType: "stopped",
-          locationName: "Moto Service Station, M6 Junction 16",
-          locationGroupName: "Services and Truckstops",
-          date: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), // 2.5 hours ago (meets >1.5h criteria)
-          latitude: 52.1234,
-          longitude: -1.5678,
-          formattedAddress: "Moto Service Station, M6 Junction 16, Northamptonshire",
-          temperature: 18.5,
-          status: "Available"
-        },
-        {
-          assetName: "SERVICE002",
-          assetType: "HGV",
-          assetGroupName: "Services",
-          eventType: "stopped",
-          locationName: "Welcome Break, M1 Junction 15a",
-          locationGroupName: "Services and Truckstops",
-          date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-          latitude: 52.3456,
-          longitude: -1.2345,
-          formattedAddress: "Welcome Break Services, M1 Junction 15a, Northamptonshire",
-          temperature: 22.3,
-          status: "Available"
-        },
-        {
-          assetName: "SERVICE003",
-          assetType: "HGV",
-          assetGroupName: "Services",
-          eventType: "stopped",
-          locationName: "Eurotunnel Truckstop",
-          locationGroupName: "Services and Truckstops",
-          date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-          latitude: 51.0987,
-          longitude: 1.3456,
-          formattedAddress: "Eurotunnel Freight Services, Folkestone, Kent",
-          temperature: 15.7,
-          status: "Available"
-        },
-        {
-          assetName: "UNKNOWN001",
-          assetType: "HGV",
-          assetGroupName: "HGVs",
-          eventType: "stopped",
-          locationName: null,
-          locationGroupName: null, // Unknown location
-          date: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(), // 3.5 hours ago
-          latitude: 53.4567,
-          longitude: -2.7890,
-          formattedAddress: "Unknown Location - Manchester Area",
-          temperature: 19.8,
-          status: "Available"
-        },
-        {
-          assetName: "UNKNOWN002",
-          assetType: "HGV",
-          assetGroupName: "HGVs",
-          eventType: "stopped",
-          locationName: null,
-          locationGroupName: null, // Unknown location
-          date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-          latitude: 51.6789,
-          longitude: -0.1234,
-          formattedAddress: "Unknown Location - London Area",
-          temperature: 21.2,
-          status: "Available"
-        },
-        {
-          assetName: "DEPOT001",
-          assetType: "HGV",
-          assetGroupName: "HGVs",
-          eventType: "stopped",
-          locationName: "BUFFALOAD ELLINGTON",
-          locationGroupName: "Buffaload",
-          date: new Date().toISOString(),
-          latitude: 52.3355,
-          longitude: -0.2945,
-          formattedAddress: "Buffaload Ellington, Ellington, Huntingdon, Cambridgeshire",
-          temperature: 24.0,
-          status: "Available"
-        },
-        {
-          assetName: "TIPPER001",
-          assetType: "Tipper",
-          assetGroupName: "TFP Tipper Operation",
-          eventType: "stopped",
-          locationName: "Site B",
-          locationGroupName: "Buffaload",
-          date: new Date().toISOString(),
-          latitude: 52.3773,
-          longitude: -0.0240,
-          formattedAddress: "Mick George, Somersham, Cambridgeshire",
-          temperature: 24.0,
-          status: "Available"
-        },
-        {
-          assetName: "MAINT001",
-          assetType: "HGV",
-          assetGroupName: "Maintenance",
-          eventType: "stopped",
-          locationName: "Maintenance Bay",
-          locationGroupName: "Maintenance",
-          date: new Date().toISOString(),
-          latitude: 52.3355,
-          longitude: -0.2945,
-          formattedAddress: "Buffaload Ellington, Ellington, Huntingdon, Cambridgeshire",
-          temperature: 24.0,
-          status: "Under Maintenance"
-        }
-      ];
+    //   vehicles = [
+    //     {
+    //       assetName: "HGV001",
+    //       assetType: "HGV",
+    //       assetGroupName: "HGVs",
+    //       eventType: "stopped",
+    //       locationName: "High Street",
+    //       locationGroupName: "Unknown", // Will show in HGVs filter (not excluded)
+    //       date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "HGV002",
+    //       assetType: "HGV",
+    //       assetGroupName: "HGVs",
+    //       eventType: "stopped",
+    //       locationName: "Industrial Estate",
+    //       locationGroupName: "Unknown",
+    //       date: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
+    //       status: "In Transit"
+    //     },
+    //     {
+    //       assetName: "SERVICE001",
+    //       assetType: "HGV",
+    //       assetGroupName: "Services",
+    //       eventType: "stopped",
+    //       locationName: "Moto Service Station, M6 Junction 16",
+    //       locationGroupName: "Services and Truckstops",
+    //       date: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), // 2.5 hours ago (meets >1.5h criteria)
+    //       latitude: 52.1234,
+    //       longitude: -1.5678,
+    //       formattedAddress: "Moto Service Station, M6 Junction 16, Northamptonshire",
+    //       temperature: 18.5,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "SERVICE002",
+    //       assetType: "HGV",
+    //       assetGroupName: "Services",
+    //       eventType: "stopped",
+    //       locationName: "Welcome Break, M1 Junction 15a",
+    //       locationGroupName: "Services and Truckstops",
+    //       date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+    //       latitude: 52.3456,
+    //       longitude: -1.2345,
+    //       formattedAddress: "Welcome Break Services, M1 Junction 15a, Northamptonshire",
+    //       temperature: 22.3,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "SERVICE003",
+    //       assetType: "HGV",
+    //       assetGroupName: "Services",
+    //       eventType: "stopped",
+    //       locationName: "Eurotunnel Truckstop",
+    //       locationGroupName: "Services and Truckstops",
+    //       date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+    //       latitude: 51.0987,
+    //       longitude: 1.3456,
+    //       formattedAddress: "Eurotunnel Freight Services, Folkestone, Kent",
+    //       temperature: 15.7,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "UNKNOWN001",
+    //       assetType: "HGV",
+    //       assetGroupName: "HGVs",
+    //       eventType: "stopped",
+    //       locationName: null,
+    //       locationGroupName: null, // Unknown location
+    //       date: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(), // 3.5 hours ago
+    //       latitude: 53.4567,
+    //       longitude: -2.7890,
+    //       formattedAddress: "Unknown Location - Manchester Area",
+    //       temperature: 19.8,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "UNKNOWN002",
+    //       assetType: "HGV",
+    //       assetGroupName: "HGVs",
+    //       eventType: "stopped",
+    //       locationName: null,
+    //       locationGroupName: null, // Unknown location
+    //       date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+    //       latitude: 51.6789,
+    //       longitude: -0.1234,
+    //       formattedAddress: "Unknown Location - London Area",
+    //       temperature: 21.2,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "DEPOT001",
+    //       assetType: "HGV",
+    //       assetGroupName: "HGVs",
+    //       eventType: "stopped",
+    //       locationName: "BUFFALOAD ELLINGTON",
+    //       locationGroupName: "Buffaload",
+    //       date: new Date().toISOString(),
+    //       latitude: 52.3355,
+    //       longitude: -0.2945,
+    //       formattedAddress: "Buffaload Ellington, Ellington, Huntingdon, Cambridgeshire",
+    //       temperature: 24.0,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "TIPPER001",
+    //       assetType: "Tipper",
+    //       assetGroupName: "TFP Tipper Operation",
+    //       eventType: "stopped",
+    //       locationName: "Site B",
+    //       locationGroupName: "Buffaload",
+    //       date: new Date().toISOString(),
+    //       latitude: 52.3773,
+    //       longitude: -0.0240,
+    //       formattedAddress: "Mick George, Somersham, Cambridgeshire",
+    //       temperature: 24.0,
+    //       status: "Available"
+    //     },
+    //     {
+    //       assetName: "MAINT001",
+    //       assetType: "HGV",
+    //       assetGroupName: "Maintenance",
+    //       eventType: "stopped",
+    //       locationName: "Maintenance Bay",
+    //       locationGroupName: "Maintenance",
+    //       date: new Date().toISOString(),
+    //       latitude: 52.3355,
+    //       longitude: -0.2945,
+    //       formattedAddress: "Buffaload Ellington, Ellington, Huntingdon, Cambridgeshire",
+    //       temperature: 24.0,
+    //       status: "Under Maintenance"
+    //     }
+    //   ];
 
-      maintenanceDetails = [
-        {
-          VehicleId: "HGV001",
-          ServiceDueDate: "2026-06-15",
-          MotDueDate: "2026-08-20",
-          IsVor: false,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "HGV002",
-          ServiceDueDate: "2027-03-10",
-          MotDueDate: "2027-02-15",
-          IsVor: true,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "SERVICE001",
-          ServiceDueDate: "2026-04-30",
-          MotDueDate: "2026-06-25",
-          IsVor: false,
-          LiveDefects: true
-        },
-        {
-          VehicleId: "SERVICE002",
-          ServiceDueDate: "2026-07-15",
-          MotDueDate: "2026-09-10",
-          IsVor: false,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "SERVICE003",
-          ServiceDueDate: "2026-05-20",
-          MotDueDate: "2026-07-30",
-          IsVor: true,
-          LiveDefects: true
-        },
-        {
-          VehicleId: "UNKNOWN001",
-          ServiceDueDate: "2026-08-01",
-          MotDueDate: "2026-10-15",
-          IsVor: false,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "UNKNOWN002",
-          ServiceDueDate: "2026-06-30",
-          MotDueDate: "2026-08-25",
-          IsVor: false,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "DEPOT001",
-          ServiceDueDate: "2026-07-01",
-          MotDueDate: "2026-09-01",
-          IsVor: false,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "TIPPER001",
-          ServiceDueDate: "2026-07-01",
-          MotDueDate: "2026-09-01",
-          IsVor: false,
-          LiveDefects: false
-        },
-        {
-          VehicleId: "MAINT001",
-          ServiceDueDate: "2026-05-15",
-          MotDueDate: "2026-07-20",
-          IsVor: false,
-          LiveDefects: false
-        }
-      ];
+    //   maintenanceDetails = [
+    //     {
+    //       VehicleId: "HGV001",
+    //       ServiceDueDate: "2026-06-15",
+    //       MotDueDate: "2026-08-20",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "HGV002",
+    //       ServiceDueDate: "2027-03-10",
+    //       MotDueDate: "2027-02-15",
+    //       IsVor: true,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "SERVICE001",
+    //       ServiceDueDate: "2026-04-30",
+    //       MotDueDate: "2026-06-25",
+    //       IsVor: false,
+    //       LiveDefects: true
+    //     },
+    //     {
+    //       VehicleId: "SERVICE002",
+    //       ServiceDueDate: "2026-07-15",
+    //       MotDueDate: "2026-09-10",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "SERVICE003",
+    //       ServiceDueDate: "2026-05-20",
+    //       MotDueDate: "2026-07-30",
+    //       IsVor: true,
+    //       LiveDefects: true
+    //     },
+    //     {
+    //       VehicleId: "UNKNOWN001",
+    //       ServiceDueDate: "2026-08-01",
+    //       MotDueDate: "2026-10-15",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "UNKNOWN002",
+    //       ServiceDueDate: "2026-06-30",
+    //       MotDueDate: "2026-08-25",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "DEPOT001",
+    //       ServiceDueDate: "2026-07-01",
+    //       MotDueDate: "2026-09-01",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "TIPPER001",
+    //       ServiceDueDate: "2026-07-01",
+    //       MotDueDate: "2026-09-01",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     },
+    //     {
+    //       VehicleId: "MAINT001",
+    //       ServiceDueDate: "2026-05-15",
+    //       MotDueDate: "2026-07-20",
+    //       IsVor: false,
+    //       LiveDefects: false
+    //     }
+    //   ];
 
-      // Get night-out metadata from MongoDB
-      nightOutMetadata = await VehicleMetadata.find({});
-    } else {
+    //   // Get night-out metadata from MongoDB
+    //   nightOutMetadata = await VehicleMetadata.find({});
+    // } else {
       // PRODUCTION MODE: Use real external APIs
       console.log("Using real external APIs for production");
 
@@ -382,11 +385,28 @@ router.get("/", auth, async (req, res) => {
 
       const volvoMapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
 
+      volvoDebug = {
+        useMockData,
+        volvoVehiclesReq: volvoVehiclesResponse.status,
+        volvoPositionsReq: volvoPositionsResponse.status,
+        volvoVehiclesHttp: volvoVehiclesResponse.status === "fulfilled" ? volvoVehiclesResponse.value?.status : volvoVehiclesResponse.reason?.response?.status,
+        volvoPositionsHttp: volvoPositionsResponse.status === "fulfilled" ? volvoPositionsResponse.value?.status : volvoPositionsResponse.reason?.response?.status,
+        volvoVehiclesCount: volvoVehicles?.length ?? 0,
+        volvoPositionsCount: volvoPositions?.length ?? 0,
+        volvoMappedCount: volvoMapped?.length ?? 0,
+        volvoVehiclesMoreDataAvailable: volvoVehiclesResponse.status === "fulfilled"
+          ? !!volvoVehiclesResponse.value?.data?.moreDataAvailable
+          : undefined,
+        volvoPositionsMoreDataAvailable: volvoPositionsResponse.status === "fulfilled"
+          ? !!volvoPositionsResponse.value?.data?.moreDataAvailable
+          : undefined,
+      };
+
       vehicles = [
         ...existingVehicles,
         ...volvoMapped
       ];
-    }
+    //}
 
     // Data normalization
     const nightOutMap = nightOutMetadata.reduce((acc, item) => {
@@ -437,6 +457,10 @@ router.get("/", auth, async (req, res) => {
     //         depotVisibilityRules[user.depot]?.includes(vehicle.assetGroupName)
     //       );
 
+    
+    if (debug) {
+      return res.json({ vehicles: filteredVehicles, _debug: volvoDebug });
+    }
     const filteredVehicles = mergedVehicles; // All users see all vehicles
 
     console.log("=== FINAL FILTERED OUTPUT ===");
