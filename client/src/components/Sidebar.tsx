@@ -93,8 +93,10 @@ const Sidebar: React.FC<{
       },
     });
     if (response.status === 200) {
-      console.log("🚀 BACKEND DEBUG:", response.data.debug)
-      return response.data.data;
+      if (response.data?.[0]?._debug) {
+        console.log("🚀 DEBUG:", response.data[0]._debug);
+      }
+      return response.data;
     }
     throw new Error("Failed to fetch vehicles");
   };

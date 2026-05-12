@@ -452,16 +452,14 @@ router.get("/", auth, async (req, res) => {
     console.log("=== FINAL FILTERED OUTPUT ===");
     console.log("Final vehicle count:", filteredVehicles.length);
 
-    // res.json(filteredVehicles);
-    res.json({
-      debug: {
+    res.json(filteredVehicles);
+    if (filteredVehicles.length > 0) {
+      filteredVehicles[0]._debug = {
         volvoVehiclesLength: volvoVehicles.length,
         volvoPositionsLength: volvoPositions.length,
-        volvoMappedLength: (typeof volvoMapped !== "undefined") ? volvoMapped.length : "NOT RUN",
-        existingVehiclesLength: existingVehicles.length
-      },
-      data: filteredVehicles
-    });
+        volvoMappedLength: (typeof volvoMapped !== "undefined") ? volvoMapped.length : "NOT RUN"
+      };
+    }
   } catch (err) {
     console.error("Error fetching vehicles:", err.message);
     res.status(500).json({ message: "Failed to fetch vehicle data." });
