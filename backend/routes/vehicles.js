@@ -17,7 +17,10 @@ router.get("/", auth, async (req, res) => {
                        process.env.BLUECRYSTAL_API_URL?.includes('dummy');
 
     let vehicles = [];
+    let existingVehicles = [];
     let maintenanceDetails = [];
+    let volvoVehicles = [];
+    let volvoPositions = [];
     let nightOutMetadata = [];
 
     if (useMockData) {
@@ -243,8 +246,11 @@ router.get("/", auth, async (req, res) => {
       const apiPassword = process.env.API_PASSWORD;
       const blueCrystalApiUrl = process.env.BLUECRYSTAL_API_URL;
       const blueCrystalApiKey = process.env.BLUECRYSTAL_API_KEY;
+      const volvoBaseUrl = "https://api.volvotrucks.com/vehicle";
+      const volvoUsername = process.env.VOLVO_USERNAME;
+      const volvoPassword = process.env.VOLVO_PASSWORD;
 
-      const [vehicleResponse, blueCrystalResponse, nightOutMetadataResult] =
+      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
         await Promise.allSettled([
           axios.get(apiUrl, {
             auth: {
@@ -258,6 +264,18 @@ router.get("/", auth, async (req, res) => {
               "x-end-point": "public.v1",
             },
           }),
+          axios.get(`${volvoBaseUrl}/vehicles`, {
+            auth: {
+              username: volvoUsername,
+              password: volvoPassword,
+            },
+          }),
+          axios.get(`${volvoBaseUrl}/vehiclepositions`, {
+            auth: {
+              username: volvoUsername,
+              password: volvoPassword,
+            },
+          }),
           VehicleMetadata.find({}),
         ]);
 
@@ -267,13 +285,49 @@ router.get("/", auth, async (req, res) => {
       if (blueCrystalResponse.status !== "fulfilled") {
         throw new Error("Failed to fetch BlueCrystal data");
       }
+      if (volvoVehiclesResponse.status !== "fulfilled") {
+        throw new Error("Failed to fetch Volvo vehicles data");
+      }
+      if (volvoPositionsResponse.status !== "fulfilled") {
+        throw new Error("Failed to fetch Volvo positions data");
+      }
       if (nightOutMetadataResult.status !== "fulfilled") {
         throw new Error("Failed to fetch Night-Out metadata from MongoDB");
       }
 
-      vehicles = vehicleResponse.value.data;
+      existingVehicles = vehicleResponse.value.data;
       maintenanceDetails = blueCrystalResponse.value.data;
+      volvoVehicles = volvoVehiclesResponse.value.data;
+      volvoPositions = volvoPositionsResponse.value.data;
       nightOutMetadata = nightOutMetadataResult.value;
+      
+      const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
+        return volvoVehicles.map(v => {
+          const position = volvoPositions.find(
+            p => p.vehicleId === v.vehicleId
+          );
+
+          return {
+            assetName: v.registrationNumber || v.vehicleId,
+            assetType: "HGV",
+            assetGroupName: "HGVs",
+            eventType: position?.speed > 0 ? "driving" : "stopped",
+            locationName: position?.address || null,
+            locationGroupName: null,
+            latitude: position?.latitude,
+            longitude: position?.longitude,
+            date: position?.timestamp || new Date().toISOString(),
+            status: position?.speed > 0 ? "In Transit" : "Available",
+          };
+        });
+      };
+
+      const volvoMapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
+
+      vehicles = [
+        ...existingVehicles,
+        ...volvoMapped
+      ];
     }
 
     // Data normalization
