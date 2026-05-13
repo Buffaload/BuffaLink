@@ -1,9 +1,59 @@
 import express from "express";
 import axios from "axios";
+import crypto from "crypto";
 import auth from "../middleware/auth.js";
 import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
 import { depotVisibilityRules } from "../config/visibilityRules.js";
+
+const VOLVO_BASE_URL = "https://api.volvotrucks.com/vehicle";
+
+const VOLVO_ACCEPT = {
+  vehicles: "application/x.volvogroup.com.vehicles.v1.0+json",
+  positions: "application/x.volvogroup.com.vehiclepositions.v1.0+json",
+};
+
+const makeRequestId = () => {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+};
+
+const pick = (obj, keys) =>
+  keys.reduce((acc, k) => {
+    if (obj && Object.prototype.hasOwnProperty.call(obj, k)) acc[k] = obj[k];
+    return acc;
+  }, {});
+
+/**
+ * Fetch all pages for Volvo endpoints that paginate via `moreDataAvailable` + `lastVin`.
+ */
+async function fetchVolvoPaged({ axiosInstance, path, params, accept, extractItems, getNextPageParam }) {
+  const all = [];
+  let lastVin;
+  let guard = 0;
+  
+  while (guard++ < 50) {
+    const resp = await axiosInstance.get(path, {
+      params: { ...params, ...pageParams, requestId: makeRequestId() },
+      headers: { Accept: accept },
+      timeout: 15000,
+    });
+
+    const items = extractItems(resp.data) || [];
+    all.push(...items);
+
+    const more = !!resp.data?.moreDataAvailable;
+    if (!more || items.length === 0) break;
+
+    pageParams = (getNextPageParam?.({ respData: resp.data, items, prev: pageParams })) || {};
+    if (!pageParams || Object.keys(pageParams).length === 0) break;
+  }
+
+  return all;
+}
 
 const router = express.Router();
 
@@ -31,7 +81,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
     let volvoVehicles = [];
     let volvoPositions = [];
     let nightOutMetadata = [];
-    let volvoMapped = [];
     let volvoDebug = {};
 
     if (useMockData) {
@@ -257,11 +306,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
       const apiPassword = process.env.API_PASSWORD;
       const blueCrystalApiUrl = process.env.BLUECRYSTAL_API_URL;
       const blueCrystalApiKey = process.env.BLUECRYSTAL_API_KEY;
-      const volvoBaseUrl = "https://api.volvotrucks.com/vehicle";
       const volvoUsername = process.env.VOLVO_USERNAME;
       const volvoPassword = process.env.VOLVO_PASSWORD;
-      const VOLVO_ACCEPT_VEHICLES = "application/x.volvogroup.com.vehicles.v1.0+json, application/json;q=0.9, */*;q=0.8";
-      const VOLVO_ACCEPT_POSITIONS = "application/x.volvogroup.com.vehiclepositions.v1.0+json, application/json;q=0.9, */*;q=0.8";
+      const volvoAxios = axios.create({
+        baseURL: VOLVO_BASE_URL,
+        auth: { username: volvoUsername, password: volvoPassword },
+        timeout: 15000,
+      });
 
       const safeGet = (url, config) => {
         if (!url) {
@@ -284,26 +335,21 @@ router.get("/", auth, diagnostics, async (req, res) => {
               "x-end-point": "public.v1",
             },
           }),
-          axios.get(`${volvoBaseUrl}/vehicles`, {
-            auth: {
-              username: volvoUsername,
-              password: volvoPassword,
-            },
-            headers: {
-              Accept: VOLVO_ACCEPT_VEHICLES,
-            },
+          fetchVolvoPaged({
+            axiosInstance: volvoAxios,
+            path: "/vehicles",
+            params: { additionalContent: "VOLVOGROUPVEHICLE" },
+            accept: VOLVO_ACCEPT.vehicles,
+            extractItems: (data) => data?.vehicleResponse?.vehicles,
+            getLastVin: (items) => items?.[items.length - 1]?.vin,
           }),
-          axios.get(`${volvoBaseUrl}/vehiclepositions`, {
-            auth: {
-              username: volvoUsername,
-              password: volvoPassword,
-            },
-            params: {
-              latestOnly: true,
-            },
-            headers: {
-              Accept: VOLVO_ACCEPT_POSITIONS,
-            },
+          fetchVolvoPaged({
+            axiosInstance: volvoAxios,
+            path: "/vehiclepositions",
+            params: { latestOnly: true },
+            accept: VOLVO_ACCEPT.positions,
+            extractItems: (data) => data?.vehiclePositionResponse?.vehiclePositions,
+            getLastVin: (items) => items?.[items.length - 1]?.vin,
           }),
           VehicleMetadata.find({}),
         ]);
@@ -327,15 +373,26 @@ router.get("/", auth, diagnostics, async (req, res) => {
           });
         }
       };
+  
+      if (volvoVehiclesResponse.status === "rejected") {
+        console.warn("[VOLVO /vehicles] rejected", {
+          message: volvoVehiclesResponse.reason?.message,
+          status: volvoVehiclesResponse.reason?.response?.status,
+          data: volvoVehiclesResponse.reason?.response?.data,
+        });
+      } else {
+        console.log("[VOLVO /vehicles] fulfilled", { count: volvoVehiclesResponse.value?.length ?? 0 });
+      }
 
-      logSettled("VOLVO /vehicles", volvoVehiclesResponse);
-      logSettled("VOLVO /vehiclepositions", volvoPositionsResponse);
-
-      const extractVolvoVehicles = (data) =>
-        data?.vehicleResponse?.vehicles ?? [];
-
-      const extractVolvoPositions = (data) =>
-        data?.vehiclePositionResponse?.vehiclePositions ?? [];
+      if (volvoPositionsResponse.status === "rejected") {
+        console.warn("[VOLVO /vehiclepositions] rejected", {
+          message: volvoPositionsResponse.reason?.message,
+          status: volvoPositionsResponse.reason?.response?.status,
+          data: volvoPositionsResponse.reason?.response?.data,
+        });
+      } else {
+        console.log("[VOLVO /vehiclepositions] fulfilled", { count: volvoPositionsResponse.value?.length ?? 0 });
+      }
 
       if (vehicleResponse.status !== "fulfilled") {
         console.warn("Primary vehicle API failed — continuing");
@@ -350,12 +407,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
         maintenanceDetails = blueCrystalResponse.value.data;
       }
       if (volvoVehiclesResponse.status === "fulfilled") {
-        volvoVehicles = extractVolvoVehicles(volvoVehiclesResponse.value?.data);
+        volvoVehicles = volvoVehiclesResponse.value;
       } else {
         volvoVehicles = [];
       }
       if (volvoPositionsResponse.status === "fulfilled") {
-        volvoPositions = extractVolvoPositions(volvoPositionsResponse.value?.data);
+        volvoPositions = volvoPositionsResponse.value;
       } else {
         volvoPositions = [];
       }
@@ -404,17 +461,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
         useMockData,
         volvoVehiclesReq: volvoVehiclesResponse.status,
         volvoPositionsReq: volvoPositionsResponse.status,
-        volvoVehiclesHttp: volvoVehiclesResponse.status === "fulfilled" ? volvoVehiclesResponse.value?.status : volvoVehiclesResponse.reason?.response?.status,
-        volvoPositionsHttp: volvoPositionsResponse.status === "fulfilled" ? volvoPositionsResponse.value?.status : volvoPositionsResponse.reason?.response?.status,
+        // counts
         volvoVehiclesCount: volvoVehicles?.length ?? 0,
         volvoPositionsCount: volvoPositions?.length ?? 0,
         volvoMappedCount: volvoMapped?.length ?? 0,
-        volvoVehiclesMoreDataAvailable: volvoVehiclesResponse.status === "fulfilled"
-          ? !!volvoVehiclesResponse.value?.data?.moreDataAvailable
-          : undefined,
-        volvoPositionsMoreDataAvailable: volvoPositionsResponse.status === "fulfilled"
-          ? !!volvoPositionsResponse.value?.data?.moreDataAvailable
-          : undefined,
+        // auth sanity
+        volvoAuthPresent: !!(volvoUsername && volvoPassword),
+        // samples (first 2) to diagnose shape quickly
+        volvoVehiclesSample: (volvoVehicles ?? []).slice(0, 2).map(v =>
+          pick(v, ["vin", "customerVehicleName", "brand", "type"])
+        ),
+        volvoPositionsSample: (volvoPositions ?? []).slice(0, 2).map(p => ({
+          vin: p.vin,
+          hasGnss: !!p.gnssPosition,
+          gnss: p.gnssPosition ? pick(p.gnssPosition, ["latitude", "longitude", "positionDateTime"]) : null,
+          wheelBasedSpeed: p.wheelBasedSpeed,
+        })),
       };
 
       vehicles = [
