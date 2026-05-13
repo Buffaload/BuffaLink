@@ -459,12 +459,14 @@ router.get("/", auth, async (req, res) => {
     //       );
 
     const filteredVehicles = mergedVehicles; // All users see all vehicles
+    
+    // TEMP: Echo debug query visibility (remove after diagnosis)
+    res.set("X-Debug-Query", String(req.query.debug ?? ""));
+    res.set("X-Debug-Enabled", String(debug));
+    
     if (debug) {
       return res.json({ vehicles: filteredVehicles, _debug: volvoDebug });
     }
-
-    console.log("=== FINAL FILTERED OUTPUT ===");
-    console.log("Final vehicle count:", filteredVehicles.length);
 
     res.json(filteredVehicles);
   } catch (err) {
