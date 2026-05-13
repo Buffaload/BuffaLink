@@ -1,17 +1,16 @@
 import express from "express";
 import axios from "axios";
 import auth from "../middleware/auth.js";
+import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
 import { depotVisibilityRules } from "../config/visibilityRules.js";
 
 const router = express.Router();
 
 // Fetch vehicles from external API
-router.get("/", auth, async (req, res) => {
+router.get("/", auth, diagnostics, async (req, res) => {
   console.log("Authenticated request from user:", req.user);
-  const debug = process.env.ENABLE_DIAGNOSTICS === "true" &&
-    req.user?.role === "admin" &&
-    String(req.query.debug ?? "") === "1";
+  const debug = Boolean(res.locals.debug);
   
   res.set("X-Debug-Query", String(req.query.debug ?? ""));
   res.set("X-Debug-Enabled", String(debug));
@@ -475,7 +474,6 @@ router.get("/", auth, async (req, res) => {
     if (debug) {
       return res.json({ vehicles: filteredVehicles, _debug: volvoDebug });
     }
-
     res.json(filteredVehicles);
   } catch (err) {
     if (debug) {
@@ -484,11 +482,9 @@ router.get("/", auth, async (req, res) => {
         error: err?.message ?? String(err),
         name: err?.name,
         stack: err?.stack,
-        // include whatever partial debug you have built so far
         _debug: volvoDebug ?? {},
       });
     }
-    
     console.error("Error fetching vehicles:", err.message);
     res.status(500).json({ message: "Failed to fetch vehicle data." });
   }

@@ -20,6 +20,15 @@ const allowedOrigins = [
 const vercelPreviewRegex = /^https:\/\/buffalink(-[a-z0-9-]+)?\.vercel\.app$/i;
 
 const app = express();
+
+// Build/instance fingerprint
+app.use((req, res, next) => {
+  res.set("X-BuffaLink-Build", process.env.VERCEL_GIT_COMMIT_SHA || "local");
+  res.set("X-BuffaLink-Ref", process.env.VERCEL_GIT_COMMIT_REF || "");
+  res.set("X-BuffaLink-Env", process.env.NODE_ENV || "");
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -37,13 +46,52 @@ app.use(
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Debug-Key",
+      "X-Request-Id",
+      "Cache-Control",
+      "Pragma",
+    ],
+    exposedHeaders: [
+      "X-Debug-Enabled",
+      "X-Debug-Query",
+      "X-BuffaLink-Build",
+      "X-BuffaLink-Ref",
+      "X-BuffaLink-Env",
+      "X-Request-Id",
+    ],
     credentials: true,
   })
 );
 
-app.options("*", cors());
-
+app.options("*", cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (vercelPreviewRegex.test(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Debug-Key",
+    "X-Request-Id",
+    "Cache-Control",
+    "Pragma",
+  ],
+  exposedHeaders: [
+    "X-Debug-Enabled",
+    "X-Debug-Query",
+    "X-BuffaLink-Build",
+    "X-BuffaLink-Ref",
+    "X-BuffaLink-Env",
+    "X-Request-Id",
+  ],
+  credentials: true,
+}));
 
 // Connect to MongoDB
 mongoose
