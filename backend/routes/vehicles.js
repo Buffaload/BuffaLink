@@ -15,8 +15,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
     String(req.query.forceDebug ?? "") === "1";
   const debug = forceDebug || Boolean(res.locals.debug);
   
-  res.set("X-Debug-Query", String(req.query.debug ?? ""));
-  res.set("X-Debug-Enabled", String(debug));
+  res.set("X-ForceDebug-Query", String(req.query.forceDebug ?? ""));
+  res.set("X-ForceDebug-Enabled", String(forceDebug));
 
   try {
     // Environment detection: Use NODE_ENV or check for dummy URLs
