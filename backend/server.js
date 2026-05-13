@@ -10,7 +10,6 @@ import vehicleRoutes from "./routes/vehicles.js";
 dotenv.config();
 
 const allowedOrigins = [
-  "https://buffa-link-backend.vercel.app",
   "https://buffalink.vercel.app",
   "http://localhost:3000",
   "http://localhost:5050",
@@ -18,55 +17,8 @@ const allowedOrigins = [
 
 // Regex to allow all Vercel preview URLs for BuffaLink Staging
 const vercelPreviewRegex = /^https:\/\/buffalink(-[a-z0-9-]+)?\.vercel\.app$/i;
-
 const app = express();
-
-// Build/instance fingerprint
-app.use((req, res, next) => {
-  res.set("X-BuffaLink-Build", process.env.VERCEL_GIT_COMMIT_SHA || "local");
-  res.set("X-BuffaLink-Ref", process.env.VERCEL_GIT_COMMIT_REF || "");
-  res.set("X-BuffaLink-Env", process.env.NODE_ENV || "");
-  next();
-});
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow non-browser requests (e.g. server-to-server)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      if (vercelPreviewRegex.test(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-Debug-Key",
-      "X-Request-Id",
-      "Cache-Control",
-      "Pragma",
-    ],
-    exposedHeaders: [
-      "X-Debug-Enabled",
-      "X-Debug-Query",
-      "X-BuffaLink-Build",
-      "X-BuffaLink-Ref",
-      "X-BuffaLink-Env",
-      "X-Request-Id",
-    ],
-    credentials: true,
-  })
-);
-
-app.options("*", cors({
+const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
@@ -91,7 +43,18 @@ app.options("*", cors({
     "X-Request-Id",
   ],
   credentials: true,
-}));
+};
+
+// Build/instance fingerprint
+app.use((req, res, next) => {
+  res.set("X-BuffaLink-Build", process.env.VERCEL_GIT_COMMIT_SHA || "local");
+  res.set("X-BuffaLink-Ref", process.env.VERCEL_GIT_COMMIT_REF || "");
+  res.set("X-BuffaLink-Env", process.env.NODE_ENV || "");
+  next();
+});
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Connect to MongoDB
 mongoose
