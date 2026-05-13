@@ -10,6 +10,9 @@ const router = express.Router();
 router.get("/", auth, async (req, res) => {
   console.log("Authenticated request from user:", req.user);
   const debug = req.query.debug === "1";
+  
+  res.set("X-Debug-Query", String(req.query.debug ?? ""));
+  res.set("X-Debug-Enabled", String(debug));
 
   try {
     // Environment detection: Use NODE_ENV or check for dummy URLs
@@ -470,6 +473,17 @@ router.get("/", auth, async (req, res) => {
 
     res.json(filteredVehicles);
   } catch (err) {
+    if (debug) {
+      return res.status(500).json({
+        message: "Failed to fetch vehicle data.",
+        error: err?.message ?? String(err),
+        name: err?.name,
+        stack: err?.stack,
+        // include whatever partial debug you have built so far
+        _debug: volvoDebug ?? {},
+      });
+    }
+    
     console.error("Error fetching vehicles:", err.message);
     res.status(500).json({ message: "Failed to fetch vehicle data." });
   }
