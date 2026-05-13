@@ -68,7 +68,12 @@ mongoose
 
 //Test route
 app.get("/api/test", (req, res) => {
-  res.send("Test route works");
+  res.status(200).json({
+    message: "TEST_ROUTE_UPDATED",
+    build: process.env.VERCEL_GIT_COMMIT_SHA || "local",
+    ref: process.env.VERCEL_GIT_COMMIT_REF || "",
+    env: process.env.NODE_ENV || "",
+  });
 });
 
 // Public routes
@@ -86,4 +91,6 @@ app.get("/api/user", auth, (req, res) => {
 });
 
 // Start the server
-export default app;
+export default function handler(req, res) {
+  return app(req, res);
+}
