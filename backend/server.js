@@ -18,6 +18,10 @@ const allowedOrigins = [
 // Regex to allow all Vercel preview URLs for BuffaLink Staging
 const vercelPreviewRegex = /^https:\/\/buffalink(-[a-z0-9-]+)?\.vercel\.app$/i;
 const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);

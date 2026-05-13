@@ -475,7 +475,10 @@ router.get("/", auth, diagnostics, async (req, res) => {
     const filteredVehicles = mergedVehicles; // All users see all vehicles
     
     if (forceDebug) {
-      return res.json({ vehicles: filteredVehicles, _debug: volvoDebug });
+      return res.json({ 
+        vehicles: filteredVehicles, 
+        _debug: volvoDebug 
+      });
     }
     res.json(filteredVehicles);
   } catch (err) {
