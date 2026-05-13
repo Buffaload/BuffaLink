@@ -9,7 +9,9 @@ const router = express.Router();
 // Fetch vehicles from external API
 router.get("/", auth, async (req, res) => {
   console.log("Authenticated request from user:", req.user);
-  const debug = req.query.debug === "1";
+  const debug = process.env.ENABLE_DIAGNOSTICS === "true" &&
+    req.user?.role === "admin" &&
+    String(req.query.debug ?? "") === "1";
   
   res.set("X-Debug-Query", String(req.query.debug ?? ""));
   res.set("X-Debug-Enabled", String(debug));
@@ -259,15 +261,22 @@ router.get("/", auth, async (req, res) => {
       const VOLVO_ACCEPT_VEHICLES = "application/x.volvogroup.com.vehicles.v1.0+json, application/json;q=0.9, */*;q=0.8";
       const VOLVO_ACCEPT_POSITIONS = "application/x.volvogroup.com.vehiclepositions.v1.0+json, application/json;q=0.9, */*;q=0.8";
 
+      const safeGet = (url, config) => {
+        if (!url) {
+          return Promise.reject(new Error("Missing required URL env var"));
+        }
+        return axios.get(url, config);
+      };
+
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
         await Promise.allSettled([
-          axios.get(apiUrl, {
+          safeGet(apiUrl, {
             auth: {
               username: apiUsername,
               password: apiPassword,
             },
           }),
-          axios.get(blueCrystalApiUrl, {
+          safeGet(blueCrystalApiUrl, {
             headers: {
               "x-api-key": blueCrystalApiKey,
               "x-end-point": "public.v1",
@@ -462,10 +471,6 @@ router.get("/", auth, async (req, res) => {
     //       );
 
     const filteredVehicles = mergedVehicles; // All users see all vehicles
-    
-    // TEMP: Echo debug query visibility (remove after diagnosis)
-    res.set("X-Debug-Query", String(req.query.debug ?? ""));
-    res.set("X-Debug-Enabled", String(debug));
     
     if (debug) {
       return res.json({ vehicles: filteredVehicles, _debug: volvoDebug });
