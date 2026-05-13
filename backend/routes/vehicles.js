@@ -10,7 +10,10 @@ const router = express.Router();
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
   console.log("Authenticated request from user:", req.user);
-  const debug = Boolean(res.locals.debug);
+  const forceDebug =
+    req.user?.role === "admin" &&
+    String(req.query.forceDebug ?? "") === "1";
+  const debug = forceDebug || Boolean(res.locals.debug);
   
   res.set("X-Debug-Query", String(req.query.debug ?? ""));
   res.set("X-Debug-Enabled", String(debug));
@@ -471,12 +474,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     const filteredVehicles = mergedVehicles; // All users see all vehicles
     
-    if (debug) {
+    if (forceDebug) {
       return res.json({ vehicles: filteredVehicles, _debug: volvoDebug });
     }
     res.json(filteredVehicles);
   } catch (err) {
-    if (debug) {
+    if (forceDebug) {
       return res.status(500).json({
         message: "Failed to fetch vehicle data.",
         error: err?.message ?? String(err),
