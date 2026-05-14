@@ -8,6 +8,9 @@ export interface VehicleLike {
     formattedAddress?: string | null;
     eventType?: string;
     date?: string;
+    latitude?: number;
+    longitude?: number;
+    temperature?: number;
     ServiceDueDate?: string;
     MotDueDate?: string;
     IsVor?: boolean;

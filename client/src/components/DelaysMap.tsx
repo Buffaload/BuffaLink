@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
-import { adjustedMs, matchesFilter } from "../utils/vehicleRules"
+import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import "../css/DelaysMap.css";
@@ -41,6 +41,10 @@ interface DelaysMapProps {
   filterOption: string;
   isKioskMode: boolean;
 }
+
+const toDate = (value: string | number | Date): Date => {
+  return value instanceof Date ? value : new Date(value);
+};
 
 const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   // Refs to persist map and markers across re-renders
@@ -117,15 +121,15 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   const kioskVehicleBuckets = useMemo(() => {
     const now = Date.now();
 
-    // Use Dashboard-equivalent rules directly
-    const services = vehicles.filter((v) => matchesFilter(v, "Services", [], now));
-    const nightOut = vehicles.filter((v) => matchesFilter(v, "Night-Out", [], now));
-    const depots = vehicles.filter((v) => matchesFilter(v, "Depots", [], now));
-    const maintenance = vehicles.filter((v) => matchesFilter(v, "Maintenance", [], now));
+    const services = filterVehicles(vehicles, "Services", [], now);
+    const nightOut = filterVehicles(vehicles, "Night-Out", [], now);
+    const depots = filterVehicles(vehicles, "Depots", [], now);
+    const maintenance = filterVehicles(vehicles, "Maintenance", [], now);
 
-    // TOTAL = union of the pill buckets (deduped)
+    // TOTAL = union of pill buckets (deduped)
     const seen = new Set<string>();
-    const keyOf = (v: Vehicle) => String(v.id ?? v.assetName ?? "");
+    const keyOf = (v: any) => String(v.assetName ?? "");
+
     const total = [...services, ...nightOut, ...depots, ...maintenance].filter((v) => {
       const k = keyOf(v);
       if (!k) return true;
@@ -143,12 +147,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         maintenance: maintenance.length,
       },
       base: total,
-      buckets: {
-        services,
-        nightOut,
-        depot: depots,
-        maintenance,
-      },
+      buckets: { services, nightOut, depot: depots, maintenance },
     };
   }, [vehicles]);
 
@@ -384,7 +383,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
             <p style="margin: 4px 0;"><strong>Location:</strong> ${vehicle.locationName || vehicle.formattedAddress || "Unknown"}</p>
             <p style="margin: 4px 0;"><strong>Temperature:</strong> ${vehicle.temperature}°C</p>
             <p style="margin: 4px 0;"><strong>Stopped:</strong> ${hours > 0 ? `${hours}h ` : ''}${minutes}m</p>
-            <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${new Date(vehicle.date).toLocaleString()}</p>
+            <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${vehicle.date ? toDate(vehicle.date) : NaN}</p>
           </div>
         `);
 

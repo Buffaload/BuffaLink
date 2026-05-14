@@ -398,18 +398,22 @@ const Vehicles: React.FC<VehiclesProps> = ({
   //   sortOption,
   // ]);
 
-  const filteredVehicles = useMemo(() => {
+  const { categoryVehicles, displayVehicles } = useMemo(() => {
     const now = Date.now();
-    let list = filterVehicles(vehicles, filterOption, selectedDepots, now);
 
-    // Apply VOR-only globally (as you already do)
+    // 1) Base category list (this is what kiosk pills should match)
+    const categoryVehicles = filterVehicles(vehicles, filterOption, selectedDepots, now);
+
+    // 2) Apply client-only filters for display
+    let list = categoryVehicles;
+
     if (isVorFilterActive) {
       list = list.filter((v) => !!(v.IsVor || v.LiveDefects));
     }
 
-    // Search
     const normalize = (value: string | null | undefined): string =>
       (value ?? "").toLowerCase().replace(/\s+/g, "").trim();
+
     const q = normalize(searchTerm);
     if (q) {
       list = list.filter((v) => {
@@ -419,12 +423,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
           v.locationName,
           v.formattedAddress,
           v.locationGroupName ?? "",
-        ].map(normalize).join("\n");
+        ]
+          .map(normalize)
+          .join("\n");
+
         return haystack.includes(q);
       });
     }
 
-    // Sort (reuse your existing sort logic, but compute stopped time using adjustedMs from utils)
+    // 3) Sort the DISPLAY list only
     const sorted = [...list].sort((a, b) => {
       if (sortOption === "stoppedTime") {
         const aStopped = a.date ? now - adjustedMs(a.date) : 0;
@@ -445,18 +452,25 @@ const Vehicles: React.FC<VehiclesProps> = ({
       return 0;
     });
 
-    return sorted;
-  }, [vehicles, filterOption, selectedDepots, isVorFilterActive, searchTerm, sortOption]);
+    return { categoryVehicles, displayVehicles: sorted };
+  }, [
+    vehicles,
+    filterOption,
+    selectedDepots,
+    isVorFilterActive,
+    searchTerm,
+    sortOption,
+  ]);
 
   const highlightFigures = useMemo(() => {
-    const total = filteredVehicles.length;
-    const vor = filteredVehicles.reduce(
+    const total = categoryVehicles.length;
+    const vor = categoryVehicles.reduce(
       (count, v) => count + ((v.IsVor || v.LiveDefects) ? 1 : 0),
       0
     );
 
     return { total, vor };
-  }, [filteredVehicles]);
+  }, [categoryVehicles]);
 
       // Legacy
       // if (filterOption === "Night-Out") {
@@ -779,11 +793,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
       ) : null} */}
 
       {/* Check if there are filtered vehicles */}
-      {filteredVehicles.length === 0 ? (
-        <p className="vehicle-placeholder-text">No stopped vehicles to show.</p> // Display the message
+      {displayVehicles.length === 0 ? (      
+        <p className="vehicle-placeholder-text">
+          {categoryVehicles.length === 0
+            ? "No stopped vehicles to show."
+            : "No vehicles match your current filters (search/VOR)."}
+        </p>
       ) : (
         <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
-          {filteredVehicles.map((vehicle) => {
+          {displayVehicles.map((vehicle) => {
             const now = Date.now();
             const isVor = !!vehicle.IsVor;
             const lastUpdate = adjustedMs(vehicle.date);
