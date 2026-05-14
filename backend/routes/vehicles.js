@@ -33,17 +33,25 @@ const unwrapAxiosError = (err) => ({
   data: err?.response?.data,
 });
 
-/**
- * Fetch all pages for Volvo endpoints that paginate via `moreDataAvailable` + `lastVin`.
- */
-async function fetchVolvoPaged({ axiosInstance, path, params, accept, extractItems, getNextPageParam }) {
+async function fetchVolvoPaged({
+  axiosInstance,
+  path,
+  params,
+  accept,
+  extractItems,
+  getNextPageParam,
+}) {
   const all = [];
-  let lastVin;
+  let pageParams = {};
   let guard = 0;
-  
+
   while (guard++ < 50) {
     const resp = await axiosInstance.get(path, {
-      params: { ...params, ...pageParams, requestId: makeRequestId() },
+      params: {
+        ...params,
+        ...pageParams,
+        requestId: makeRequestId(),
+      },
       headers: { Accept: accept },
       timeout: 15000,
     });
@@ -54,7 +62,12 @@ async function fetchVolvoPaged({ axiosInstance, path, params, accept, extractIte
     const more = !!resp.data?.moreDataAvailable;
     if (!more || items.length === 0) break;
 
-    pageParams = (getNextPageParam?.({ respData: resp.data, items, prev: pageParams })) || {};
+    // Compute params for next page (VIN or starttime depending on endpoint)
+    pageParams =
+      typeof getNextPageParam === "function"
+        ? getNextPageParam({ respData: resp.data, items })
+        : {};
+
     if (!pageParams || Object.keys(pageParams).length === 0) break;
   }
 
