@@ -153,18 +153,6 @@ const getDueProgress = (dateString: string): DueProgress | null => {
   return { percentage, colorClass, label };
 };
 
-// Flip this to false when BST ends
-//const APPLY_BST_FIX = true;
-//const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
-//const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-// Add 1h only for "naive" timestamps (no timezone in the string)
-// const adjustedMs = (s: string): number => {
-//   if (!s) return NaN;
-//   const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
-//   return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
-// };
-
 // Helper function to calculate duration since last status change
 const getTimeSinceUpdate = (lastUpdated: string) => {
   const now = Date.now();
@@ -185,28 +173,6 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
   return result;
 };
 
-// const daysUntil = (s?: string): number | null => {
-//   const dueMs = parseDueMs(s);
-//   if (Number.isNaN(dueMs)) return null;
-//   const today = new Date();
-//   today.setHours(0, 0, 0, 0);
-//   return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
-// };
-
-// const isCriticalAlert = (v: Vehicle): boolean => {
-//   // Not in a depot
-//   if (v.locationGroupName === "Buffaload") return false;
-
-//   const threshold = 5;
-//   const serviceDays = daysUntil(v.ServiceDueDate);
-//   const motDays = daysUntil(v.MotDueDate);
-
-//   const serviceCritical = serviceDays !== null && serviceDays <= threshold;
-//   const motCritical = motDays !== null && motDays <= threshold;
-
-//   return serviceCritical || motCritical;
-// };
-
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
@@ -218,10 +184,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   
   // Helpers for filtering, searching, and sorting
-  // const normalize = (value: string | null | undefined): string =>
-  //   (value ?? "").toLowerCase().replace(/\s+/g, "").trim();
-  //const isVorLike = (v: Vehicle) => !!(v.IsVor || v.LiveDefects);
-
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
 
@@ -472,106 +434,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return { total, vor };
   }, [categoryVehicles]);
 
-      // Legacy
-      // if (filterOption === "Night-Out") {
-      //   return vehicle.isNightOut;
-      // }
-
-      // if (filterOption === "HGVs") {
-      //   // HGVs: Show vehicles stopped for more than 1.5 hours in known locations
-      //   const timeStopped = calculateTimeStopped(vehicle.date);
-      //   return (
-      //     vehicle.assetType === "HGV" &&
-      //     vehicle.locationName && // Must have a known location
-      //     timeStopped > 1.5 * 60 * 60 * 1000 && // Stopped for more than 1.5 hours
-      //     vehicle.locationGroupName !== "Buffaload" && // Exclude depots
-      //     vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
-      //     vehicle.assetGroupName !== "TFP Tipper Operation" && // Exclude tippers
-      //     vehicle.locationGroupName !== "Services and Truckstops" // Exclude Services
-      //   );
-      // } else if (filterOption === "Services") {
-      //   // Services: Show vehicles stopped for more than 5 minutes with no location name and in Services and Truck stops
-      //   const timeStopped = calculateTimeStopped(vehicle.date);
-      //   return (
-      //     vehicle.assetType === "HGV" &&
-      //     (vehicle.locationGroupName === "Services and Truckstops" ||
-      //       !vehicle.locationGroupName) &&
-      //     timeStopped > 5 * 60 * 1000 &&
-      //     vehicle.eventType !== "driving" &&
-      //     vehicle.locationGroupName !== "Buffaload" && //Exclude depots
-      //     vehicle.locationGroupName !== "Maintenance" && //Exclude maintenance
-      //     vehicle.assetGroupName !== "TFP Tipper Operation" && //Exclude tippers
-      //     !vehicle.isNightOut //Exclude Night-Out vehicles
-      //   );
-      // } else if (filterOption === "Depots") {
-      //   // show vehicles for the selected depots
-      //   const matchesDepot =
-      //     selectedDepots.length > 0
-      //       ? selectedDepots.some((depot) => {
-      //           switch (depot) {
-      //             case "Ellington":
-      //               return (
-      //                 vehicle.locationGroupName === "Buffaload" &&
-      //                 vehicle.assetGroupName !== "TFP Tipper Operation" &&
-      //                 vehicle.locationName === "BUFFALOAD ELLINGTON"
-      //               );
-      //             case "Crewe":
-      //               return (
-      //                 vehicle.locationGroupName === "Buffaload" &&
-      //                 vehicle.locationName === "BUFFALOAD CREWE"
-      //               );
-      //             case "Skelmersdale":
-      //               return (
-      //                 vehicle.locationGroupName === "Buffaload" &&
-      //                 vehicle.locationName === "BUFFALOAD SKELMERSDALE"
-      //               );
-      //             default:
-      //               return false;
-      //           }
-      //         })
-      //       : vehicle.locationGroupName === "Buffaload" && // Only vehicles in depots
-      //         vehicle.assetGroupName !== "TFP Tipper Operation"; //Exclude tippers
-
-      //   // Apply VOR filter if active
-      //   if (isVorFilterActive) {
-      //     return matchesDepot && (vehicle.IsVor || vehicle.LiveDefects);
-      //   }
-
-      //   return matchesDepot;
-      // } else if (filterOption === "Maintenance") {
-      //   // Maintenance: Show vehicles in Maintenance
-      //   return vehicle.locationGroupName === "Maintenance";
-      // } else if (filterOption === "Tippers") {
-      //   // Tippers: Filter only tippers for admin
-      //   return vehicle.assetGroupName === "TFP Tipper Operation";
-      // }
-
-      // return true; // Default: show all vehicles if no filter matches
-    // });
-  // }, [
-  //   vehicles,
-  //   filterOption,
-  //   selectedDepots,
-  //   calculateTimeStopped,
-  //   isVorFilterActive,
-  // ]);
-
-  //! Causing issues with automation, do not use
-  // // If filterOption is "Debrief", show the form instead of vehicle cards
-  // if (filterOption === "Debrief") {
-  //   return (
-  //     <div className="debrief-container">
-  //       <iframe
-  //         src="https://forms.office.com/Pages/ResponsePage.aspx?id=KG0LOI9UKUqEzF1Dxrj5ABC_RfvJHCFIpuo_68d2P49UMlUwNkpaNTJXTDlORU9KRklXSFVaVE84My4u&embed=true"
-  //         title="Debrief form"
-  //         width="100%"
-  //         height="700px"
-  //         allowFullScreen
-  //       ></iframe>
-  //     </div>
-  //   );
-  // }
-
   // Colours for time stopped
   const getBackgroundColour = (timeStopped: number) => {
     if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
@@ -777,27 +639,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
         </div>
       ) : null}
 
-      {/* Show the VOR checkbox only for Depots and sub-tabs */}
-      {/* {filterOption === "Depots" &&
-      (selectedDepots.length === 0 || selectedDepots.length > 0) ? (
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            <input
-              type="checkbox"
-              checked={isVorFilterActive}
-              onChange={(e) => setIsVorFilterActive(e.target.checked)}
-            />
-            Show VOR Only
-          </label>
-        </div>
-      ) : null} */}
-
       {/* Check if there are filtered vehicles */}
       {displayVehicles.length === 0 ? (      
         <p className="vehicle-placeholder-text">
           {categoryVehicles.length === 0
             ? "No stopped vehicles to show."
-            : "No vehicles match your current filters (search/VOR)."}
+            : "No vehicles match your current filters (Search/VOR)."}
         </p>
       ) : (
         <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
@@ -845,12 +692,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     }`}
                   >
                     <h2 className="vehicle-reg">{vehicle.assetName}</h2>
-                    {/* <br />
-                    <p>
-                      <b>Last Updated:</b>
-                      <br />
-                      {new Date(vehicle.date).toLocaleString()}
-                    </p> */}
                     {filterOption === "Services" ||
                     filterOption === "Night-Out" ? (
                       <label className="toggle-container">
@@ -901,7 +742,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         <span className="due-progress-label">Service health</span>
                         <span className="due-progress-days"></span>
                       </div>
-                      <div className="due-progress-bar">
+                      <div className="due-progress-bar empty-progress-bar">
                         <div
                           className={`due-progress-bar-inner`}
                           style={{ width: `0` }}
@@ -957,7 +798,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       </div>
                       <div className="due-progress-bar">
                         <div
-                          className={`due-progress-bar-inner`}
+                          className={`due-progress-bar-inner empty-progress-bar`}
                           style={{ width: `0` }}
                         />
                       </div>

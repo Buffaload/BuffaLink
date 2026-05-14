@@ -631,6 +631,10 @@
   border: 2px solid #ef4444;
 }
 
+.empty-progress-bar {
+  border: 2px solid rgb(156, 163, 175);
+}
+
 .due-progress-bar-inner {
   height: 100%;
   border-radius: 999px;
