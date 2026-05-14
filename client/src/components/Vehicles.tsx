@@ -216,150 +216,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
-  // const filteredVehicles = useMemo(() => {
-  //   const now = Date.now();
-  //   const calculateTimeStopped = (lastUpdate: string): number => {
-  //     return now - adjustedMs(lastUpdate);
-  //   };
-
-  //   let list = vehicles.filter((vehicle) => {
-  //     if (filterOption === "Night-Out") {
-  //       return vehicle.isNightOut;
-  //     }
-
-  //     if (filterOption === "HGVs") {
-  //       const timeStopped = calculateTimeStopped(vehicle.date);
-  //       return (
-  //         vehicle.assetType === "HGV" &&
-  //         vehicle.locationName &&
-  //         timeStopped > 1.5 * 60 * 60 * 1000 &&
-  //         vehicle.locationGroupName !== "Buffaload" &&
-  //         vehicle.locationGroupName !== "Maintenance" &&
-  //         vehicle.assetGroupName !== "TFP Tipper Operation" &&
-  //         vehicle.locationGroupName !== "Services and Truckstops"
-  //       );
-  //     }
-
-  //     if (filterOption === "Services") {
-  //       const timeStopped = calculateTimeStopped(vehicle.date);
-  //       return (
-  //         vehicle.assetType === "HGV" &&
-  //         (vehicle.locationGroupName === "Services and Truckstops" ||
-  //           !vehicle.locationGroupName) &&
-  //         timeStopped > 5 * 60 * 1000 &&
-  //         vehicle.eventType !== "driving" &&
-  //         vehicle.locationGroupName !== "Buffaload" &&
-  //         vehicle.locationGroupName !== "Maintenance" &&
-  //         vehicle.assetGroupName !== "TFP Tipper Operation" &&
-  //         !vehicle.isNightOut
-  //       );
-  //     }
-
-  //     if (filterOption === "Depots") {
-  //       const matchesDepot =
-  //         selectedDepots.length > 0
-  //           ? selectedDepots.some((depot) => {
-  //               switch (depot) {
-  //                 case "Ellington":
-  //                   return (
-  //                     vehicle.locationGroupName === "Buffaload" &&
-  //                     vehicle.assetGroupName !== "TFP Tipper Operation" &&
-  //                     vehicle.locationName === "BUFFALOAD ELLINGTON"
-  //                   );
-  //                 case "Crewe":
-  //                   return (
-  //                     vehicle.locationGroupName === "Buffaload" &&
-  //                     vehicle.locationName === "BUFFALOAD CREWE"
-  //                   );
-  //                 case "Skelmersdale":
-  //                   return (
-  //                     vehicle.locationGroupName === "Buffaload" &&
-  //                     vehicle.locationName === "BUFFALOAD SKELMERSDALE"
-  //                   );
-  //                 default:
-  //                   return false;
-  //               }
-  //             })
-  //           : vehicle.locationGroupName === "Buffaload" &&
-  //             vehicle.assetGroupName !== "TFP Tipper Operation";
-
-  //       return matchesDepot;
-  //     }
-
-  //     if (filterOption === "Maintenance") {
-  //       return vehicle.locationGroupName === "Maintenance";
-  //     }
-
-  //     if (filterOption === "Critical") {
-  //       return isCriticalAlert(vehicle);
-  //     }
-
-  //     if (filterOption === "Tippers") {
-  //       return vehicle.assetGroupName === "TFP Tipper Operation";
-  //     }
-
-  //     return true;
-  //   });
-
-  //   // 2) Apply VOR-only globally (across relevant tabs)
-  //   // "Relevant tabs" interpreted as: any tab you are currently viewing.
-  //   if (isVorFilterActive) {
-  //     list = list.filter(isVorLike);
-  //   }
-
-  //   // 3) Search by reg / location / address (case-insensitive, ignores spaces)
-  //   const q = normalize(searchTerm);
-  //   if (q) {
-  //     list = list.filter((v) => {
-  //       const haystack = [
-  //         v.assetName,
-  //         v.assetRegistration,
-  //         v.locationName,
-  //         v.formattedAddress,
-  //         v.locationGroupName,
-  //       ]
-  //         .map(normalize)
-  //         .join("|");
-
-  //       return haystack.includes(q);
-  //     });
-  //   }
-
-  //   // 4) Sort
-  //   const sorted = [...list].sort((a, b) => {
-  //     if (sortOption === "stoppedTime") {
-  //       const aStopped = calculateTimeStopped(a.date);
-  //       const bStopped = calculateTimeStopped(b.date);
-  //       // Longest stopped first
-  //       if (bStopped !== aStopped) return bStopped - aStopped;
-  //       return (a.assetName ?? "").localeCompare(b.assetName ?? "");
-  //     }
-
-  //     if (sortOption === "reg") {
-  //       const aReg = (a.assetRegistration || a.assetName || "").toUpperCase();
-  //       const bReg = (b.assetRegistration || b.assetName || "").toUpperCase();
-  //       return aReg.localeCompare(bReg);
-  //     }
-
-  //     if (sortOption === "location") {
-  //       const aLoc = (a.locationName || a.formattedAddress || "").toUpperCase();
-  //       const bLoc = (b.locationName || b.formattedAddress || "").toUpperCase();
-  //       return aLoc.localeCompare(bLoc);
-  //     }
-
-  //     return 0;
-  //   });
-
-  //   return sorted;
-  // }, [
-  //   vehicles,
-  //   filterOption,
-  //   selectedDepots,
-  //   isVorFilterActive,
-  //   searchTerm,
-  //   sortOption,
-  // ]);
-
   const { categoryVehicles, displayVehicles } = useMemo(() => {
     const now = Date.now();
 
@@ -796,9 +652,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         <span className="due-progress-label">MOT health</span>
                         <span className="due-progress-days"></span>
                       </div>
-                      <div className="due-progress-bar">
+                      <div className="due-progress-bar empty-progress-bar">
                         <div
-                          className={`due-progress-bar-inner empty-progress-bar`}
+                          className={`due-progress-bar-inner`}
                           style={{ width: `0` }}
                         />
                       </div>
