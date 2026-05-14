@@ -90,12 +90,12 @@
 }
 
 .sidebar-nav li {
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   list-style-type: none;
 }
 
 .sidebar-section-heading {
-  margin: 20px 0 8px 0;
+  margin: 10px 0;
   padding-left: 20px;
   font-size: 12px;
   font-weight: 600;

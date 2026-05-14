@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import { adjustedMs, matchesFilter } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import "../css/DelaysMap.css";
@@ -87,18 +88,18 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   });
 
   // Flip this to false when BST ends
-  const APPLY_BST_FIX = true;
-  const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
+  // const APPLY_BST_FIX = true;
+  // const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
 
-  // Add 1h only for "naive" timestamps (no timezone in the string)
-  const adjustedMs = useCallback(
-    (s: string): number => {
-      if (!s) return NaN;
-      const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
-      return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
-    },
-    [BST_OFFSET_MS]
-  );
+  // // Add 1h only for "naive" timestamps (no timezone in the string)
+  // const adjustedMs = useCallback(
+  //   (s: string): number => {
+  //     if (!s) return NaN;
+  //     const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
+  //     return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
+  //   },
+  //   [BST_OFFSET_MS]
+  // );
 
   // const calculateTimeStopped = (lastUpdate: string): number => {
   //   return now - adjustedMs(lastUpdate);
@@ -113,22 +114,21 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
 
   // const normalise = (value?: string) => (value ?? "").trim();
 
-  const getVehicleCategory = useCallback((v: Vehicle): VehicleCategory => {
-    if (v.isNightOut) return "nightOut";
-    if (v.locationGroupName === "Maintenance") return "maintenance";
-    if (v.locationGroupName === "Buffaload") return "depot";
-    if (
-      v.assetType === "HGV" &&
-      (v.locationGroupName === "Services and Truckstops" || !v.locationGroupName)
-    ) {
-      return "services";
-    }
-    return "other";
-  }, []);
+  const getVehicleCategory = useCallback(
+    (v: Vehicle, nowMs: number): VehicleCategory => {
+      if (matchesFilter(v, "Night-Out", [], nowMs)) return "nightOut";
+      if (matchesFilter(v, "Maintenance", [], nowMs)) return "maintenance";
+      if (matchesFilter(v, "Depots", [], nowMs)) return "depot";
+      if (matchesFilter(v, "Services", [], nowMs)) return "services";
+      return "other";
+    },
+    []
+  );
 
   const kioskVehicleBuckets = useMemo(() => {
-    // Base set for kiosk counts: HGVs only, exclude tipper op (matches your delays exclusions)
-    const base = vehicles.filter(
+    const now = Date.now();
+    // Keep existing kiosk intent: HGVs only, exclude tippers
+    const baseCandidates = vehicles.filter(
       (v) => v.assetType === "HGV" && v.assetGroupName !== "TFP Tipper Operation"
     );
 
@@ -140,14 +140,21 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       other: [],
     };
 
-    for (const v of base) {
-      buckets[getVehicleCategory(v)].push(v);
+    for (const v of baseCandidates) {
+      buckets[getVehicleCategory(v, now)].push(v);
     }
     
     const servicesCount = buckets.services.length;
     const nightOutCount = buckets.nightOut.length;
     const depotsCount = buckets.depot.length;
     const maintenanceCount = buckets.maintenance.length;
+    const base =
+      ([] as Vehicle[]).concat(
+        buckets.services,
+        buckets.nightOut,
+        buckets.depot,
+        buckets.maintenance
+      );
 
     return {
       counts: {
@@ -193,7 +200,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         !vehicle.isNightOut // Exclude Night-Out vehicles
       );
     });
-  }, [vehicles, adjustedMs]);
+  }, [vehicles]);
 
   const vehiclesToPlot = useMemo(() => {
     // Non-kiosk mode remains unchanged: plot the Delays subset only
@@ -359,8 +366,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     const fillColor = getMarkerFillColor();
 
     // Plot markers for vehicles stopped > 1.5 hours in the past 30 days
-    vehiclesToPlot.forEach((vehicle) => {
-      if (vehicle.latitude && vehicle.longitude) {
+    vehiclesToPlot.forEach((vehicle) => {   
+    if (
+          vehicle.latitude != null &&
+          vehicle.longitude != null &&
+          Number.isFinite(vehicle.latitude) &&
+          Number.isFinite(vehicle.longitude)
+        ) {
         // Create circular marker with temperature
         const circleMarker = L.circleMarker([vehicle.latitude, vehicle.longitude], {
           color: '#fff',
@@ -416,7 +428,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       }
     }
 
-  }, [vehiclesToPlot, isKioskMode, activeKioskPill, adjustedMs]); // Only re-run when filteredVehicles changes
+  }, [vehiclesToPlot, isKioskMode, activeKioskPill]); // Only re-run when filteredVehicles changes
 
   // Map carousel
   const CAROUSEL_MS = 30000;

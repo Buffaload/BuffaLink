@@ -1,5 +1,6 @@
 import API_BASE_URL from "../config";
 import React, { useEffect, useMemo, useState } from "react";
+import { countFor, isCriticalAlert } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -116,32 +117,12 @@ const Sidebar: React.FC<{
   // Calculate counts for badges
   const counts = useMemo(() => {
     const now = Date.now();
-    
-    const hgvsCount = vehicles.filter((vehicle) => {
-      // HGVs: Must meet specific criteria
-      const timeStopped = now - adjustedMs(vehicle.date || "");
-      return (
-        vehicle.assetType === "HGV" &&
-        vehicle.locationName && // Must have a known location
-        timeStopped > 1.5 * 60 * 60 * 1000 && // Stopped for more than 1.5 hours
-        vehicle.locationGroupName !== "Buffaload" && // Exclude depots
-        vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
-        vehicle.assetGroupName !== "TFP Tipper Operation" && // Exclude tippers
-        vehicle.locationGroupName !== "Services and Truckstops" // Exclude Services
-      );
-    }).length;
-    
-    const maintenanceCount = vehicles.filter(
-      (vehicle) => vehicle.locationGroupName === "Maintenance"
-    ).length;
-    
-    const criticalCount = vehicles.filter(isCriticalAlert).length;
-
-    const tippersCount = vehicles.filter(
-      (vehicle) => vehicle.assetGroupName === "TFP Tipper Operation"
-    ).length;
-
-    return { hgvsCount, maintenanceCount, criticalCount, tippersCount };
+    return {
+      hgvsCount: countFor(vehicles, "HGVs", [], now),
+      maintenanceCount: countFor(vehicles, "Maintenance", [], now),
+      criticalCount: vehicles.filter(isCriticalAlert).length,
+      tippersCount: countFor(vehicles, "Tippers", [], now),
+    };
   }, [vehicles]);
 
   // function for Night-out subtab

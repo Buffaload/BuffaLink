@@ -69,10 +69,8 @@ mongoose
 //Test route
 app.get("/api/test", (req, res) => {
   res.status(200).json({
-    message: "TEST_ROUTE_UPDATED",
-    build: process.env.VERCEL_GIT_COMMIT_SHA || "local",
-    ref: process.env.VERCEL_GIT_COMMIT_REF || "",
-    env: process.env.NODE_ENV || "",
+    message: "BACKEND_NEW_BUILD_CONFIRMED",
+    time: new Date().toISOString(),
   });
 });
 

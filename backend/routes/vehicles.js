@@ -467,7 +467,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
               // Prefer GNSS timestamp; fallback to received/created times
               date: gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
               // Volvo response doesn’t include a human address in this spec
-              locationName: null,
+              locationName: "Unknown location",
               locationGroupName: null,
             };
           })
