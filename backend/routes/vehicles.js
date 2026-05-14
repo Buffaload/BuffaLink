@@ -341,7 +341,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             params: { additionalContent: "VOLVOGROUPVEHICLE" },
             accept: VOLVO_ACCEPT.vehicles,
             extractItems: (data) => data?.vehicleResponse?.vehicles,
-            getLastVin: (items) => items?.[items.length - 1]?.vin,
+            getNextPageParam: ({ items }) => ({ lastVin: items?.[items.length - 1]?.vin }),
           }),
           fetchVolvoPaged({
             axiosInstance: volvoAxios,
@@ -349,7 +349,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
             params: { latestOnly: true },
             accept: VOLVO_ACCEPT.positions,
             extractItems: (data) => data?.vehiclePositionResponse?.vehiclePositions,
-            getLastVin: (items) => items?.[items.length - 1]?.vin,
+            getNextPageParam: ({ items }) => ({
+                starttime: items?.[items.length - 1]?.receivedDateTime, // per Volvo description
+              }),
           }),
           VehicleMetadata.find({}),
         ]);
