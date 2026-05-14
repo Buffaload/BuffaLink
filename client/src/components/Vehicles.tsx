@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { filterVehicles, adjustedMs, isCriticalAlert } from "../utils/vehicleRules";
+import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -155,7 +155,7 @@ const getDueProgress = (dateString: string): DueProgress | null => {
 
 // Flip this to false when BST ends
 const APPLY_BST_FIX = true;
-const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
+//const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Add 1h only for "naive" timestamps (no timezone in the string)
@@ -193,13 +193,13 @@ const parseDueMs = (s?: string): number => {
   return d.getTime();
 };
 
-const daysUntil = (s?: string): number | null => {
-  const dueMs = parseDueMs(s);
-  if (Number.isNaN(dueMs)) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
-};
+// const daysUntil = (s?: string): number | null => {
+//   const dueMs = parseDueMs(s);
+//   if (Number.isNaN(dueMs)) return null;
+//   const today = new Date();
+//   today.setHours(0, 0, 0, 0);
+//   return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
+// };
 
 // const isCriticalAlert = (v: Vehicle): boolean => {
 //   // Not in a depot
@@ -226,9 +226,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   
   // Helpers for filtering, searching, and sorting
-  const normalize = (value: string | null | undefined): string =>
-    (value ?? "").toLowerCase().replace(/\s+/g, "").trim();
-  const isVorLike = (v: Vehicle) => !!(v.IsVor || v.LiveDefects);
+  // const normalize = (value: string | null | undefined): string =>
+  //   (value ?? "").toLowerCase().replace(/\s+/g, "").trim();
+  //const isVorLike = (v: Vehicle) => !!(v.IsVor || v.LiveDefects);
 
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
