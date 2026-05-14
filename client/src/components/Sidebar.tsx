@@ -30,8 +30,6 @@ interface Vehicle {
   MotDueDate?: string;
 }
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 // Parse "YYYY-MM-DD" safely as local midnight, also supports ISO strings
 // const parseDueMs = (s?: string): number => {
 //   if (!s) return NaN;
