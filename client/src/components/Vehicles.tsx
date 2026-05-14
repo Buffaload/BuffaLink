@@ -74,6 +74,12 @@ const isDatePast = (dateString: string) => {
   return date < today; // Returns true if the date is in the past
 };
 
+const hasAssetName = (
+  v: { assetName?: string }
+): v is { assetName: string } => {
+  return typeof v.assetName === "string" && v.assetName.length > 0;
+};
+
 // Helper function for percentage calculation and color coding for service/MOT due dates
 const getProgressColorClass = (percentage: number) => {
   if (percentage < 33.33) return "progress-red";
@@ -572,7 +578,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
   // const TIPPER_ALERT_MODE: TipperAlertMode = "breathe";
 
   const getTipperAlertClass = (
-    vehicle: Vehicle,
+    vehicle: {
+      eventType?: string | null;
+      date?: string | null;
+      IsVor?: boolean;
+    },
     filterOption: string,
     now: number
   ) => {
@@ -580,9 +590,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
     if (filterOption !== "Tippers") return "";
 
     const isDriving = (vehicle.eventType || "").toLowerCase() === "driving";
-    const lastMs = adjustedMs
-      ? adjustedMs(vehicle.date)
-      : new Date(vehicle.date).getTime();
+    const lastMs = vehicle.date
+        ? adjustedMs(vehicle.date)
+        : NaN;
     const timeStopped = now - lastMs;
 
     if (isDriving || timeStopped <= 0) return ""; // moving → nothing
@@ -597,12 +607,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
   };
 
   // Function to toggle the Night-Out status of a vehicle
-  const toggleNightOut = async (vehicle: Vehicle) => {
-    const previousState = vehicle.isNightOut; // Save the previous state
-    const updatedState = !vehicle.isNightOut; // Toggle state
+  const toggleNightOut = async (
+    vehicle: {
+      assetName: string;
+      isNightOut?: boolean;
+    }
+  ) => {
+    const previousState = vehicle.isNightOut;
+    const updatedState = !vehicle.isNightOut;
 
-    // Optimistically update the toggle state
-    queryClient.setQueryData(["vehicles"], (old: Vehicle[] | undefined) =>
+    queryClient.setQueryData(["vehicles"], (old: any[] | undefined) =>
       old
         ? old.map((v) =>
             v.assetName === vehicle.assetName
@@ -619,24 +633,21 @@ const Vehicles: React.FC<VehiclesProps> = ({
         )}/night-out`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ isNightOut: !vehicle.isNightOut }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isNightOut: updatedState }),
         }
       );
 
-      if (response.ok) {
-        queryClient.invalidateQueries({ queryKey: ["vehicles"] }); //Refetch vehicles after toggle
-      } else {
+      if (!response.ok) {
         throw new Error("Failed to toggle Night-Out status");
       }
+
+      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
     } catch (error) {
       console.error("Error toggling Night-Out status:", error);
-      alert("Something went wrong while toggling Night-Out status.");
 
-      // Revert the optimistic update in case of an error
-      queryClient.setQueryData(["vehicles"], (old: Vehicle[] | undefined) =>
+      // rollback
+      queryClient.setQueryData(["vehicles"], (old: any[] | undefined) =>
         old
           ? old.map((v) =>
               v.assetName === vehicle.assetName
@@ -805,7 +816,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
               // Display Dashboard wizard on all pages other than Map/Kiosk mode
 
               <li
-                key={vehicle.id || vehicle.assetName}
+                key={vehicle.assetName}
                 className={`vehicle-card ${vorSkin} ${
                   vehicle.isNightOut ? "night-out" : ""
                 } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
@@ -836,7 +847,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         <input
                           type="checkbox"
                           checked={!!vehicle.isNightOut}
-                          onChange={() => toggleNightOut(vehicle)}
+                          onChange={() => {
+                              if (hasAssetName(vehicle)) {
+                                toggleNightOut(vehicle);
+                              }
+                          }}
                         />
                         <span className="toggle-slider"></span>
                       </label>
@@ -847,7 +862,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <b className="vehicle-status">{vehicle.eventType}</b>
                     <br />
                     <span className="vehicle-time-since-update">
-                      {getTimeSinceUpdate(vehicle.date)}
+                      {vehicle.date ? getTimeSinceUpdate(vehicle.date) : NaN}
                     </span>
                   </p>
                   <br />
@@ -929,8 +944,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <p className="vehicle-subheading">
                     Location:{" "}
                     <span className="vehicle-location">
-                      {vehicle.locationName ||
-                        vehicle.formattedAddress ||
+                      {vehicle.locationName ??
+                        vehicle.formattedAddress ??
                         "undefined"}
                     </span>
                   </p>
