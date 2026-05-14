@@ -33,21 +33,13 @@ interface Vehicle {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Parse "YYYY-MM-DD" safely as local midnight, also supports ISO strings
-const parseDueMs = (s?: string): number => {
-  if (!s) return NaN;
-  const t = s.trim();
-  if (!t) return NaN;
-  const d = t.includes("T") ? new Date(t) : new Date(`${t}T00:00:00`);
-  return d.getTime();
-};
-
-const daysUntil = (s?: string): number | null => {
-  const dueMs = parseDueMs(s);
-  if (Number.isNaN(dueMs)) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
-};
+// const parseDueMs = (s?: string): number => {
+//   if (!s) return NaN;
+//   const t = s.trim();
+//   if (!t) return NaN;
+//   const d = t.includes("T") ? new Date(t) : new Date(`${t}T00:00:00`);
+//   return d.getTime();
+// };
 
 // const isCriticalAlert = (v: Vehicle): boolean => {
 //   // "Not in a depot"
@@ -105,14 +97,6 @@ const Sidebar: React.FC<{
     refetchInterval: 30000, // Poll every 30 sec
     staleTime: 60000, // Data is fresh for 1 minute
   });
-
-  // Helper function to parse timestamps with BST fix
-  const adjustedMs = (s: string): number => {
-    if (!s) return NaN;
-    const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
-    const BST_OFFSET_MS = 60 * 60 * 1000; // 1 hour for BST
-    return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
-  };
 
   // Calculate counts for badges
   const counts = useMemo(() => {

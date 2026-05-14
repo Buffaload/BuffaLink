@@ -154,9 +154,9 @@ const getDueProgress = (dateString: string): DueProgress | null => {
 };
 
 // Flip this to false when BST ends
-const APPLY_BST_FIX = true;
+//const APPLY_BST_FIX = true;
 //const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+//const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Add 1h only for "naive" timestamps (no timezone in the string)
 // const adjustedMs = (s: string): number => {
@@ -183,14 +183,6 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
   result += `${minutes} minutes ago`;
 
   return result;
-};
-
-const parseDueMs = (s?: string): number => {
-  if (!s) return NaN;
-  const t = s.trim();
-  if (!t) return NaN;
-  const d = t.includes("T") ? new Date(t) : new Date(`${t}T00:00:00`);
-  return d.getTime();
 };
 
 // const daysUntil = (s?: string): number | null => {

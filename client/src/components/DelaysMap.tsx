@@ -110,20 +110,9 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       activeKioskPill === pill ? "is-active" : "is-inactive"
     }`;
   
-  type VehicleCategory = "nightOut" | "maintenance" | "depot" | "services" | "other";
+  // type VehicleCategory = "nightOut" | "maintenance" | "depot" | "services" | "other";
 
   // const normalise = (value?: string) => (value ?? "").trim();
-
-  const getVehicleCategory = useCallback(
-    (v: Vehicle, nowMs: number): VehicleCategory => {
-      if (matchesFilter(v, "Night-Out", [], nowMs)) return "nightOut";
-      if (matchesFilter(v, "Maintenance", [], nowMs)) return "maintenance";
-      if (matchesFilter(v, "Depots", [], nowMs)) return "depot";
-      if (matchesFilter(v, "Services", [], nowMs)) return "services";
-      return "other";
-    },
-    []
-  );
 
   const kioskVehicleBuckets = useMemo(() => {
     const now = Date.now();
