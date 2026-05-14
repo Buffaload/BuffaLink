@@ -220,7 +220,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   
   // Helpers for filtering, searching, and sorting
-  const normalize = (value?: string) =>
+  const normalize = (value: string | null | undefined): string =>
     (value ?? "").toLowerCase().replace(/\s+/g, "").trim();
   const isVorLike = (v: Vehicle) => !!(v.IsVor || v.LiveDefects);
 
@@ -410,7 +410,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     }
 
     // Search
-    const normalize = (value?: string) =>
+    const normalize = (value: string | null | undefined): string =>
       (value ?? "").toLowerCase().replace(/\s+/g, "").trim();
     const q = normalize(searchTerm);
     if (q) {
