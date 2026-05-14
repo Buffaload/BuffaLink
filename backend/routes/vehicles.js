@@ -450,8 +450,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
             const p = posByVin.get(v.vin);
             if (!p) return null;
             const gnss = p.gnssPosition;
-            if (!gnss || gnss.latitude == null || gnss.longitude == null) return null;
-            const speed = Number(p.wheelBasedSpeed ?? gnss.speed ?? 0);
+            if (!gnss || gnss.latitude == null || gnss.longitude == null) return null; 
+            const rawSpeed = p.wheelBasedSpeed ?? gnss.speed ?? 0;
+            const speed = Number(rawSpeed);
+            // Volvo feeds often jitter around 0 when stationary; use a small threshold.
+            const MOVING_THRESHOLD = 1;
+            const isMoving = Number.isFinite(speed) && speed > MOVING_THRESHOLD;
             const reg = v?.volvoGroupVehicle?.registrationNumber;
             const name = v.customerVehicleName;
 
@@ -460,8 +464,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
-              eventType: speed > 0 ? "driving" : "stopped",
-              status: speed > 0 ? "In Transit" : "Available",
+              eventType: isMoving ? "driving" : "stopped",
+              status: isMoving ? "In Transit" : "Available",
               latitude: gnss.latitude,
               longitude: gnss.longitude,
               // Prefer GNSS timestamp; fallback to received/created times

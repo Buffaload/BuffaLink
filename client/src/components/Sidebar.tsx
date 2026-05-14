@@ -49,20 +49,20 @@ const daysUntil = (s?: string): number | null => {
   return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
 };
 
-const isCriticalAlert = (v: Vehicle): boolean => {
-  // "Not in a depot"
-  if (v.locationGroupName === "Buffaload") return false;
+// const isCriticalAlert = (v: Vehicle): boolean => {
+//   // "Not in a depot"
+//   if (v.locationGroupName === "Buffaload") return false;
 
-  const serviceDays = daysUntil(v.ServiceDueDate);
-  const motDays = daysUntil(v.MotDueDate);
+//   const serviceDays = daysUntil(v.ServiceDueDate);
+//   const motDays = daysUntil(v.MotDueDate);
 
-  // Critical if due in <= 5 days (includes overdue negatives)
-  const threshold = 5;
-  const serviceCritical = serviceDays !== null && serviceDays <= threshold;
-  const motCritical = motDays !== null && motDays <= threshold;
+//   // Critical if due in <= 5 days (includes overdue negatives)
+//   const threshold = 5;
+//   const serviceCritical = serviceDays !== null && serviceDays <= threshold;
+//   const motCritical = motDays !== null && motDays <= threshold;
 
-  return serviceCritical || motCritical;
-};
+//   return serviceCritical || motCritical;
+// };
 
 const Sidebar: React.FC<{
   onFilterChange: (filter: string) => void;

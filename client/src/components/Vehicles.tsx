@@ -153,11 +153,11 @@ const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Add 1h only for "naive" timestamps (no timezone in the string)
-const adjustedMs = (s: string): number => {
-  if (!s) return NaN;
-  const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
-  return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
-};
+// const adjustedMs = (s: string): number => {
+//   if (!s) return NaN;
+//   const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
+//   return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
+// };
 
 // Helper function to calculate duration since last status change
 const getTimeSinceUpdate = (lastUpdated: string) => {
@@ -195,19 +195,19 @@ const daysUntil = (s?: string): number | null => {
   return Math.floor((dueMs - today.getTime()) / MS_PER_DAY);
 };
 
-const isCriticalAlert = (v: Vehicle): boolean => {
-  // Not in a depot
-  if (v.locationGroupName === "Buffaload") return false;
+// const isCriticalAlert = (v: Vehicle): boolean => {
+//   // Not in a depot
+//   if (v.locationGroupName === "Buffaload") return false;
 
-  const threshold = 5;
-  const serviceDays = daysUntil(v.ServiceDueDate);
-  const motDays = daysUntil(v.MotDueDate);
+//   const threshold = 5;
+//   const serviceDays = daysUntil(v.ServiceDueDate);
+//   const motDays = daysUntil(v.MotDueDate);
 
-  const serviceCritical = serviceDays !== null && serviceDays <= threshold;
-  const motCritical = motDays !== null && motDays <= threshold;
+//   const serviceCritical = serviceDays !== null && serviceDays <= threshold;
+//   const motCritical = motDays !== null && motDays <= threshold;
 
-  return serviceCritical || motCritical;
-};
+//   return serviceCritical || motCritical;
+// };
 
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,

@@ -127,51 +127,41 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
 
   const kioskVehicleBuckets = useMemo(() => {
     const now = Date.now();
-    // Keep existing kiosk intent: HGVs only, exclude tippers
-    const baseCandidates = vehicles.filter(
-      (v) => v.assetType === "HGV" && v.assetGroupName !== "TFP Tipper Operation"
-    );
 
-    const buckets: Record<VehicleCategory, Vehicle[]> = {
-      nightOut: [],
-      maintenance: [],
-      depot: [],
-      services: [],
-      other: [],
-    };
+    // Use Dashboard-equivalent rules directly
+    const services = vehicles.filter((v) => matchesFilter(v, "Services", [], now));
+    const nightOut = vehicles.filter((v) => matchesFilter(v, "Night-Out", [], now));
+    const depots = vehicles.filter((v) => matchesFilter(v, "Depots", [], now));
+    const maintenance = vehicles.filter((v) => matchesFilter(v, "Maintenance", [], now));
 
-    for (const v of baseCandidates) {
-      buckets[getVehicleCategory(v, now)].push(v);
-    }
-    
-    const servicesCount = buckets.services.length;
-    const nightOutCount = buckets.nightOut.length;
-    const depotsCount = buckets.depot.length;
-    const maintenanceCount = buckets.maintenance.length;
-    const base =
-      ([] as Vehicle[]).concat(
-        buckets.services,
-        buckets.nightOut,
-        buckets.depot,
-        buckets.maintenance
-      );
+    // TOTAL = union of the pill buckets (deduped)
+    const seen = new Set<string>();
+    const keyOf = (v: Vehicle) => String(v.id ?? v.assetName ?? "");
+    const total = [...services, ...nightOut, ...depots, ...maintenance].filter((v) => {
+      const k = keyOf(v);
+      if (!k) return true;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
 
     return {
       counts: {
-        total:
-          servicesCount +
-          nightOutCount +
-          depotsCount +
-          maintenanceCount,
-        services: servicesCount,
-        nightOut: nightOutCount,
-        depots: depotsCount,
-        maintenance: maintenanceCount,
+        total: total.length,
+        services: services.length,
+        nightOut: nightOut.length,
+        depots: depots.length,
+        maintenance: maintenance.length,
       },
-      base,
-      buckets,
+      base: total,
+      buckets: {
+        services,
+        nightOut,
+        depot: depots,
+        maintenance,
+      },
     };
-  }, [vehicles, getVehicleCategory]);
+  }, [vehicles]);
 
   // Destructure counts for easy access in the component
   const { counts: kioskCounts } = kioskVehicleBuckets;
@@ -209,7 +199,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     // Kiosk mode: plot only the selected category
     switch (activeKioskPill) {
       case "total":
-        // Plot all base vehicles that your kiosk counts represent (HGVs excluding tippers)
+        // Plot the total of all pill categories
         return kioskVehicleBuckets.base;
       case "services":
         return kioskVehicleBuckets.buckets.services;
