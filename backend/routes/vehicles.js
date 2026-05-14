@@ -27,6 +27,12 @@ const pick = (obj, keys) =>
     return acc;
   }, {});
 
+const unwrapAxiosError = (err) => ({
+  message: err?.message,
+  status: err?.response?.status,
+  data: err?.response?.data,
+});
+
 /**
  * Fetch all pages for Volvo endpoints that paginate via `moreDataAvailable` + `lastVin`.
  */
@@ -463,22 +469,18 @@ router.get("/", auth, diagnostics, async (req, res) => {
         useMockData,
         volvoVehiclesReq: volvoVehiclesResponse.status,
         volvoPositionsReq: volvoPositionsResponse.status,
-        // counts
+        volvoVehiclesError:
+          volvoVehiclesResponse.status === "rejected"
+            ? unwrapAxiosError(volvoVehiclesResponse.reason)
+            : null,
+        volvoPositionsError:
+          volvoPositionsResponse.status === "rejected"
+            ? unwrapAxiosError(volvoPositionsResponse.reason)
+            : null,
         volvoVehiclesCount: volvoVehicles?.length ?? 0,
         volvoPositionsCount: volvoPositions?.length ?? 0,
         volvoMappedCount: volvoMapped?.length ?? 0,
-        // auth sanity
         volvoAuthPresent: !!(volvoUsername && volvoPassword),
-        // samples (first 2) to diagnose shape quickly
-        volvoVehiclesSample: (volvoVehicles ?? []).slice(0, 2).map(v =>
-          pick(v, ["vin", "customerVehicleName", "brand", "type"])
-        ),
-        volvoPositionsSample: (volvoPositions ?? []).slice(0, 2).map(p => ({
-          vin: p.vin,
-          hasGnss: !!p.gnssPosition,
-          gnss: p.gnssPosition ? pick(p.gnssPosition, ["latitude", "longitude", "positionDateTime"]) : null,
-          wheelBasedSpeed: p.wheelBasedSpeed,
-        })),
       };
 
       vehicles = [
