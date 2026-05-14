@@ -872,7 +872,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <b className="vehicle-status">{vehicle.eventType}</b>
                     <br />
                     <span className="vehicle-time-since-update">
-                      {vehicle.date ? getTimeSinceUpdate(vehicle.date) : NaN}
+                      {vehicle.date ? getTimeSinceUpdate(vehicle.date) : "--- : --- : ---"}
                     </span>
                   </p>
                   <br />
@@ -880,7 +880,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 </span>
                 <span className="vehicle-card-main">
                   <br />
-                  {serviceProgress && (
+                  {serviceProgress ? (
                     <div className="due-progress-block">
                       <div className="due-progress-row">
                         <span className="due-progress-label">Service health</span>
@@ -895,23 +895,46 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         />
                       </div>
                     </div>
+                  ) : (
+                    <div className="due-progress-block">
+                      <div className="due-progress-row">
+                        <span className="due-progress-label">Service health</span>
+                        <span className="due-progress-days"></span>
+                      </div>
+                      <div className="due-progress-bar">
+                        <div
+                          className={`due-progress-bar-inner`}
+                          style={{ width: `0` }}
+                        />
+                      </div>
+                    </div>
                   )}
-                  <p className="vehicle-subheading"
-                    style={{
-                      color: isDatePast(vehicle.ServiceDueDate ?? "")
-                        ? "red"
-                        : "#555",
-                    }}
-                  >
-                    <span className="vehicle-due-span">Due:</span>{" "}
-                    <b className="vehicle-due-dates">
-                      {vehicle.ServiceDueDate
-                      ? formatDate(vehicle.ServiceDueDate)
-                      : "N/A"}
-                    </b>
-                  </p>
+                  {serviceProgress ? (
+                    <p className="vehicle-subheading"
+                      style={{
+                        color: isDatePast(vehicle.ServiceDueDate ?? "")
+                          ? "red"
+                          : "#555",
+                      }}
+                    >
+                      <span className="vehicle-due-span">Due:</span>{" "}
+                      <b className="vehicle-due-dates">
+                        {vehicle.ServiceDueDate
+                        ? formatDate(vehicle.ServiceDueDate)
+                        : "N/A"}
+                      </b>
+                    </p>
+                  ) : (
+                    <p className="vehicle-subheading"
+                      style={{
+                        color: "#555",
+                      }}
+                    >
+                      <span className="vehicle-due-span">Date not available</span>
+                    </p>
+                  )}
                   <br />
-                  {motProgress && (
+                  {motProgress ? (
                     <div className="due-progress-block">
                       <div className="due-progress-row">
                         <span className="due-progress-label">MOT health</span>
@@ -926,19 +949,42 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         />
                       </div>
                     </div>
+                  ) : (
+                    <div className="due-progress-block">
+                      <div className="due-progress-row">
+                        <span className="due-progress-label">MOT health</span>
+                        <span className="due-progress-days"></span>
+                      </div>
+                      <div className="due-progress-bar">
+                        <div
+                          className={`due-progress-bar-inner`}
+                          style={{ width: `0` }}
+                        />
+                      </div>
+                    </div>
                   )}
-                  <p className="vehicle-subheading"
-                    style={{
-                      color: isDatePast(vehicle.MotDueDate ?? "")
-                        ? "red"
-                        : "#555",
-                    }}
-                  >
-                    <span className="vehicle-due-span">Due:</span>{" "}
-                    <b className="vehicle-due-dates">
-                      {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
-                    </b>
-                  </p>
+                  {motProgress ? (
+                    <p className="vehicle-subheading"
+                      style={{
+                        color: isDatePast(vehicle.MotDueDate ?? "")
+                          ? "red"
+                          : "#555",
+                      }}
+                    >
+                      <span className="vehicle-due-span">Due:</span>{" "}
+                      <b className="vehicle-due-dates">
+                        {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+                      </b>
+                    </p>
+                  ) : (
+                    <p className="vehicle-subheading"
+                      style={{
+                        color: "#555",
+                      }}
+                    >
+                      <span className="vehicle-due-span">Date not available</span>
+                    </p>
+                  )}
                   <br />
                   {/* Conditionally show VOR and Live Defects only if true */}
                   {vehicle.LiveDefects && (
