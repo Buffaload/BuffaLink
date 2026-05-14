@@ -368,9 +368,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             params: { latestOnly: true },
             accept: VOLVO_ACCEPT.positions,
             extractItems: (data) => data?.vehiclePositionResponse?.vehiclePositions,
-            getNextPageParam: ({ items }) => ({
-                starttime: items?.[items.length - 1]?.receivedDateTime, // per Volvo description
-              }),
+            getNextPageParam: null,
           }),
           VehicleMetadata.find({}),
         ]);
