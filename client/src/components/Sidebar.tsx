@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { countFor, isCriticalAlert } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import {
   Truck,
   Fuel,
@@ -134,6 +135,18 @@ const Sidebar: React.FC<{
     setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
   };
 
+  const location = useLocation();
+
+  useEffect(() => {
+    // Only close automatically on small viewports
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+    if (isMobile && isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   const forceScrollToTop = () => {
     // Hard reset
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -149,8 +162,12 @@ const Sidebar: React.FC<{
       <button
         className={`hamburger-menu ${isSidebarOpen ? "open" : ""}`}
         onClick={toggleSidebar}
+        aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
+        aria-expanded={isSidebarOpen}
       >
-        &#9776;
+        <span />
+        <span />
+        <span />
       </button>
 
       <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
@@ -414,16 +431,6 @@ const Sidebar: React.FC<{
               <span className={`sidebar-link-meta ${counts.criticalCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>{counts.criticalCount}</span>
             </button>
           </li>
-          {/* <li>
-            <button
-              className={`sidebar-link ${
-                filterOption === "Debrief" ? "active" : ""
-              }`}
-              onClick={() => handleButtonClick("Debrief")}
-            >
-              Debrief
-            </button>
-          </li> */}
           {userRole === "admin" && (
             <>
               <li className="sidebar-section-heading">CONTRACTS</li>
