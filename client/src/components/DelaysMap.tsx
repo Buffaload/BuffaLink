@@ -273,6 +273,15 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   }, [createClusterIcon]);
 
   useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Let layout settle, then force Leaflet to recalc size
+    requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+    });
+  }, [isKioskMode, activeKioskPill]);
+
+  useEffect(() => {
     // keep refs in sync with latest React state
     activeKioskPillRef.current = activeKioskPill;
     isKioskModeRef.current = isKioskMode;

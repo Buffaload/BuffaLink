@@ -5,19 +5,18 @@
 .location-services-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 140px);
+  flex: 1 1 auto;
+  min-height: 0; /* critical for flex children */
   width: 100%;
   background: #f9fafb;
   border-radius: 16px;
   padding: 12px;
-  margin-top: -10px;
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
   color: #1f2937;
 }
 
 .dashboard-content--kiosk .location-services-container {
-  height: calc(100vh - 100px);  /* kiosk */
-  margin-top: -30px;
+  flex: 1 1 auto;
 }
 
 .highlight-figures-map {
@@ -135,12 +134,12 @@
 }
 
 #map {
-  flex: 1;
+  flex: 1 1 auto;
   width: 100%;
+  min-height: 0;
   border-radius: 14px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
   z-index: 0;
-  min-height: 300px;
 }
 
 .location-services-header h3 {
