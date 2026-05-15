@@ -204,51 +204,23 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return window.scrollY || document.documentElement.scrollTop || 0;
   };
 
-  // Scroll to top button
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      window.scrollBy({ top: -140, left: 0, behavior: "auto" });
+    });
+  };
+
   useEffect(() => {
     const onScroll = () => {
-      setShowBackToTop(getActiveScrollTop() > 400);
+      setShowBackToTop(window.scrollY > 300);
     };
 
     onScroll();
-
-    // Listen to window scroll always
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    // Also listen to container scroll (if it exists)
-    const el = scrollRef.current;
-    el?.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      el?.removeEventListener("scroll", onScroll);
-    };
-  }, [filterOption]);
-
-  const scrollToTop = () => {
-    const el = scrollRef.current;
-    if (el) {
-      el.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  // Reset scroll position when dashboard view changes
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) {
-      window.scrollTo({ top: 0, behavior: "auto" });
-      return;
-    }
-
-    const anchor = el.querySelector<HTMLElement>("[data-scroll-top-anchor]");
-    if (anchor) {
-      anchor.scrollIntoView({ behavior: "auto", block: "start" });
-    } else {
-      el.scrollTo({ top: -140, behavior: "auto" });
-    }
-  }, [filterOption]);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {

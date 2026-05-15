@@ -134,6 +134,16 @@ const Sidebar: React.FC<{
     setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
   };
 
+  const forceScrollToTop = () => {
+    // Hard reset
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    // Compensate for dynamic padding / header overlap
+    requestAnimationFrame(() => {
+      window.scrollBy({ top: -140, left: 0, behavior: "auto" });
+    });
+  };
+
   return (
     <>
       <button
@@ -158,7 +168,10 @@ const Sidebar: React.FC<{
               className={`sidebar-link ${
                 filterOption === "HGVs" ? "active" : ""
               }`}
-              onClick={() => handleButtonClick("HGVs")}
+              onClick={() => {
+                forceScrollToTop();
+                handleButtonClick("HGVs");
+              }}
             >
               <span className="sidebar-link-text"><Truck className="sidebar-icon" />HGVs</span>
               <span className="sidebar-link-meta sidebar-value--grey">{counts.hgvsCount}</span>
@@ -171,7 +184,10 @@ const Sidebar: React.FC<{
                   ? "active"
                   : ""
               }`}
-              onClick={() => handleButtonClick("Services")}
+              onClick={() => {
+                forceScrollToTop();
+                handleButtonClick("Services");
+              }}
             >            
               <span className="sidebar-link-text">
                 <Fuel className="sidebar-icon" />
@@ -180,7 +196,7 @@ const Sidebar: React.FC<{
               <span className="sidebar-link-meta sidebar-chevron">
                 {filterOption === "Services" ? (
                     <ChevronUp size={16} />
-                   ) : ( 
+                  ) : ( 
                     <ChevronDown size={16} /> 
                   )}
               </span>
@@ -193,8 +209,11 @@ const Sidebar: React.FC<{
                 <button
                   className={`sidebar-link ${
                     activeButton === "Night-Out" ? "active" : ""
-                  }`}
-                  onClick={() => handleSubTabClick("Night-Out")}
+                  }`}            
+                  onClick={() => {
+                    forceScrollToTop();
+                    handleSubTabClick("Night-Out");
+                  }}
                   style={{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
@@ -220,7 +239,10 @@ const Sidebar: React.FC<{
                   className={`sidebar-link ${
                     activeButton === "Delays" ? "active" : ""
                   }`}
-                  onClick={() => handleSubTabClick("Delays")}
+                  onClick={() => {
+                    forceScrollToTop();
+                    handleSubTabClick("Delays");
+                  }}
                   style={{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
@@ -252,6 +274,7 @@ const Sidebar: React.FC<{
               }`}
               onClick={() => {
                 // Clear all subtabs when clicking "Depots"
+                forceScrollToTop();
                 handleButtonClick("Depots");
                 setSelectedDepots([]);
                 onDepotChange([]); // Notify parent about cleared depots
@@ -279,7 +302,10 @@ const Sidebar: React.FC<{
                   className={`sidebar-link ${
                     selectedDepots.includes("Ellington") ? "active" : ""
                   }`}
-                  onClick={() => handleDepotClick("Ellington")}
+                  onClick={() => {
+                    forceScrollToTop();
+                    handleDepotClick("Ellington");
+                  }}
                   style={{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
@@ -305,7 +331,10 @@ const Sidebar: React.FC<{
                   className={`sidebar-link ${
                     selectedDepots.includes("Crewe") ? "active" : ""
                   }`}
-                  onClick={() => handleDepotClick("Crewe")}
+                  onClick={() => {
+                    forceScrollToTop();
+                    handleDepotClick("Crewe");
+                  }}
                   style={{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
@@ -331,7 +360,10 @@ const Sidebar: React.FC<{
                   className={`sidebar-link ${
                     selectedDepots.includes("Skelmersdale") ? "active" : ""
                   }`}
-                  onClick={() => handleDepotClick("Skelmersdale")}
+                  onClick={() => {
+                    forceScrollToTop();
+                    handleDepotClick("Skelmersdale");
+                  }}
                   style={{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
@@ -359,7 +391,10 @@ const Sidebar: React.FC<{
               className={`sidebar-link ${
                 filterOption === "Maintenance" ? "active" : ""
               }`}
-              onClick={() => handleButtonClick("Maintenance")}
+              onClick={() => {
+                forceScrollToTop();
+                handleButtonClick("Maintenance");
+              }}
             >
               <span className="sidebar-link-text"><Wrench className="sidebar-icon" />Maintenance</span>
               <span className="sidebar-link-meta sidebar-value--grey">{counts.maintenanceCount}</span>
@@ -370,7 +405,10 @@ const Sidebar: React.FC<{
               className={`sidebar-link ${
                 filterOption === "Critical" ? "active" : ""
               }`}
-              onClick={() => handleButtonClick("Critical")}
+              onClick={() => {
+                forceScrollToTop();
+                handleButtonClick("Critical");
+              }}
             >
               <span className="sidebar-link-text"><TriangleAlert className="sidebar-icon" />Critical Alerts</span>
               <span className={`sidebar-link-meta ${counts.criticalCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>{counts.criticalCount}</span>
@@ -394,7 +432,10 @@ const Sidebar: React.FC<{
                   className={`sidebar-link ${
                     filterOption === "Tippers" ? "active" : ""
                   }`}
-                  onClick={() => handleButtonClick("Tippers")}
+                  onClick={() => {
+                    forceScrollToTop();
+                    handleButtonClick("Tippers");
+                  }}
                 >
                   <span className="sidebar-link-text"><FileText className="sidebar-icon" />Tippers</span>
                   <span className="sidebar-link-meta sidebar-value--grey">{counts.tippersCount}</span>
