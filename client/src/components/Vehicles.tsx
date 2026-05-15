@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -184,22 +184,51 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [sortOption, setSortOption] = useState<"stoppedTime" | "reg" | "location">("stoppedTime");
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
-
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  
   useEffect(() => {
-    const onScroll = () => {
-      // Show button once user has scrolled down a bit
-      setShowBackToTop(window.scrollY > 400);
+    const el = scrollRef.current;
+
+    const getScrollTop = () => {
+      // If the container scrolls, use that; otherwise fall back to window.
+      if (el) return el.scrollTop;
+      return window.scrollY || document.documentElement.scrollTop || 0;
     };
 
-    onScroll(); // initialise on mount
-    window.addEventListener("scroll", onScroll, { passive: true });
+    const onScroll = () => {
+      setShowBackToTop(getScrollTop() > 400);
+    };
 
-    return () => window.removeEventListener("scroll", onScroll);
+    onScroll();
+
+    if (el) {
+      el.addEventListener("scroll", onScroll, { passive: true });
+      return () => el.removeEventListener("scroll", onScroll);
+    } else {
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
+    }
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
+
+  // Reset scroll position when dashboard view changes
+  useEffect(() => {
+    const el = scrollRef.current;
+
+    if (el) {
+      el.scrollTo({ top: 0, behavior: "auto" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [filterOption]);
 
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
@@ -411,7 +440,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }
 
   return (
-    <div className="vehicle-container">
+    <div className="vehicle-container" ref={scrollRef}>
       {(filterOption !== "DelaysMap" && !isKioskMode) ? (
         <div className="vehicles-wizard" aria-label="Dashboard tools">
           {/* VOR only (styled like a pill) */}
