@@ -4,12 +4,20 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  --app-header-height: 120px;
+}
+
+/* kiosk mode header height */
+.dashboard-container.kiosk-mode {
+  --app-header-height: 80px;
 }
 
 .dashboard-content {
   flex-grow: 1;
-  overflow: visible;
+  overflow: hidden;
   padding: 20px;
+  min-height: 0; /* allow child scroller to work */
 }
 
 .app-header {

@@ -2,10 +2,15 @@
 .vehicle-container {
   padding: 20px;
   max-width: 1200px;
-  min-height: 100%;
   margin: 0 auto;
   text-align: center;
-  overflow: visible;
+  height: calc(100% - var(--app-header-height, 120px));
+  margin-top: var(--app-header-height, 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 /* Dashboard Wizard (VOR / Sort / Search) */

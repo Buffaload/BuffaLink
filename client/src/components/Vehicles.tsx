@@ -187,22 +187,32 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-    requestAnimationFrame(() => {
-      window.scrollBy({ top: -140, left: 0, behavior: "auto" });
-    });
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
     const onScroll = () => {
-      setShowBackToTop(window.scrollY > 300);
+      setShowBackToTop(el.scrollTop > 300);
     };
 
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
 
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Ensure each dashboard view starts at the true top of the vehicle container
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    el.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [filterOption, isKioskMode]);
 
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
