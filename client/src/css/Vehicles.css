@@ -925,6 +925,16 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .depots-info-banner,
+  .critical-info-banner {
+    left: 50vw;
+  }
+
+  .lucide-triangle-alert {
+    width: 25px;
+    height: 25px;
+  }
+
   .vehicle-list {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }

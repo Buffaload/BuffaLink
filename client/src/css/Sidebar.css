@@ -263,7 +263,6 @@
   width: 44px;
   height: 44px;
   padding: 0;
-  background: rgba(11, 28, 45, 0.78);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -284,9 +283,7 @@
 /* Slide the button with the sidebar so it feels attached */
 .hamburger-menu.open {
   /* Move to sit near the sidebar’s right edge */
-  transform: translateX(calc(var(--sidebar-width) - 62px));
-  background: rgba(11, 28, 45, 0.9);
-  border-color: rgba(40, 167, 69, 0.35); /* subtle BuffaLink green accent */
+  transform: translateX(calc(var(--sidebar-width)));
 }
 
 /* Hamburger bars */
@@ -294,11 +291,10 @@
   position: absolute;
   width: 22px;
   height: 2px;
-  background-color: #ffffff;
+  background-color: rgba(11, 28, 45, 0.78);
   border-radius: 2px;
   transition: transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
               opacity 200ms ease;
-
 }
 
 /* Top bar */
@@ -347,6 +343,12 @@
 
   .dashboard-content {
     margin-left: 0;
+  }
+}
+
+@media screen and (min-width: 769px) {
+  .hamburger-menu {
+    display: none;
   }
 }
 

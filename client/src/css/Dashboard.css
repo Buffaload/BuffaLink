@@ -168,6 +168,10 @@
     gap: 12px;
   }
 
+  .dashboard-title {
+    margin-top: -5px;
+  }
+
   .dashboard-title-suffix {
     display: none !important;
   }
