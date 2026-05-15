@@ -186,29 +186,44 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [showBackToTop, setShowBackToTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   
+  // Helper function to decide whether container is scrollable
+  const getActiveScrollTop = () => {
+    const el = scrollRef.current;
+    if (el) {
+      const style = window.getComputedStyle(el);
+      const overflowY = style.overflowY;
+      const canScroll = el.scrollHeight > el.clientHeight + 1;
+
+      // Only treat the container as the scroll host if it can actually scroll
+      if (canScroll && overflowY !== "visible") {
+        return el.scrollTop;
+      }
+    }
+
+    // Otherwise fall back to window scrolling
+    return window.scrollY || document.documentElement.scrollTop || 0;
+  };
+
+  // Scroll to top button
   useEffect(() => {
     const onScroll = () => {
-      const el = scrollRef.current;
-
-      const scrollTop = el
-        ? el.scrollTop
-        : window.scrollY || document.documentElement.scrollTop || 0;
-
-      setShowBackToTop(scrollTop > 400);
+      setShowBackToTop(getActiveScrollTop() > 400);
     };
 
-    // Run once on mount
     onScroll();
-    const el = scrollRef.current;
 
-    if (el) {
-      el.addEventListener("scroll", onScroll, { passive: true });
-      return () => el.removeEventListener("scroll", onScroll);
-    } else {
-      window.addEventListener("scroll", onScroll, { passive: true });
-      return () => window.removeEventListener("scroll", onScroll);
-    }
-  }, []);
+    // Listen to window scroll always
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    // Also listen to container scroll (if it exists)
+    const el = scrollRef.current;
+    el?.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      el?.removeEventListener("scroll", onScroll);
+    };
+  }, [filterOption]);
 
   const scrollToTop = () => {
     const el = scrollRef.current;
@@ -231,7 +246,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     if (anchor) {
       anchor.scrollIntoView({ behavior: "auto", block: "start" });
     } else {
-      el.scrollTo({ top: 0, behavior: "auto" });
+      el.scrollTo({ top: -140, behavior: "auto" });
     }
   }, [filterOption]);
 
