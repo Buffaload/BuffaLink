@@ -33,6 +33,69 @@ const unwrapAxiosError = (err) => ({
   data: err?.response?.data,
 });
 
+// Radius in meters for "at depot" detection.
+// 300–800m is typical depending on GPS jitter + depot footprint.
+const GEOFENCE_RADIUS_METERS = Number(process.env.GEOFENCE_RADIUS_METERS ?? 650);
+
+// Simple haversine distance (meters)
+const haversineMeters = (lat1, lon1, lat2, lon2) => {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371000; // earth radius meters
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// Add sites here (depots + maintenance locations)
+const GEOFENCE_SITES = [
+  {
+    key: "ELLINGTON",
+    name: "BUFFALOAD ELLINGTON",
+    group: "Buffaload",
+    latitude: 52.335571,
+    longitude: -0.294590,
+  },
+  {
+    key: "CREWE",
+    name: "BUFFALOAD CREWE",
+    group: "Buffaload",
+    latitude: 53.088139,
+    longitude: -2.420820,
+  },
+  {
+    key: "SKELMERSDALE",
+    name: "BUFFALOAD SKELMERSDALE",
+    group: "Buffaload",
+    latitude: 53.540878,
+    longitude: -2.786520,
+  },
+];
+
+// Returns the matching geofence site (or null) for given coordinates
+const matchGeofenceSite = (latitude, longitude) => {
+  if (latitude == null || longitude == null) return null;
+
+  let best = null;
+  let bestDist = Infinity;
+
+  for (const site of GEOFENCE_SITES) {
+    const d = haversineMeters(latitude, longitude, site.latitude, site.longitude);
+    if (d < bestDist) {
+      best = site;
+      bestDist = d;
+    }
+  }
+
+  if (best && bestDist <= GEOFENCE_RADIUS_METERS) {
+    return { ...best, distanceMeters: bestDist };
+  }
+  return null;
+};
+
 async function fetchVolvoPaged({
   axiosInstance,
   path,
@@ -458,6 +521,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
             const isMoving = Number.isFinite(speed) && speed > MOVING_THRESHOLD;
             const reg = v?.volvoGroupVehicle?.registrationNumber;
             const name = v.customerVehicleName;
+            const lat = gnss.latitude;
+            const lon = gnss.longitude;
+
+            // Geofence match (depots / maintenance)
+            const site = matchGeofenceSite(lat, lon);
 
             return {
               assetName: `[VOLVO] ${reg || name || v.vin}`,
@@ -466,13 +534,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
               assetGroupName: "HGVs",
               eventType: isMoving ? "driving" : "stopped",
               status: isMoving ? "In Transit" : "Available",
-              latitude: gnss.latitude,
-              longitude: gnss.longitude,
+              latitude: lat,
+              longitude: lon,
               // Prefer GNSS timestamp; fallback to received/created times
               date: gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
-              // Volvo response doesn’t include a human address in this spec
-              locationName: "Unknown location",
-              locationGroupName: null,
+              // If geofenced, set depot/maintenance name + group
+              locationName: site?.name ?? "Unknown location",
+              locationGroupName: site?.group ?? null,
             };
           })
           .filter(Boolean);
