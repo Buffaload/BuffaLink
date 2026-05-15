@@ -17,6 +17,7 @@
   flex-grow: 1;
   overflow: hidden;
   padding: 20px;
+  padding-top: 130px;
   min-height: 0; /* allow child scroller to work */
 }
 

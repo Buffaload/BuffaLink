@@ -192,21 +192,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
     el.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   };
 
-  useEffect(() => {
+  const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
 
-    const onScroll = () => {
-      setShowBackToTop(el.scrollTop > 300);
-    };
+    setShowBackToTop(el.scrollTop > 300);
+  };
 
-    // run once on mount
-    onScroll();
-    el.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-    };
+  useEffect(() => {
+    handleScroll(); // sync visibility on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Ensure each dashboard view starts at the true top of the vehicle container
@@ -425,7 +420,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   return (
     <>
-      <div className="vehicle-container" ref={scrollRef}>
+      <div 
+        className="vehicle-container" 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        >
         <div data-scroll-top-anchor />
         {(filterOption !== "DelaysMap" && !isKioskMode) ? (
           <div className="vehicles-wizard" aria-label="Dashboard tools">

@@ -273,13 +273,19 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   }, [createClusterIcon]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const el = document.getElementById("map");
+    if (!map || !el) return;
 
-    // Let layout settle, then force Leaflet to recalc size
-    requestAnimationFrame(() => {
-      mapRef.current?.invalidateSize();
-    });
-  }, [isKioskMode, activeKioskPill]);
+    // Ensure correct sizing on first paint
+    requestAnimationFrame(() => map.invalidateSize());
+
+    // Keep it responsive to any layout/viewport changes
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(el);
+
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     // keep refs in sync with latest React state
@@ -432,115 +438,117 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   }
 
   return (
-    <div className="location-services-container">
-      {(!isKioskMode) ? (
-        <div className="highlight-figures highlight-figures-map" aria-label="Vehicle highlights">
-          <span className="figure-pill figure-pill--red">
-            <span className="figure-dot figure-dot--red" aria-hidden="true" />
-            {filteredVehicles.length}{" "} Vehicle {" "}
-            {filteredVehicles.length === 1 ? "stop" : "stops"}
-          </span>
-        </div>
-      ) : (
-        <div className="highlight-figures highlight-figures-kiosk" aria-label="Vehicle highlights">
-          <div className="kiosk-figures--row">
-            <span className={`${getPillClass("total")} figure-pill--grey`}
-              onClick={() => handlePillClick("total")}
-              data-active={activeKioskPill === "total"}
-              role="button"
-              tabIndex={0}
-            >    
-              {activeKioskPill === "total" && !isCarouselPaused && (
-                <span
-                  key={pillProgressKey}
-                  className="figure-pill-progress"
-                  aria-hidden="true"
-                />
-              )}
-              <span className="figure-dot figure-dot--grey" aria-hidden="true" />
-              {kioskCounts.total}{" "}
-              {kioskCounts.total === 1 ? "Vehicle" : "Vehicles"}
-            </span>
-            <span className={`${getPillClass("services")} figure-pill--red`}
-              onClick={() => handlePillClick("services")}
-              data-active={activeKioskPill === "services"}
-              role="button"
-              tabIndex={0}
-            >
-              {activeKioskPill === "services" && !isCarouselPaused && (
-                <span
-                  key={pillProgressKey}
-                  className="figure-pill-progress"
-                  aria-hidden="true"
-                />
-              )}
+    <div className="map-viewport">
+      <div className="location-services-container">
+        {(!isKioskMode) ? (
+          <div className="highlight-figures highlight-figures-map" aria-label="Vehicle highlights">
+            <span className="figure-pill figure-pill--red">
               <span className="figure-dot figure-dot--red" aria-hidden="true" />
-              {kioskCounts.services}{" "} Services/Truckstops/Unknown {" "}
-            </span>
-            <span className={`${getPillClass("nightOut")} figure-pill--blue`}
-              onClick={() => handlePillClick("nightOut")}
-              data-active={activeKioskPill === "nightOut"}
-              role="button"
-              tabIndex={0}
-            >
-              {activeKioskPill === "nightOut" && !isCarouselPaused && (
-                <span
-                  key={pillProgressKey}
-                  className="figure-pill-progress"
-                  aria-hidden="true"
-                />
-              )}
-              <span className="figure-dot figure-dot--blue" aria-hidden="true" />
-              {kioskCounts.nightOut}{" "} Night-Out {" "}
-            </span>
-            <span className={`${getPillClass("depots")} figure-pill--green`}
-              onClick={() => handlePillClick("depots")}
-              data-active={activeKioskPill === "depots"}
-              role="button"
-              tabIndex={0}
-            >
-              {activeKioskPill === "depots" && !isCarouselPaused && (
-                <span
-                  key={pillProgressKey}
-                  className="figure-pill-progress"
-                  aria-hidden="true"
-                />
-              )}
-              <span className="figure-dot figure-dot--green" aria-hidden="true" />
-              {kioskCounts.depots}{" "} Depots {" "}
-            </span>
-            <span className={`${getPillClass("maintenance")} figure-pill--orange`}
-              onClick={() => handlePillClick("maintenance")}
-              data-active={activeKioskPill === "maintenance"}
-              role="button"
-              tabIndex={0}
-            >
-              {activeKioskPill === "maintenance" && !isCarouselPaused && (
-                <span
-                  key={pillProgressKey}
-                  className="figure-pill-progress"
-                  aria-hidden="true"
-                />
-              )}
-              <span className="figure-dot figure-dot--orange" aria-hidden="true" />
-              {kioskCounts.maintenance}{" "} Maintenance {" "}
+              {filteredVehicles.length}{" "} Vehicle {" "}
+              {filteredVehicles.length === 1 ? "stop" : "stops"}
             </span>
           </div>
+        ) : (
+          <div className="highlight-figures highlight-figures-kiosk" aria-label="Vehicle highlights">
+            <div className="kiosk-figures--row">
+              <span className={`${getPillClass("total")} figure-pill--grey`}
+                onClick={() => handlePillClick("total")}
+                data-active={activeKioskPill === "total"}
+                role="button"
+                tabIndex={0}
+              >    
+                {activeKioskPill === "total" && !isCarouselPaused && (
+                  <span
+                    key={pillProgressKey}
+                    className="figure-pill-progress"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="figure-dot figure-dot--grey" aria-hidden="true" />
+                {kioskCounts.total}{" "}
+                {kioskCounts.total === 1 ? "Vehicle" : "Vehicles"}
+              </span>
+              <span className={`${getPillClass("services")} figure-pill--red`}
+                onClick={() => handlePillClick("services")}
+                data-active={activeKioskPill === "services"}
+                role="button"
+                tabIndex={0}
+              >
+                {activeKioskPill === "services" && !isCarouselPaused && (
+                  <span
+                    key={pillProgressKey}
+                    className="figure-pill-progress"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="figure-dot figure-dot--red" aria-hidden="true" />
+                {kioskCounts.services}{" "} Services/Truckstops/Unknown {" "}
+              </span>
+              <span className={`${getPillClass("nightOut")} figure-pill--blue`}
+                onClick={() => handlePillClick("nightOut")}
+                data-active={activeKioskPill === "nightOut"}
+                role="button"
+                tabIndex={0}
+              >
+                {activeKioskPill === "nightOut" && !isCarouselPaused && (
+                  <span
+                    key={pillProgressKey}
+                    className="figure-pill-progress"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="figure-dot figure-dot--blue" aria-hidden="true" />
+                {kioskCounts.nightOut}{" "} Night-Out {" "}
+              </span>
+              <span className={`${getPillClass("depots")} figure-pill--green`}
+                onClick={() => handlePillClick("depots")}
+                data-active={activeKioskPill === "depots"}
+                role="button"
+                tabIndex={0}
+              >
+                {activeKioskPill === "depots" && !isCarouselPaused && (
+                  <span
+                    key={pillProgressKey}
+                    className="figure-pill-progress"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="figure-dot figure-dot--green" aria-hidden="true" />
+                {kioskCounts.depots}{" "} Depots {" "}
+              </span>
+              <span className={`${getPillClass("maintenance")} figure-pill--orange`}
+                onClick={() => handlePillClick("maintenance")}
+                data-active={activeKioskPill === "maintenance"}
+                role="button"
+                tabIndex={0}
+              >
+                {activeKioskPill === "maintenance" && !isCarouselPaused && (
+                  <span
+                    key={pillProgressKey}
+                    className="figure-pill-progress"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="figure-dot figure-dot--orange" aria-hidden="true" />
+                {kioskCounts.maintenance}{" "} Maintenance {" "}
+              </span>
+            </div>
 
-          <div className="kiosk-figures--row">
-            <button
-              type="button"
-              className="figure-pill figure-pill--kiosk figure-pill--control"
-              onClick={() => setIsCarouselPaused((p) => !p)}
-              aria-label={isCarouselPaused ? "Play category carousel" : "Pause category carousel"}
-              title={isCarouselPaused ? "Play" : "Pause"}
-            >
-              {isCarouselPaused ? <Play size={16} /> : <Pause size={16} />}
-            </button>
+            <div className="kiosk-figures--row">
+              <button
+                type="button"
+                className="figure-pill figure-pill--kiosk figure-pill--control"
+                onClick={() => setIsCarouselPaused((p) => !p)}
+                aria-label={isCarouselPaused ? "Play category carousel" : "Pause category carousel"}
+                title={isCarouselPaused ? "Play" : "Pause"}
+              >
+                {isCarouselPaused ? <Play size={16} /> : <Pause size={16} />}
+              </button>
+            </div>
           </div>
-        </div>
-      ) }
-      <div id="map"></div>
+        ) }
+        <div id="map"></div>
+      </div>
     </div>
   );
 };

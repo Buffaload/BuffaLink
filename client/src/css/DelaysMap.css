@@ -1,12 +1,19 @@
-.dashboard-content {
-  padding-top: 130px;
+.dashboard-content--kiosk {
+  padding-top: 80px;
+}
+
+.map-viewport {
+  height: calc(100vh - var(--app-header-height, 120px));
+  margin-top: var(--app-header-height, 120px);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .location-services-container {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0; /* critical for flex children */
+  height: 100%;
+  min-height: 0;
   width: 100%;
   background: #f9fafb;
   border-radius: 16px;
