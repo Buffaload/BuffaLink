@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Building2,
   TriangleAlert,
+  ChevronUp,
 } from "lucide-react";
 import "../css/Vehicles.css";
 import API_BASE_URL from "../config";
@@ -182,7 +183,24 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
   const [sortOption, setSortOption] = useState<"stoppedTime" | "reg" | "location">("stoppedTime");
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      // Show button once user has scrolled down a bit
+      setShowBackToTop(window.scrollY > 400);
+    };
+
+    onScroll(); // initialise on mount
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
@@ -281,14 +299,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
   ]);
 
   const highlightFigures = useMemo(() => {
-    const total = categoryVehicles.length;
-    const vor = categoryVehicles.reduce(
+    // Reflect ALL active client-side filters (VOR-only + Search)
+    const total = displayVehicles.length;
+    const vor = displayVehicles.reduce(
       (count, v) => count + ((v.IsVor || v.LiveDefects) ? 1 : 0),
       0
     );
 
     return { total, vor };
-  }, [categoryVehicles]);
+  }, [displayVehicles]);
 
   // Colours for time stopped
   const getBackgroundColour = (timeStopped: number) => {
@@ -708,6 +727,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
             );
           })}
         </ul>
+      )}
+      {!isKioskMode && (
+        <button
+          type="button"
+          className={`back-to-top ${showBackToTop ? "back-to-top--visible" : ""}`}
+          aria-label="Back to top"
+          onClick={scrollToTop}
+        >
+          <ChevronUp size={20} aria-hidden="true" focusable="false" />
+        </button>
       )}
       <p className="vehicle-disclaimer">Vehicle data is fetched every 30 seconds.</p>
     </div>

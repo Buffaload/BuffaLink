@@ -469,6 +469,66 @@
   margin-left: 5px;
 }
 
+/* Back to top button */
+.back-to-top {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fff;
+  color: #333;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+
+  z-index: 1000;
+}
+
+.back-to-top--visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.back-to-top:hover {
+  background: #f5f5f5;
+}
+
+.back-to-top:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.back-to-top--visible svg {
+  animation: chevron-bounce 1.6s ease-in-out infinite;
+}
+
+.back-to-top:hover svg {
+  animation-play-state: paused;
+}
+
+@keyframes chevron-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 .vehicle-disclaimer {
   margin-top: 10rem;
   font-size: 0.85rem;
