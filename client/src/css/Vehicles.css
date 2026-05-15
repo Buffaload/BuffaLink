@@ -14,7 +14,7 @@
 
 /* scrollbar width */
 .vehicle-container::-webkit-scrollbar {
-  width: 10px;
+  width: 15px;
 }
 
 /* track (the background) */
@@ -275,7 +275,7 @@
   width: calc(100vw - 300px);
   max-width: 1000px;
   margin: 8px auto;
-  margin-top: -50px;
+  margin-top: -40px;
   padding: 8px;
   background-color: #fff4cc;          /* soft yellow */
   border: 2px solid #f0c040;           /* darker yellow border */
