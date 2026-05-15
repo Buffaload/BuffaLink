@@ -69,7 +69,7 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
         />
         {error && <p style={{ color: "red" }}>{error}</p>}
         <button type="submit" className="login-button">
-          Login
+          LOGIN
         </button>
       </form>
     </div>
