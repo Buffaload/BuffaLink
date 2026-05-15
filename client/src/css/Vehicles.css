@@ -240,7 +240,8 @@
 }
 
 /* Dashboard info banner styling */
-.depots-info-banner, .critical-info-banner {
+.depots-info-banner, 
+.critical-info-banner {
   position: fixed;
   display: flex;
   gap: 8px;
@@ -251,7 +252,7 @@
   width: calc(100vw - 300px);
   max-width: 1000px;
   margin: 8px auto;
-  margin-top: -30px;
+  margin-top: -50px;
   padding: 8px;
   background-color: #fff4cc;          /* soft yellow */
   border: 2px solid #f0c040;           /* darker yellow border */
