@@ -5,7 +5,6 @@
   margin: 0 auto;
   text-align: center;
   height: calc(100% - var(--app-header-height, 120px));
-  margin-top: var(--app-header-height, 120px);
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -535,7 +534,8 @@
 }
 
 .vehicle-disclaimer {
-  margin-top: 10rem;
+  margin-top: 3rem;
+  margin-bottom: 8rem;
   font-size: 0.85rem;
   color: #888;
 }

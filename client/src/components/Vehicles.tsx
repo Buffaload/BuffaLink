@@ -421,323 +421,327 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }
 
   return (
-    <div className="vehicle-container" ref={scrollRef}>
-      <div data-scroll-top-anchor />
-      {(filterOption !== "DelaysMap" && !isKioskMode) ? (
-        <div className="vehicles-wizard" aria-label="Dashboard tools">
-          {/* VOR only (styled like a pill) */}
-          <label className="wizard-pill wizard-vor">
-            <input
-              className="wizard-checkbox"
-              type="checkbox"
-              checked={isVorFilterActive}
-              onChange={(e) => setIsVorFilterActive(e.target.checked)}
-            />
-            <span className="wizard-pill-text">VOR only</span>
-          </label>
-
-          {/* Sort dropdown (pill) */}
-          <div className="wizard-pill wizard-sort">
-            <span className="wizard-sort-label">Sort:</span>
-            <select
-              className="wizard-select"
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
-            >
-              <option value="stoppedTime">Stopped time</option>
-              <option value="reg">Reg</option>
-              <option value="location">Location</option>
-            </select>
-          </div>
-
-          {/* Search bar (pill w/ icon) */}
-          <div className="wizard-search">
-            <svg
-              className="wizard-search-icon"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm0-2a6 6 0 1 0 0-12a6 6 0 0 0 0 12Zm9.707 5.707-4.386-4.386a1 1 0 0 1 1.414-1.414l4.386 4.386a1 1 0 0 1-1.414 1.414Z"
-                fill="currentColor"
+    <>
+      <div className="vehicle-container" ref={scrollRef}>
+        <div data-scroll-top-anchor />
+        {(filterOption !== "DelaysMap" && !isKioskMode) ? (
+          <div className="vehicles-wizard" aria-label="Dashboard tools">
+            {/* VOR only (styled like a pill) */}
+            <label className="wizard-pill wizard-vor">
+              <input
+                className="wizard-checkbox"
+                type="checkbox"
+                checked={isVorFilterActive}
+                onChange={(e) => setIsVorFilterActive(e.target.checked)}
               />
-            </svg>
+              <span className="wizard-pill-text">VOR only</span>
+            </label>
 
-            <input
-              className="wizard-search-input"
-              type="text"
-              placeholder="Search reg / location..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            {/* Sort dropdown (pill) */}
+            <div className="wizard-pill wizard-sort">
+              <span className="wizard-sort-label">Sort:</span>
+              <select
+                className="wizard-select"
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+              >
+                <option value="stoppedTime">Stopped time</option>
+                <option value="reg">Reg</option>
+                <option value="location">Location</option>
+              </select>
+            </div>
+
+            {/* Search bar (pill w/ icon) */}
+            <div className="wizard-search">
+              <svg
+                className="wizard-search-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm0-2a6 6 0 1 0 0-12a6 6 0 0 0 0 12Zm9.707 5.707-4.386-4.386a1 1 0 0 1 1.414-1.414l4.386 4.386a1 1 0 0 1-1.414 1.414Z"
+                  fill="currentColor"
+                />
+              </svg>
+
+              <input
+                className="wizard-search-input"
+                type="text"
+                placeholder="Search reg / location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="highlight-figures" aria-label="Vehicle highlights">
+              <span className="figure-pill figure-pill--grey">
+                <span className="figure-dot figure-dot--grey" aria-hidden="true" />
+                {highlightFigures.total}{" "}
+                {highlightFigures.total === 1 ? "Vehicle" : "Vehicles"}
+              </span>
+
+              <span className="figure-pill figure-pill--red">
+                <span className="figure-dot figure-dot--red" aria-hidden="true" />
+                {highlightFigures.vor} VOR
+              </span>
+            </div>
           </div>
+        ) : null}
 
-          <div className="highlight-figures" aria-label="Vehicle highlights">
-            <span className="figure-pill figure-pill--grey">
-              <span className="figure-dot figure-dot--grey" aria-hidden="true" />
-              {highlightFigures.total}{" "}
-              {highlightFigures.total === 1 ? "Vehicle" : "Vehicles"}
-            </span>
-
-            <span className="figure-pill figure-pill--red">
-              <span className="figure-dot figure-dot--red" aria-hidden="true" />
-              {highlightFigures.vor} VOR
-            </span>
+        {filterOption === "Depots" && !isKioskMode && (
+          <div className="depots-info-banner">
+            <Building2 size="16"/>
+            {selectedDepots.length === 0 ? (
+              <>Showing: <strong>ALL</strong></>
+            ) : (
+              <>
+                Showing:&nbsp; {selectedDepots.join(", ")}
+              </>
+            )}
           </div>
-        </div>
-      ) : null}
+        )}
 
-      {filterOption === "Depots" && !isKioskMode && (
-        <div className="depots-info-banner">
-          <Building2 size="16"/>
-          {selectedDepots.length === 0 ? (
-            <>Showing: <strong>ALL</strong></>
-          ) : (
-            <>
-              Showing:&nbsp; {selectedDepots.join(", ")}
-            </>
-          )}
-        </div>
-      )}
-
-      {filterOption === "Critical" && (
-        <div className="critical-info-banner">
-          <TriangleAlert size="16"/>
-          Showing all vehicles that are due a service/MOT within less than 5 days and are currently out of a depot
-        </div>
-      )}
-
-      {(isKioskMode) ? (
-        <div className="kiosk-vehicles-wizard">
-          <div className="highlight-figures" aria-label="Vehicle highlights">
-            <span className="figure-pill figure-pill--grey">
-              <span className="figure-dot figure-dot--grey" aria-hidden="true" />
-              {highlightFigures.total}{" "}
-              {highlightFigures.total === 1 ? "Vehicle" : "Vehicles"}
-            </span>
-
-            <span className="figure-pill figure-pill--red">
-              <span className="figure-dot figure-dot--red" aria-hidden="true" />
-              {highlightFigures.vor} VOR
-            </span>
+        {filterOption === "Critical" && (
+          <div className="critical-info-banner">
+            <TriangleAlert size="16"/>
+            Showing all vehicles that are due a service/MOT within less than 5 days and are currently out of a depot
           </div>
-        </div>
-      ) : null}
+        )}
 
-      {/* Check if there are filtered vehicles */}
-      {displayVehicles.length === 0 ? (      
-        <p className="vehicle-placeholder-text">
-          {categoryVehicles.length === 0
-            ? "No stopped vehicles to show."
-            : "No vehicles match your current filters (Search/VOR)."}
-        </p>
-      ) : (
-        <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
-          {displayVehicles.map((vehicle) => {
-            const now = Date.now();
-            const isVor = !!vehicle.IsVor;
-            const lastUpdate = adjustedMs(vehicle.date);
-            const timeStopped = now - lastUpdate;
+        {(isKioskMode) ? (
+          <div className="kiosk-vehicles-wizard">
+            <div className="highlight-figures" aria-label="Vehicle highlights">
+              <span className="figure-pill figure-pill--grey">
+                <span className="figure-dot figure-dot--grey" aria-hidden="true" />
+                {highlightFigures.total}{" "}
+                {highlightFigures.total === 1 ? "Vehicle" : "Vehicles"}
+              </span>
 
-            //Aply conditional formatting only for "Services"
-            const BackgroundColourClass =
-              !isVor && (filterOption === "Services" || filterOption === "Critical")
-                ? getBackgroundColour(timeStopped)
+              <span className="figure-pill figure-pill--red">
+                <span className="figure-dot figure-dot--red" aria-hidden="true" />
+                {highlightFigures.vor} VOR
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Check if there are filtered vehicles */}
+        {displayVehicles.length === 0 ? (      
+          <p className="vehicle-placeholder-text">
+            {categoryVehicles.length === 0
+              ? "No stopped vehicles to show."
+              : "No vehicles match your current filters (Search/VOR)."}
+          </p>
+        ) : (
+          <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
+            {displayVehicles.map((vehicle) => {
+              const now = Date.now();
+              const isVor = !!vehicle.IsVor;
+              const lastUpdate = adjustedMs(vehicle.date);
+              const timeStopped = now - lastUpdate;
+
+              //Aply conditional formatting only for "Services"
+              const BackgroundColourClass =
+                !isVor && (filterOption === "Services" || filterOption === "Critical")
+                  ? getBackgroundColour(timeStopped)
+                  : "";
+
+              // Apply breathing red effect
+              const animationClass = !isVor
+                ? getTipperAlertClass(vehicle, filterOption, now)
                 : "";
 
-            // Apply breathing red effect
-            const animationClass = !isVor
-              ? getTipperAlertClass(vehicle, filterOption, now)
-              : "";
+              const vorSkin = isVor ? "vor-muted" : "";
+              const serviceProgress = getServiceDueProgress(vehicle.ServiceDueDate ?? "");
+              const motProgress = getDueProgress(vehicle.MotDueDate ?? "");
 
-            const vorSkin = isVor ? "vor-muted" : "";
-            const serviceProgress = getServiceDueProgress(vehicle.ServiceDueDate ?? "");
-            const motProgress = getDueProgress(vehicle.MotDueDate ?? "");
+              return (
+                // Display Dashboard wizard on all pages other than Map/Kiosk mode
+                <li
+                  key={vehicle.assetName}
+                  className={`vehicle-card ${vorSkin} ${
+                    vehicle.isNightOut ? "night-out" : ""
+                  } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
+                >
+                  <span className="vehicle-card-content-header">
+                    {/* Ping dot only when alerting */}
+                    {!isVor && animationClass && (
+                      <span className="alert-ping" aria-hidden="true" />
+                    )}
 
-            return (
-              // Display Dashboard wizard on all pages other than Map/Kiosk mode
-              <li
-                key={vehicle.assetName}
-                className={`vehicle-card ${vorSkin} ${
-                  vehicle.isNightOut ? "night-out" : ""
-                } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
-              >
-                <span className="vehicle-card-content-header">
-                  {/* Ping dot only when alerting */}
-                  {!isVor && animationClass && (
-                    <span className="alert-ping" aria-hidden="true" />
-                  )}
-
-                  <div
-                    className={`vehicle-card-header ${
-                      filterOption === "Services" || filterOption === "Night-Out"
-                        ? "with-toggle"
-                        : "centered"
-                    }`}
-                  >
-                    <h2 className="vehicle-reg">{vehicle.assetName}</h2>
-                    {filterOption === "Services" ||
-                    filterOption === "Night-Out" ? (
-                      <label className="toggle-container">
-                        <input
-                          type="checkbox"
-                          checked={!!vehicle.isNightOut}
-                          onChange={() => {
-                              if (hasAssetName(vehicle)) {
-                                toggleNightOut(vehicle);
-                              }
-                          }}
-                        />
-                        <span className="toggle-slider"></span>
-                      </label>
-                    ) : null}
-                  </div>
-                  <p>
+                    <div
+                      className={`vehicle-card-header ${
+                        filterOption === "Services" || filterOption === "Night-Out"
+                          ? "with-toggle"
+                          : "centered"
+                      }`}
+                    >
+                      <h2 className="vehicle-reg">{vehicle.assetName}</h2>
+                      {filterOption === "Services" ||
+                      filterOption === "Night-Out" ? (
+                        <label className="toggle-container">
+                          <input
+                            type="checkbox"
+                            checked={!!vehicle.isNightOut}
+                            onChange={() => {
+                                if (hasAssetName(vehicle)) {
+                                  toggleNightOut(vehicle);
+                                }
+                            }}
+                          />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      ) : null}
+                    </div>
+                    <p>
+                      <br />
+                      <b className="vehicle-status">{vehicle.eventType}</b>
+                      <br />
+                      <span className="vehicle-time-since-update">
+                        {vehicle.date ? getTimeSinceUpdate(vehicle.date) : "--- : --- : ---"}
+                      </span>
+                    </p>
                     <br />
-                    <b className="vehicle-status">{vehicle.eventType}</b>
+                    <hr></hr>
+                  </span>
+                  <span className="vehicle-card-main">
                     <br />
-                    <span className="vehicle-time-since-update">
-                      {vehicle.date ? getTimeSinceUpdate(vehicle.date) : "--- : --- : ---"}
-                    </span>
-                  </p>
-                  <br />
-                  <hr></hr>
-                </span>
-                <span className="vehicle-card-main">
-                  <br />
-                  {serviceProgress ? (
-                    <div className="due-progress-block">
-                      <div className="due-progress-row">
-                        <span className="due-progress-label">Service health</span>
-                        <span className="due-progress-days">
-                          {serviceProgress.label}
-                        </span>
+                    {serviceProgress ? (
+                      <div className="due-progress-block">
+                        <div className="due-progress-row">
+                          <span className="due-progress-label">Service health</span>
+                          <span className="due-progress-days">
+                            {serviceProgress.label}
+                          </span>
+                        </div>
+                        <div className="due-progress-bar">
+                          <div
+                            className={`due-progress-bar-inner ${serviceProgress.colorClass}`}
+                            style={{ width: `${serviceProgress.percentage}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="due-progress-bar">
-                        <div
-                          className={`due-progress-bar-inner ${serviceProgress.colorClass}`}
-                          style={{ width: `${serviceProgress.percentage}%` }}
-                        />
+                    ) : (
+                      <div className="due-progress-block">
+                        <div className="due-progress-row">
+                          <span className="due-progress-label">Service health</span>
+                          <span className="due-progress-days"></span>
+                        </div>
+                        <div className="due-progress-bar empty-progress-bar">
+                          <div
+                            className={`due-progress-bar-inner`}
+                            style={{ width: `0` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="due-progress-block">
-                      <div className="due-progress-row">
-                        <span className="due-progress-label">Service health</span>
-                        <span className="due-progress-days"></span>
+                    )}
+                    {serviceProgress ? (
+                      <p className="vehicle-subheading"
+                        style={{
+                          color: isDatePast(vehicle.ServiceDueDate ?? "")
+                            ? "red"
+                            : "#555",
+                        }}
+                      >
+                        <span className="vehicle-due-span">Due:</span>{" "}
+                        <b className="vehicle-due-dates">
+                          {vehicle.ServiceDueDate
+                          ? formatDate(vehicle.ServiceDueDate)
+                          : "N/A"}
+                        </b>
+                      </p>
+                    ) : (
+                      <p className="vehicle-subheading"
+                        style={{
+                          color: "#555",
+                        }}
+                      >
+                        <span className="vehicle-due-span">Date not available</span>
+                      </p>
+                    )}
+                    <br />
+                    {motProgress ? (
+                      <div className="due-progress-block">
+                        <div className="due-progress-row">
+                          <span className="due-progress-label">MOT health</span>
+                          <span className="due-progress-days">
+                            {motProgress.label}
+                          </span>
+                        </div>
+                        <div className="due-progress-bar">
+                          <div
+                            className={`due-progress-bar-inner ${motProgress.colorClass}`}
+                            style={{ width: `${motProgress.percentage}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="due-progress-bar empty-progress-bar">
-                        <div
-                          className={`due-progress-bar-inner`}
-                          style={{ width: `0` }}
-                        />
+                    ) : (
+                      <div className="due-progress-block">
+                        <div className="due-progress-row">
+                          <span className="due-progress-label">MOT health</span>
+                          <span className="due-progress-days"></span>
+                        </div>
+                        <div className="due-progress-bar empty-progress-bar">
+                          <div
+                            className={`due-progress-bar-inner`}
+                            style={{ width: `0` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {serviceProgress ? (
-                    <p className="vehicle-subheading"
-                      style={{
-                        color: isDatePast(vehicle.ServiceDueDate ?? "")
-                          ? "red"
-                          : "#555",
-                      }}
-                    >
-                      <span className="vehicle-due-span">Due:</span>{" "}
-                      <b className="vehicle-due-dates">
-                        {vehicle.ServiceDueDate
-                        ? formatDate(vehicle.ServiceDueDate)
-                        : "N/A"}
-                      </b>
+                    )}
+                    {motProgress ? (
+                      <p className="vehicle-subheading"
+                        style={{
+                          color: isDatePast(vehicle.MotDueDate ?? "")
+                            ? "red"
+                            : "#555",
+                        }}
+                      >
+                        <span className="vehicle-due-span">Due:</span>{" "}
+                        <b className="vehicle-due-dates">
+                          {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+                        </b>
+                      </p>
+                    ) : (
+                      <p className="vehicle-subheading"
+                        style={{
+                          color: "#555",
+                        }}
+                      >
+                        <span className="vehicle-due-span">Date not available</span>
+                      </p>
+                    )}
+                    <br />
+                    {/* Conditionally show VOR and Live Defects only if true */}
+                    {vehicle.LiveDefects && (
+                      <p style={{ color: "red" }}>
+                        <b>LIVE DEFECTS</b>
+                      </p>
+                    )}
+                    <br />
+                  </span>
+                  <span className="vehicle-card-footer">
+                    <hr></hr>
+                    <br />
+                    <p className="vehicle-subheading">
+                      Location:{" "}
+                      <span className="vehicle-location">
+                        {vehicle.locationName ??
+                          vehicle.formattedAddress ??
+                          "undefined"}
+                      </span>
                     </p>
-                  ) : (
-                    <p className="vehicle-subheading"
-                      style={{
-                        color: "#555",
-                      }}
-                    >
-                      <span className="vehicle-due-span">Date not available</span>
-                    </p>
-                  )}
-                  <br />
-                  {motProgress ? (
-                    <div className="due-progress-block">
-                      <div className="due-progress-row">
-                        <span className="due-progress-label">MOT health</span>
-                        <span className="due-progress-days">
-                          {motProgress.label}
-                        </span>
-                      </div>
-                      <div className="due-progress-bar">
-                        <div
-                          className={`due-progress-bar-inner ${motProgress.colorClass}`}
-                          style={{ width: `${motProgress.percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="due-progress-block">
-                      <div className="due-progress-row">
-                        <span className="due-progress-label">MOT health</span>
-                        <span className="due-progress-days"></span>
-                      </div>
-                      <div className="due-progress-bar empty-progress-bar">
-                        <div
-                          className={`due-progress-bar-inner`}
-                          style={{ width: `0` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {motProgress ? (
-                    <p className="vehicle-subheading"
-                      style={{
-                        color: isDatePast(vehicle.MotDueDate ?? "")
-                          ? "red"
-                          : "#555",
-                      }}
-                    >
-                      <span className="vehicle-due-span">Due:</span>{" "}
-                      <b className="vehicle-due-dates">
-                        {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
-                      </b>
-                    </p>
-                  ) : (
-                    <p className="vehicle-subheading"
-                      style={{
-                        color: "#555",
-                      }}
-                    >
-                      <span className="vehicle-due-span">Date not available</span>
-                    </p>
-                  )}
-                  <br />
-                  {/* Conditionally show VOR and Live Defects only if true */}
-                  {vehicle.LiveDefects && (
-                    <p style={{ color: "red" }}>
-                      <b>LIVE DEFECTS</b>
-                    </p>
-                  )}
-                  <br />
-                </span>
-                <span className="vehicle-card-footer">
-                  <hr></hr>
-                  <br />
-                  <p className="vehicle-subheading">
-                    Location:{" "}
-                    <span className="vehicle-location">
-                      {vehicle.locationName ??
-                        vehicle.formattedAddress ??
-                        "undefined"}
-                    </span>
-                  </p>
-                  <br />
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    <br />
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="vehicle-disclaimer">Vehicle data is fetched every 30 seconds.</p>
+      </div>
+
       {!isKioskMode && (
         <button
           type="button"
@@ -748,8 +752,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           <ChevronUp size={20} aria-hidden="true" focusable="false" />
         </button>
       )}
-      <p className="vehicle-disclaimer">Vehicle data is fetched every 30 seconds.</p>
-    </div>
+    </>
   );
 };
 
