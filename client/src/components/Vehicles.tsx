@@ -185,24 +185,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  
-  // Helper function to decide whether container is scrollable
-  const getActiveScrollTop = () => {
-    const el = scrollRef.current;
-    if (el) {
-      const style = window.getComputedStyle(el);
-      const overflowY = style.overflowY;
-      const canScroll = el.scrollHeight > el.clientHeight + 1;
-
-      // Only treat the container as the scroll host if it can actually scroll
-      if (canScroll && overflowY !== "visible") {
-        return el.scrollTop;
-      }
-    }
-
-    // Otherwise fall back to window scrolling
-    return window.scrollY || document.documentElement.scrollTop || 0;
-  };
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
