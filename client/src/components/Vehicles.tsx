@@ -200,11 +200,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
       setShowBackToTop(el.scrollTop > 300);
     };
 
-    onScroll(); // initial check
+    // run once on mount
+    onScroll();
     el.addEventListener("scroll", onScroll, { passive: true });
 
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [scrollRef.current]);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, []);
 
   // Ensure each dashboard view starts at the true top of the vehicle container
   useEffect(() => {
