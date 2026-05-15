@@ -12,6 +12,10 @@
   scrollbar-gutter: stable;
 }
 
+.vehicle-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* Dashboard Wizard (VOR / Sort / Search) */
 .vehicles-wizard {
   position: fixed;

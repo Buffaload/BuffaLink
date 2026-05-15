@@ -1,6 +1,7 @@
 /* Basic layout to position the sidebar and dashboard content */
 .dashboard-container {
   padding: 30px;
+  padding-top: 130px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -17,7 +18,6 @@
   flex-grow: 1;
   overflow: hidden;
   padding: 20px;
-  padding-top: 130px;
   min-height: 0; /* allow child scroller to work */
 }
 

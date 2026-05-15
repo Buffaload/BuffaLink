@@ -277,10 +277,8 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     const el = document.getElementById("map");
     if (!map || !el) return;
 
-    // Ensure correct sizing on first paint
     requestAnimationFrame(() => map.invalidateSize());
 
-    // Keep it responsive to any layout/viewport changes
     const ro = new ResizeObserver(() => map.invalidateSize());
     ro.observe(el);
 
