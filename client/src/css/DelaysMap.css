@@ -7,7 +7,7 @@
   top: var(--app-header-height, 120px);
   right: 0;
   bottom: 0;
-  left: 200px;
+  left: 260px;
   padding: 20px;
   box-sizing: border-box;
   overflow: hidden;
