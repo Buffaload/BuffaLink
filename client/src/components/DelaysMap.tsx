@@ -90,33 +90,11 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     refetchInterval: 30000, // Poll every 30 sec
     staleTime: 60000, // Data is fresh for 1 minute
   });
-
-  // Flip this to false when BST ends
-  // const APPLY_BST_FIX = true;
-  // const BST_OFFSET_MS = APPLY_BST_FIX ? 60 * 60 * 1000 : 0;
-
-  // // Add 1h only for "naive" timestamps (no timezone in the string)
-  // const adjustedMs = useCallback(
-  //   (s: string): number => {
-  //     if (!s) return NaN;
-  //     const naive = !/Z$|[+-]\d\d:?\d\d$/.test(s);
-  //     return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
-  //   },
-  //   [BST_OFFSET_MS]
-  // );
-
-  // const calculateTimeStopped = (lastUpdate: string): number => {
-  //   return now - adjustedMs(lastUpdate);
-  // };
   
   const getPillClass = (pill: KioskPill) =>
     `figure-pill figure-pill--kiosk ${
       activeKioskPill === pill ? "is-active" : "is-inactive"
     }`;
-  
-  // type VehicleCategory = "nightOut" | "maintenance" | "depot" | "services" | "other";
-
-  // const normalise = (value?: string) => (value ?? "").trim();
 
   const kioskVehicleBuckets = useMemo(() => {
     const now = Date.now();
@@ -306,19 +284,6 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   // Update markers when vehicle data changes
   useEffect(() => {
     if (!mapRef.current || !clusterLayerRef.current) return;
-
-    // Check vehicle long/lat data for mapping issues
-    // vehiclesToPlot.forEach(v => {
-    //   console.log(
-    //     v.assetName,
-    //     v.locationGroupName,
-    //     v.latitude,
-    //     v.longitude,
-    //     typeof v.latitude,
-    //     typeof v.longitude
-    //   );
-    // });
-
 
     // Clear existing markers
     clusterLayerRef.current!.clearLayers();
@@ -552,7 +517,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
               {kioskCounts.maintenance}{" "} Maintenance {" "}
             </span>
           </div>
-     
+
           <div className="kiosk-figures--row">
             <button
               type="button"

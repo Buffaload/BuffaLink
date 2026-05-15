@@ -20,7 +20,6 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     suffix?: string;
   };
 
-  
   const filterTitles: Record<string, DashboardTitle> = {
     HGVs: {
       prefix: "HGVs - ",
@@ -63,8 +62,6 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     },
   };
 
-  // const getTitle = () => filterTitles[filterOption] || filterTitles.default;
-
   const toggleKioskMode = () => {
     setIsKioskMode((prevMode) => !prevMode);
   };
@@ -87,21 +84,11 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     };
   }, [isKioskMode]);
 
-  // const kioskVehicleFilters = [
-  //   "HGVs",
-  //   "Services",
-  //   "Night-Out",
-  //   "Depots",
-  //   "Maintenance",
-  //   "Tippers",
-  // ] as const;
-
   if (!token) {
     return null;
   }
 
   const title = filterTitles[filterOption] ?? filterTitles.default;
-  // const kioskDepots = selectedDepots;
   
   return (
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>

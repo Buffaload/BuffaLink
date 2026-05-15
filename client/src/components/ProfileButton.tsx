@@ -6,7 +6,6 @@ import {
   Minus,
 } from "lucide-react";
 import "../css/ProfileButton.css";
-
 interface ProfileButtonProps {
   username: string;
   handleLogout: () => void;
@@ -180,6 +179,5 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     </div>
   );
 };
-
 
 export default ProfileButton;

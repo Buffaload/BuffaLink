@@ -320,9 +320,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return ""; // Default: no special colour
   };
 
-  // type TipperAlertMode = "breathe" | "flash";
-  // const TIPPER_ALERT_MODE: TipperAlertMode = "breathe";
-
   const getTipperAlertClass = (
     vehicle: {
       eventType?: string | null;
@@ -550,7 +547,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
             return (
               // Display Dashboard wizard on all pages other than Map/Kiosk mode
-
               <li
                 key={vehicle.assetName}
                 className={`vehicle-card ${vorSkin} ${

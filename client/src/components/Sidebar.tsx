@@ -31,30 +31,6 @@ interface Vehicle {
   MotDueDate?: string;
 }
 
-// Parse "YYYY-MM-DD" safely as local midnight, also supports ISO strings
-// const parseDueMs = (s?: string): number => {
-//   if (!s) return NaN;
-//   const t = s.trim();
-//   if (!t) return NaN;
-//   const d = t.includes("T") ? new Date(t) : new Date(`${t}T00:00:00`);
-//   return d.getTime();
-// };
-
-// const isCriticalAlert = (v: Vehicle): boolean => {
-//   // "Not in a depot"
-//   if (v.locationGroupName === "Buffaload") return false;
-
-//   const serviceDays = daysUntil(v.ServiceDueDate);
-//   const motDays = daysUntil(v.MotDueDate);
-
-//   // Critical if due in <= 5 days (includes overdue negatives)
-//   const threshold = 5;
-//   const serviceCritical = serviceDays !== null && serviceDays <= threshold;
-//   const motCritical = motDays !== null && motDays <= threshold;
-
-//   return serviceCritical || motCritical;
-// };
-
 const Sidebar: React.FC<{
   onFilterChange: (filter: string) => void;
   onDepotChange: (depots: string[]) => void;
