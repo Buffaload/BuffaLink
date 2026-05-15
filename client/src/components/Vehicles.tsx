@@ -187,19 +187,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   
   useEffect(() => {
-    const el = scrollRef.current;
-
-    const getScrollTop = () => {
-      // If the container scrolls, use that; otherwise fall back to window.
-      if (el) return el.scrollTop;
-      return window.scrollY || document.documentElement.scrollTop || 0;
-    };
-
     const onScroll = () => {
-      setShowBackToTop(getScrollTop() > 400);
+      const el = scrollRef.current;
+
+      const scrollTop = el
+        ? el.scrollTop
+        : window.scrollY || document.documentElement.scrollTop || 0;
+
+      setShowBackToTop(scrollTop > 400);
     };
 
+    // Run once on mount
     onScroll();
+    const el = scrollRef.current;
 
     if (el) {
       el.addEventListener("scroll", onScroll, { passive: true });
@@ -222,11 +222,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
   // Reset scroll position when dashboard view changes
   useEffect(() => {
     const el = scrollRef.current;
-
-    if (el) {
-      el.scrollTo({ top: 0, behavior: "auto" });
-    } else {
+    if (!el) {
       window.scrollTo({ top: 0, behavior: "auto" });
+      return;
+    }
+
+    const anchor = el.querySelector<HTMLElement>("[data-scroll-top-anchor]");
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: "auto", block: "start" });
+    } else {
+      el.scrollTo({ top: 0, behavior: "auto" });
     }
   }, [filterOption]);
 
@@ -441,6 +446,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   return (
     <div className="vehicle-container" ref={scrollRef}>
+      <div data-scroll-top-anchor />
       {(filterOption !== "DelaysMap" && !isKioskMode) ? (
         <div className="vehicles-wizard" aria-label="Dashboard tools">
           {/* VOR only (styled like a pill) */}
