@@ -182,7 +182,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const queryClient = useQueryClient();
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
   const [sortOption, setSortOption] = useState<"stoppedTime" | "reg" | "location">("stoppedTime");
-  const [_timelineTick, setTimelineTick] = useState(0);
+  const [timelineTick, setTimelineTick] = useState(0);
+  void timelineTick;
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
