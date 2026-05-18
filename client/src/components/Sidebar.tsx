@@ -335,6 +335,7 @@ const Sidebar: React.FC<{
                   >
                     <span className="depot-tile-left">
                       <span className="depot-sub-icon">↩</span>
+                      <Building className="sidebar-icon" />
                       <span className="depot-name">{depot}</span>
                     </span>
 
