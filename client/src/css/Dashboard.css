@@ -64,7 +64,10 @@
   min-height: 100vh;
 }
 
-.dashboard-container.kiosk-mode .dashboard-header,
+.dashboard-container.kiosk-mode .dashboard-header {
+  margin-left: 30px;
+}
+
 .dashboard-container.kiosk-mode .dashboard-content {
   margin-left: 0;
 }
