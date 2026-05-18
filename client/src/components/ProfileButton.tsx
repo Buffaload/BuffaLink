@@ -4,7 +4,6 @@ import {
   LogOut,
   Plus,
   Minus,
-  Shield,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -99,7 +98,9 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
           {/* Header */}
           <div className="admin-portal-header">
             <div className="admin-portal-title">
-              <Shield size={16} className="admin-portal-title-icon" />
+              <span className="admin-menu-title-icon" aria-hidden="true">
+                <SlidersHorizontal size={16} />
+              </span>
               <span>Admin Portal</span>
             </div>
 
