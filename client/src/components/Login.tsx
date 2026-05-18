@@ -49,29 +49,47 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
     }
   };
 
-  return (
-    <div className="login-container">
-      <form className="login-form" onSubmit={handleSubmit}>
-        <img src="/logo.svg" alt="Logo" className="login-logo" />
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
+  return ( 
+    <div className="login-root">
+      {/* LEFT PANEL */}
+      <div className="login-left">
+        <img
+          src="/public/buffaload-logo.png"
+          alt="Buffaload"
+          className="login-logo"
         />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" className="login-button">
-          LOGIN
-        </button>
-      </form>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <h1>Sign in</h1>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && <div className="login-error">{error}</div>}
+          <button type="submit" className="login-button">
+            Login
+          </button>
+        </form>
+      </div>
+
+      {/* RIGHT PANEL */}
+      <div className="login-right">
+        <div className="image-grid">
+          <img src="/public/login1.png" />
+          <img src="/public/login2.png" />
+          <img src="/public/login3.png" />
+          <img src="/public/login4.png" />
+        </div>
+      </div>
     </div>
   );
 };
