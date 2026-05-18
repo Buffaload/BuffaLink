@@ -1,6 +1,7 @@
 /* Container for the vehicle cards */
 .vehicle-container {
   padding: 20px;
+  padding-right: 40px;
   width: 100%;
   max-width: none;
   margin: 0 auto;
@@ -281,7 +282,7 @@
   width: calc(100vw - 300px);
   max-width: 1000px;
   margin: 8px auto;
-  margin-top: -40px;
+  margin-top: -45px;
   padding: 8px;
   background-color: #fff4cc;          /* soft yellow */
   border: 2px solid #f0c040;           /* darker yellow border */
