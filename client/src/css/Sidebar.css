@@ -262,7 +262,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  padding: 0 20px 10px 50px; /* keep sub-tab indentation */
+  padding: 0 20px 10px 20px; /* keep sub-tab indentation */
   margin-top: 6px;
 }
 
@@ -280,17 +280,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-
   width: 100%;
   padding: 10px 12px;
-
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 10px;
-
   color: #ffffff;
   cursor: pointer;
-
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
 }
 
@@ -332,13 +328,10 @@
   width: 16px;
   height: 16px;
   border-radius: 999px;
-
   border: 2px solid rgba(255, 255, 255, 0.28);
   background: rgba(0, 0, 0, 0.15);
-
   position: relative;
   flex: 0 0 auto;
-
   transition: all 0.2s ease;
 }
 

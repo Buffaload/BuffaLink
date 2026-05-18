@@ -96,7 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       <div className={`dashboard-header ${isKioskMode ? "header-on" : "header-off"}`}>
         <div className="dashboard-title">
           {isKioskMode ? (
-            <img src="/logo.svg" alt="Logo" className="kiosk-logo" />
+            <img src="/fleetpulse-logo-black" alt="Logo" className="kiosk-logo" />
           ) : (
             <h2>
               <>

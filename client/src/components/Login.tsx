@@ -55,8 +55,8 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
       <div className="login-left">
         <form className="login-form" onSubmit={handleSubmit}>
           <img
-            src="/buffaload-logo.png"
-            alt="Buffaload"
+            src="/fleetpulse-logo.png"
+            alt="FleetPulse"
             className="login-logo"
           />
           <input

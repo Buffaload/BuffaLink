@@ -174,8 +174,8 @@ const Sidebar: React.FC<{
       <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <img
-              src="/buffaload-logo.png"
-              alt="Buffaload Logistics"
+              src="/fleetpulse-logo.png"
+              alt="FleetPulse"
               className="sidebar-logo"
             />
         </div>
@@ -334,7 +334,6 @@ const Sidebar: React.FC<{
                     aria-pressed={checked}
                   >
                     <span className="depot-tile-left">
-                      <span className="depot-sub-icon">↩</span>
                       <Building className="sidebar-icon" />
                       <span className="depot-name">{depot}</span>
                     </span>
