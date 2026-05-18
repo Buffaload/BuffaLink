@@ -16,7 +16,7 @@ html {
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f4f4f4;
+  background-color: #0b0b0b;
 }
 
 
@@ -70,13 +70,15 @@ html {
 
 /* Inputs */
 .login-form input {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--login-input-bg);
+  border: 1px solid var(--login-input-border);
   border-radius: 6px;
   padding: 14px 16px;
   margin-bottom: 16px;
   color: #fff;
   font-size: 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .login-form input::placeholder {
@@ -85,7 +87,9 @@ html {
 
 .login-form input:focus {
   outline: none;
-  border-color: #15a841;
+  background: var(--login-input-bg-focus);
+  border-color: var(--login-input-border-focus);
+  box-shadow: 0 0 0 3px rgba(55, 214, 122, 0.18);
 }
 
 .login-container input,

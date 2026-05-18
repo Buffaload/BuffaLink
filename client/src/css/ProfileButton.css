@@ -16,21 +16,36 @@
 .profile-button {
   width: 40px;
   height: 40px;
-  background-color: #28a745;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
+  background: radial-gradient(circle at 35% 30%, #6dffad 0%, #37d67a 42%, #1f8f4d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.30),
+    0 0 0 3px rgba(55, 214, 122, 0.12),
+    0 0 14px rgba(55, 214, 122, 0.30);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   user-select: none;
   flex-shrink: 0;
+  transition: transform 0.08s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .profile-button--admin:hover {
-  background-color: #218838;
   cursor: pointer;
+  filter: brightness(1.05) saturate(1.05);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.32),
+    0 0 0 3px rgba(55, 214, 122, 0.16),
+    0 0 18px rgba(55, 214, 122, 0.40);
+}
+
+.profile-button--admin:active {
+  transform: translateY(1px);
 }
 
 /* Profile initial circle styling */
@@ -39,8 +54,10 @@
   font-weight: bold;
 }
 
-/* Profile menu */
-
+.profile-button:focus-visible {
+  outline: 2px solid rgba(55, 214, 122, 0.85);
+  outline-offset: 2px;
+}
 
 /* Logout button */
 .logout-button {
@@ -75,7 +92,7 @@
   position: absolute;
   right: 0;
   bottom: 60px;
-  width: 220px;
+  width: 227px;
   margin-right: 5px;
   border-radius: 12px;
   padding: 12px;
@@ -92,19 +109,19 @@
   z-index: 2000;
 }
 
-.admin-menu-header {
+.admin-portal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.admin-menu-title {
+.admin-portal-title {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   font-size: 13px;
   opacity: 0.95;
@@ -114,6 +131,7 @@
   width: 28px;
   height: 28px;
   border-radius: 10px;
+  margin-right: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -121,6 +139,19 @@
   border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
+/* .admin-portal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+} */
+
+.admin-portal-close,
 .admin-menu-icon-btn {
   width: 30px;
   height: 30px;
@@ -135,6 +166,7 @@
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.08s ease;
 }
 
+.admin-portal-close:hover,
 .admin-menu-icon-btn:hover {
   background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.16);
