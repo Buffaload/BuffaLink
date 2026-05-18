@@ -40,70 +40,7 @@
 }
 
 /* Profile menu */
-.profile-menu {
-  position: absolute;
-  right: 0;
-  bottom: 60px;
-  background: #218837ef;
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-  padding: 12px;
-  width: 220px;
-  margin-right: 5px;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
-  z-index: 2000;
-}
 
-.profile-menu p {
-  font-size: 14px;
-}
-
-.profile-menu label {
-  font-size: 12px;
-}
-
-.profile-menu-title {
-  font-weight: 600;
-  margin-top: 0;
-  text-align: right;
-  opacity: 0.85;
-}
-
-.profile-menu-section {
-  margin-bottom: 12px;
-}
-
-.number-input {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.number-input input {
-  width: 60px;
-  text-align: center;
-  border-radius: 8px;
-  border: 2px solid #e5e7eb;
-  background-color: #e5e7eb;
-}
-
-.number-input input::-webkit-outer-spin-button,
-.number-input input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.number-input button {
-  background: none;
-  border: none;
-  color: white;
-}
-
-.number-input button:hover {
-  cursor: pointer;
-}
 
 /* Logout button */
 .logout-button {
@@ -131,4 +68,196 @@
   margin-right: 8px;
   opacity: 1;
   stroke-width: 3;
+}
+
+/* Admin portal */
+.admin-menu {
+  position: absolute;
+  right: 0;
+  bottom: 60px;
+  width: 220px;
+  margin-right: 5px;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 28, 45, 0.96) 0%,
+    rgba(8, 23, 36, 0.94) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.35),
+    0 2px 0 rgba(255, 255, 255, 0.04) inset;
+  color: #fff;
+  z-index: 2000;
+}
+
+.admin-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-menu-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 13px;
+  opacity: 0.95;
+}
+
+.admin-menu-title-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.admin-menu-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.08s ease;
+}
+
+.admin-menu-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.admin-menu-icon-btn:active {
+  transform: translateY(1px);
+}
+
+.admin-menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.10);
+  margin: 10px 0 12px 0;
+}
+
+.admin-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Tiles - consistent with your depot tile visual language */
+.admin-setting-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-setting-tile:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.admin-setting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-setting-label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-setting-hint {
+  font-size: 11px;
+  opacity: 0.70;
+  letter-spacing: 0.02em;
+}
+
+/* Stepper */
+.admin-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.step-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.20);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.08s ease;
+}
+
+.step-btn:hover {
+  background: rgba(0, 0, 0, 0.30);
+  border-color: rgba(55, 214, 122, 0.55);
+}
+
+.step-btn:active {
+  transform: translateY(1px);
+}
+
+.step-input {
+  width: 58px;
+  height: 30px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+.step-input:focus {
+  border-color: rgba(55, 214, 122, 0.70);
+  box-shadow: 0 0 0 3px rgba(55, 214, 122, 0.18);
+}
+
+/* Remove number input spinners if desired */
+.step-input::-webkit-outer-spin-button,
+.step-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.step-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Focus visibility */
+.step-btn:focus-visible,
+.admin-menu-icon-btn:focus-visible {
+  outline: 2px solid rgba(55, 214, 122, 0.85);
+  outline-offset: 2px;
 }

@@ -9,7 +9,6 @@ import {
   Fuel,
   Moon,
   Map,
-  Building,
   Building2,
   Wrench,
   TriangleAlert,
@@ -334,7 +333,6 @@ const Sidebar: React.FC<{
                     aria-pressed={checked}
                   >
                     <span className="depot-tile-left">
-                      <Building className="sidebar-icon" />
                       <span className="depot-name">{depot}</span>
                     </span>
 

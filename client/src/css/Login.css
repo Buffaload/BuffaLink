@@ -1,5 +1,3 @@
-/* Login.css */
-
 /* Make the form and container occupy full height */
 body,
 html {
@@ -12,6 +10,33 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f4f4f4;
+}
+
+
+/* Edge/Chrome autofill dark theme fix */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  /* Force dark background instead of Edge’s off-white */
+  -webkit-box-shadow: 0 0 0px 1000px #0b1c2d inset;
+  box-shadow: 0 0 0px 1000px #0b1c2d inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Ensure normal state matches */
+input,
+textarea,
+select {
+  background-color: #0b1c2d;
+  color: #ffffff;
 }
 
 /* Layout */

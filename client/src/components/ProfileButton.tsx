@@ -4,6 +4,9 @@ import {
   LogOut,
   Plus,
   Minus,
+  Shield,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import "../css/ProfileButton.css";
 interface ProfileButtonProps {
@@ -92,14 +95,39 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
       </button>
 
       {open && isAdmin && (
-        <div className="profile-menu">
-          <p className="profile-menu-title">ADMIN PORTAL</p>
-          <hr />
-          <>
-            <div className="profile-menu-section">
-              <label>Service timeline (days)</label>
-              <div className="number-input">
+        <div className="adminMenu" role="dialog" aria-label="Admin portal">
+          {/* Header */}
+          <div className="admin-portal-header">
+            <div className="admin-portal-title">
+              <Shield size={16} className="admin-portal-title-icon" />
+              <span>Admin Portal</span>
+            </div>
+
+            <button
+              type="button"
+              className="admin-portal-close"
+              onClick={() => setOpen(false)}
+              aria-label="Close admin portal"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="admin-menu-divider" />
+
+          {/* Settings tiles */}
+          <div className="admin-menu-body">
+            {/* Service timeline */}
+            <div className="admin-setting-tile">
+              <div className="admin-setting-text">
+                <div className="admin-setting-label">Service timeline</div>
+                <div className="admin-setting-hint">Days</div>
+              </div>
+
+              <div className="admin-stepper" role="group" aria-label="Service timeline days">
                 <button
+                  type="button"
+                  className="step-btn"
                   onClick={() =>
                     updateValue(
                       setServiceDays,
@@ -107,10 +135,13 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
                       serviceDays - 1
                     )
                   }
+                  aria-label="Decrease service timeline"
                 >
                   <Minus size={16} />
                 </button>
+
                 <input
+                  className="step-input"
                   type="number"
                   value={serviceDays}
                   onChange={(e) =>
@@ -120,8 +151,12 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
                       parseInt(e.target.value, 10)
                     )
                   }
+                  aria-label="Service timeline value"
                 />
+
                 <button
+                  type="button"
+                  className="step-btn"
                   onClick={() =>
                     updateValue(
                       setServiceDays,
@@ -129,27 +164,34 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
                       serviceDays + 1
                     )
                   }
+                  aria-label="Increase service timeline"
                 >
                   <Plus size={16} />
                 </button>
               </div>
             </div>
 
-            <div className="profile-menu-section">
-              <label>MOT timeline (days)</label>
-              <div className="number-input">
+            {/* MOT timeline */}
+            <div className="admin-setting-tile">
+              <div className="admin-setting-text">
+                <div className="admin-setting-label">MOT timeline</div>
+                <div className="admin-setting-hint">Days</div>
+              </div>
+
+              <div className="admin-stepper" role="group" aria-label="MOT timeline days">
                 <button
+                  type="button"
+                  className="step-btn"
                   onClick={() =>
-                    updateValue(
-                      setMotDays,
-                      MOT_TIMELINE_DAYS_KEY,
-                      motDays - 1
-                    )
+                    updateValue(setMotDays, MOT_TIMELINE_DAYS_KEY, motDays - 1)
                   }
+                  aria-label="Decrease MOT timeline"
                 >
                   <Minus size={16} />
                 </button>
+
                 <input
+                  className="step-input"
                   type="number"
                   value={motDays}
                   onChange={(e) =>
@@ -159,21 +201,22 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
                       parseInt(e.target.value, 10)
                     )
                   }
+                  aria-label="MOT timeline value"
                 />
+
                 <button
+                  type="button"
+                  className="step-btn"
                   onClick={() =>
-                    updateValue(
-                      setMotDays,
-                      MOT_TIMELINE_DAYS_KEY,
-                      motDays + 1
-                    )
+                    updateValue(setMotDays, MOT_TIMELINE_DAYS_KEY, motDays + 1)
                   }
+                  aria-label="Increase MOT timeline"
                 >
                   <Plus size={16} />
                 </button>
               </div>
             </div>
-          </>
+          </div>
         </div>
       )}
     </div>
