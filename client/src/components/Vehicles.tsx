@@ -182,6 +182,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const queryClient = useQueryClient();
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
   const [sortOption, setSortOption] = useState<"stoppedTime" | "reg" | "location">("stoppedTime");
+  const [timelineTick, setTimelineTick] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -211,6 +212,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     el.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [filterOption, isKioskMode]);
+
+  useEffect(() => {
+    const onTimelineChanged = () => setTimelineTick((t) => t + 1);
+
+    window.addEventListener("buffalink:timelineChanged", onTimelineChanged);
+    return () => window.removeEventListener("buffalink:timelineChanged", onTimelineChanged);
+  }, []);
 
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
@@ -307,6 +315,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
     searchTerm,
     sortOption,
+    timelineTick,
   ]);
 
   const highlightFigures = useMemo(() => {

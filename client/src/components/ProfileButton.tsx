@@ -75,6 +75,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     if (!Number.isInteger(value) || value <= 0) return;
     setter(value);
     localStorage.setItem(key, String(value));
+    window.dispatchEvent(new Event("buffalink:timelineChanged"));
     queryClient.invalidateQueries({ queryKey: ["vehicles"] });
   };
 
