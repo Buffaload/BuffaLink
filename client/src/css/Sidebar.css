@@ -6,6 +6,8 @@
 
 .dashboard-content {
   padding: 20px;
+  padding-top: 0;
+  padding-right: 0;
 }
 
 @media screen and (min-width: 769px) {
