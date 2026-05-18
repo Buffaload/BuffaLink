@@ -298,6 +298,7 @@
 .vehicle-placeholder-text {
   margin-top: 200px;
   margin-bottom: 300px;
+  text-align: center;
 }
 
 /* Styling for the vehicle list */
