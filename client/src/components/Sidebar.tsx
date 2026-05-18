@@ -41,16 +41,16 @@ const Sidebar: React.FC<{
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
+  const showDepotSubTabs = filterOption === "Depots";
 
-  
-const DEPOTS = [
-  "Ellington",
-  "Crewe",
-  "Coventry",
-  "Skelmersdale",
-  "Belshill",
-  "Avonmouth",
-]
+  const DEPOTS = [
+    "Ellington",
+    "Crewe",
+    "Coventry",
+    "Skelmersdale",
+    "Belshill",
+    "Avonmouth",
+  ];
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -107,18 +107,33 @@ const DEPOTS = [
 
   // function for depots subtab
   const handleDepotClick = (depot: string) => {
-    const updatedDepots = selectedDepots.includes(depot)
-      ? selectedDepots.filter((item) => item !== depot)
-      : [...selectedDepots, depot];
+    // If empty => treat as ALL selected (default)
+    const currentlyAll = selectedDepots.length === 0;
 
-    setSelectedDepots(updatedDepots); // Update local state
-    onDepotChange(updatedDepots); // Pass updated depots to parent
+    let updatedDepots: string[];
+
+    if (currentlyAll) {
+      // Clicking one when "ALL" is active => start filtering by excluding that depot
+      updatedDepots = DEPOTS.filter((d) => d !== depot);
+    } else {
+      updatedDepots = selectedDepots.includes(depot)
+        ? selectedDepots.filter((item) => item !== depot)
+        : [...selectedDepots, depot];
+    }
+
+    // If user ends up selecting all explicitly, collapse back to [] which means ALL
+    if (updatedDepots.length === DEPOTS.length) {
+      setSelectedDepots([]);
+      onDepotChange([]);
+      return;
+    }
+
+    setSelectedDepots(updatedDepots);
+    onDepotChange(updatedDepots);
   };
 
-  const showDepotSubTabs = filterOption === "Depots";
-
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
+    setIsSidebarOpen((prev) => !prev);
   };
 
   const location = useLocation();
@@ -299,8 +314,40 @@ const DEPOTS = [
           </li>
           {/* Sub-tab for "Depots" */}
           {showDepotSubTabs && (
-            <ul className="sidebar-nav">
-              <li>
+            <div className="depot-grid" role="group" aria-label="Depot filter">
+              {DEPOTS.map((depot) => {
+                // If empty => ALL is selected in the UI
+                const effectiveSelected =
+                  selectedDepots.length === 0 ? DEPOTS : selectedDepots;
+
+                const checked = effectiveSelected.includes(depot);
+
+                return (
+                  <button
+                    key={depot}
+                    type="button"
+                    className="depot-tile"
+                    onClick={() => {
+                      forceScrollToTop();
+                      handleDepotClick(depot);
+                    }}
+                    aria-pressed={checked}
+                  >
+                    <span className="depot-tile-left">
+                      <span className="depot-sub-icon">↩</span>
+                      <span className="depot-name">{depot}</span>
+                    </span>
+
+                    <span
+                      className={`depot-radio ${checked ? "checked" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+              {/* <li>
                 <button
                   className={`sidebar-link ${
                     selectedDepots.includes("Ellington") ? "active" : ""
@@ -388,7 +435,7 @@ const DEPOTS = [
                 </button>
               </li>
             </ul>
-          )}
+          )} */}
           <li>
             <button
               className={`sidebar-link ${
