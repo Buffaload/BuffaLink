@@ -373,6 +373,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
     searchTerm,
     sortOption,
+    matchesSelectedDepot,
   ]);
 
   const highlightFigures = useMemo(() => {
