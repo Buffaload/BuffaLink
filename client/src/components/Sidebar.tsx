@@ -42,6 +42,16 @@ const Sidebar: React.FC<{
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
 
+  
+const DEPOTS = [
+  "Ellington",
+  "Crewe",
+  "Coventry",
+  "Skelmersdale",
+  "Belshill",
+  "Avonmouth",
+]
+
   useEffect(() => {
     const role = localStorage.getItem("role");
     if (role) {

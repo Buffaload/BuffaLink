@@ -106,6 +106,7 @@
 .sidebar-section-heading {
   margin: 12px 0;
   padding-left: 20px;
+  padding-bottom: 10px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -182,14 +183,14 @@
 
 .sidebar-link-meta {
   display: flex;
-  align-items: center;   /* ✅ vertical centering */
+  align-items: center;
   justify-content: center;
   opacity: 0.9;
   font-size: 14px;
 }
 
 .sidebar-link-meta svg {
-  display: block;        /* ✅ removes baseline alignment */
+  display: block;
 }
 
 .sidebar-value--grey {
@@ -254,6 +255,107 @@
 .contact-button:hover {
   background-color: #218838; /* Slightly darker green on hover */
   text-decoration: none; /* No underline */
+}
+
+/* Depots grid */
+.depot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 20px 10px 50px; /* keep sub-tab indentation */
+  margin-top: 6px;
+}
+
+/* 1 column on smaller screens */
+@media screen and (max-width: 768px) {
+  .depot-grid {
+    grid-template-columns: 1fr;
+    padding-left: 35px;
+  }
+}
+
+/* Depot tile button */
+.depot-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  width: 100%;
+  padding: 10px 12px;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+
+  color: #ffffff;
+  cursor: pointer;
+
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.depot-tile:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.depot-tile:active {
+  transform: translateY(1px);
+}
+
+.depot-tile:focus-visible {
+  outline: 2px solid rgba(55, 214, 122, 0.85);
+  outline-offset: 2px;
+}
+
+/* Left side content */
+.depot-tile-left {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.depot-sub-icon {
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
+.depot-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Illuminated green radial indicator */
+.depot-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.15);
+
+  position: relative;
+  flex: 0 0 auto;
+
+  transition: all 0.2s ease;
+}
+
+.depot-radio.checked {
+  border-color: #37d67a;
+  background: radial-gradient(circle at 40% 35%, #6dffad 0%, #37d67a 45%, #1f8f4d 100%);
+  box-shadow:
+    0 0 0 3px rgba(55, 214, 122, 0.18),
+    0 0 10px rgba(55, 214, 122, 0.55);
+}
+
+.depot-radio.checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Sidebar toggle button for mobile */
