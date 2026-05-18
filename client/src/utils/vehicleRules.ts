@@ -96,29 +96,41 @@ export const matchesFilter = (
                 !v.isNightOut
             );
 
-        case "Depots": {
-            const isDepotBase =
-            v.locationGroupName === "Buffaload" &&
-            v.assetGroupName !== "TFP Tipper Operation";
+            case "Depots": {
+                // Exclude tippers from depot view (matches your current intent)
+                if (v.assetGroupName === "TFP Tipper Operation") return false;
 
-            if (selectedDepots.length === 0) return isDepotBase;
+                const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""} ${v.locationGroupName ?? ""}`
+                    .toUpperCase()
+                    .replace(/\s+/g, " ")
+                    .trim();
 
-            // Depot subtabs
-            return selectedDepots.some((depot) => {
-                if (!isDepotBase) return false;
+                const depotMatchers: Record<string, RegExp[]> = {
+                    Ellington: [/ELLINGTON/i, /BUFFALOAD ELLINGTON/i],
+                    Crewe: [/CREWE/i, /BUFFALOAD CREWE/i],
+                    Skelmersdale: [/SKELMERSDALE/i, /BUFFALOAD SKELMERSDALE/i],
+                    Coventry: [/COVENTRY/i, /CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i],
+                    Avonmouth: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i],
+                    Belshill: [/BELSHILL/i],
+                };
 
-                switch (depot) {
-                    case "Ellington":
-                    return v.locationName === "BUFFALOAD ELLINGTON";
-                    case "Crewe":
-                    return v.locationName === "BUFFALOAD CREWE";
-                    case "Skelmersdale":
-                    return v.locationName === "BUFFALOAD SKELMERSDALE";
-                    default:
-                    return false;
-                }
-            });
-        }
+                const matchesAnyDepot = Object.values(depotMatchers).some((patterns) =>
+                    patterns.some((re) => re.test(hay))
+                );
+
+                // "Depot base" = either geofenced (Buffaload group) OR text match fallback
+                const isDepotBase = v.locationGroupName === "Buffaload" || matchesAnyDepot;
+
+                if (selectedDepots.length === 0) return isDepotBase;
+
+                return (
+                    isDepotBase &&
+                    selectedDepots.some((depot) => {
+                    const patterns = depotMatchers[depot];
+                    return patterns ? patterns.some((re) => re.test(hay)) : false;
+                    })
+                );
+            }
 
         case "Maintenance":
             return v.locationGroupName === "Maintenance";
@@ -134,16 +146,16 @@ export const matchesFilter = (
     }
 };
 
-export const filterVehicles = (
-    vehicles: VehicleLike[],
+export const filterVehicles = <T extends VehicleLike>(
+    vehicles: T[],
     filterOption: string,
     selectedDepots: string[] = [],
     nowMs: number = Date.now()
-) => vehicles.filter((v) => matchesFilter(v, filterOption, selectedDepots, nowMs));
+): T[] => vehicles.filter((v) => matchesFilter(v, filterOption, selectedDepots, nowMs));
 
-export const countFor = (
-    vehicles: VehicleLike[],
+export const countFor = <T extends VehicleLike>(
+    vehicles: T[],
     filterOption: string,
     selectedDepots: string[] = [],
     nowMs: number = Date.now()
-) => filterVehicles(vehicles, filterOption, selectedDepots, nowMs).length;
+): number => filterVehicles(vehicles, filterOption, selectedDepots, nowMs).length;

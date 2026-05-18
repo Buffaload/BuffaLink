@@ -88,7 +88,7 @@ const Sidebar: React.FC<{
   const { data: vehicles = [] } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
-    refetchInterval: 30000, // Poll every 30 sec
+    refetchInterval: false, // Poll every 30 sec
     staleTime: 60000, // Data is fresh for 1 minute
   });
 

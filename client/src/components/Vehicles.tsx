@@ -264,11 +264,58 @@ const Vehicles: React.FC<VehiclesProps> = ({
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
+  type DepotMatchableVehicle = {
+    locationName?: string;
+    formattedAddress?: string;
+    locationGroupName?: string;
+  };
+
+  // Depot matching helpers (geofence + text/address fallback)
+  const normalizeDepotText = (value: string | null | undefined) =>
+    (value ?? "")
+      .toUpperCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const DEPOT_ALIASES: Record<string, string[]> = {
+    COVENTRY: ["COVENTRY", "CO-OP COVENTRY", "COOP COVENTRY"],
+    AVONMOUTH: ["AVONMOUTH", "CO-OP AVONMOUTH", "COOP AVONMOUTH"],
+    BELSHILL: ["BELSHILL"],
+    ELLINGTON: ["ELLINGTON"],
+    CREWE: ["CREWE"],
+    SKELMERSDALE: ["SKELMERSDALE", "SKELMERSDALE DEPOT"],
+  };
+
+  const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
+  normalizeDepotText(
+    [
+      v.locationName,
+      v.formattedAddress,
+      v.locationGroupName,
+    ]
+      .filter(Boolean)
+      .join(" | ")
+  );
+
+  const matchesSelectedDepot = (v: DepotMatchableVehicle, depotLabel: string) => {
+    const hay = vehicleDepotHaystack(v);
+    const key = normalizeDepotText(depotLabel);
+    const aliases = DEPOT_ALIASES[key] ?? [key];
+
+    return aliases.some((a) => hay.includes(normalizeDepotText(a)));
+  };
+
   const { categoryVehicles, displayVehicles } = useMemo(() => {
     const now = Date.now();
 
     // 1) Base category list (this is what kiosk pills should match)
-    const categoryVehicles = filterVehicles(vehicles, filterOption, selectedDepots, now);
+    let categoryVehicles = filterVehicles(vehicles, filterOption, selectedDepots, now);
+
+    if (filterOption === "Depots" && selectedDepots.length > 0) {
+      categoryVehicles = categoryVehicles.filter((v) =>
+        selectedDepots.some((d) => matchesSelectedDepot(v, d))
+      );
+    }
 
     // 2) Apply client-only filters for display
     let list = categoryVehicles;
@@ -679,7 +726,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                             color: "#555",
                           }}
                         >
-                          <span className="vehicle-due-span">Date not available</span>
+                          <span className="vehicle-due-span">Data not available</span>
                         </p>
                       )}
                       <br />
@@ -731,7 +778,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                             color: "#555",
                           }}
                         >
-                          <span className="vehicle-due-span">Date not available</span>
+                          <span className="vehicle-due-span">Data not available</span>
                         </p>
                       )}
                       <br />
