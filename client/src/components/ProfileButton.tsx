@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
+import {
+  Settings, 
   LogOut,
   Plus,
   Minus,
@@ -86,7 +87,9 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         onClick={() => setOpen((v) => !v)}
         aria-label="Admin menu"
       >
-        <span className="profile-initial">{userInitial}</span>
+        <span className="profile-initial">
+          {isAdmin ? <Settings size={16} /> : userInitial}
+        </span>
       </button>
 
       <button className="logout-button" onClick={handleLogout}>

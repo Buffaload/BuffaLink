@@ -88,7 +88,7 @@ const Sidebar: React.FC<{
   const { data: vehicles = [] } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
-    refetchInterval: false, // Poll every 30 sec
+    refetchInterval: false,
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
@@ -355,95 +355,6 @@ const Sidebar: React.FC<{
               })}
             </div>
           )}
-              {/* <li>
-                <button
-                  className={`sidebar-link ${
-                    selectedDepots.includes("Ellington") ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    forceScrollToTop();
-                    handleDepotClick("Ellington");
-                  }}
-                  style={{
-                    fontSize: "14px", // Smaller font size
-                    paddingLeft: "50px", // Left indentation
-                  }}
-                >
-                  <span className="sidebar-nav--submenu">
-                    <span
-                      style={{
-                        display: "inline-block",
-                        transform: "scaleX(-1)", // Flip horizontally
-                        marginRight: "8px",
-                      }}
-                    >
-                      ↩
-                    </span>
-                    <Building className="sidebar-icon" />
-                    Ellington
-                  </span>
-                </button>
-              </li>
-              <li>
-                <button
-                  className={`sidebar-link ${
-                    selectedDepots.includes("Crewe") ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    forceScrollToTop();
-                    handleDepotClick("Crewe");
-                  }}
-                  style={{
-                    fontSize: "14px", // Smaller font size
-                    paddingLeft: "50px", // Left indentation
-                  }}
-                >
-                  <span className="sidebar-nav--submenu">
-                    <span
-                      style={{
-                        display: "inline-block",
-                        transform: "scaleX(-1)", // Flip horizontally
-                        marginRight: "8px",
-                      }}
-                    >
-                      ↩
-                    </span>
-                    <Building className="sidebar-icon" />
-                    Crewe
-                  </span>
-                </button>
-              </li>
-              <li>
-                <button
-                  className={`sidebar-link ${
-                    selectedDepots.includes("Skelmersdale") ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    forceScrollToTop();
-                    handleDepotClick("Skelmersdale");
-                  }}
-                  style={{
-                    fontSize: "14px", // Smaller font size
-                    paddingLeft: "50px", // Left indentation
-                  }}
-                >
-                  <span className="sidebar-nav--submenu">
-                    <span
-                      style={{
-                        display: "inline-block",
-                        transform: "scaleX(-1)", // Flip horizontally
-                        marginRight: "8px",
-                      }}
-                    >
-                      ↩
-                    </span>
-                    <Building className="sidebar-icon" />
-                    Skelmersdale
-                  </span>
-                </button>
-              </li>
-            </ul>
-          )} */}
           <li>
             <button
               className={`sidebar-link ${

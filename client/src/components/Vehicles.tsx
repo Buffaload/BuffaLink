@@ -174,6 +174,46 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
   return result;
 };
 
+type DepotMatchableVehicle = {
+  locationName?: string | null;
+  formattedAddress?: string | null;
+  locationGroupName?: string | null;
+};
+
+const normalizeDepotText = (value: string | null | undefined) =>
+  (value ?? "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const DEPOT_ALIASES: Record<string, string[]> = {
+  COVENTRY: ["COVENTRY", "CO-OP COVENTRY", "COOP COVENTRY"],
+  AVONMOUTH: ["AVONMOUTH", "CO-OP AVONMOUTH", "COOP AVONMOUTH"],
+  BELSHILL: ["BELSHILL"],
+  ELLINGTON: ["ELLINGTON"],
+  CREWE: ["CREWE"],
+  SKELMERSDALE: ["SKELMERSDALE", "SKELMERSDALE DEPOT"],
+};
+
+const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
+  normalizeDepotText(
+  [
+    v.locationName,
+    v.formattedAddress,
+    v.locationGroupName,
+  ]
+    .filter(Boolean)
+    .join(" | ")
+);
+
+const matchesSelectedDepot = (v: DepotMatchableVehicle, depotLabel: string) => {
+  const hay = vehicleDepotHaystack(v);
+  const key = normalizeDepotText(depotLabel);
+  const aliases = DEPOT_ALIASES[key] ?? [key];
+
+  return aliases.some((a) => hay.includes(normalizeDepotText(a)));
+};
+
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
@@ -264,47 +304,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
-  type DepotMatchableVehicle = {
-    locationName?: string;
-    formattedAddress?: string;
-    locationGroupName?: string;
-  };
-
   // Depot matching helpers (geofence + text/address fallback)
-  const normalizeDepotText = (value: string | null | undefined) =>
-    (value ?? "")
-      .toUpperCase()
-      .replace(/\s+/g, " ")
-      .trim();
-
-  const DEPOT_ALIASES: Record<string, string[]> = {
-    COVENTRY: ["COVENTRY", "CO-OP COVENTRY", "COOP COVENTRY"],
-    AVONMOUTH: ["AVONMOUTH", "CO-OP AVONMOUTH", "COOP AVONMOUTH"],
-    BELSHILL: ["BELSHILL"],
-    ELLINGTON: ["ELLINGTON"],
-    CREWE: ["CREWE"],
-    SKELMERSDALE: ["SKELMERSDALE", "SKELMERSDALE DEPOT"],
-  };
-
-  const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
-  normalizeDepotText(
-    [
-      v.locationName,
-      v.formattedAddress,
-      v.locationGroupName,
-    ]
-      .filter(Boolean)
-      .join(" | ")
-  );
-
-  const matchesSelectedDepot = (v: DepotMatchableVehicle, depotLabel: string) => {
-    const hay = vehicleDepotHaystack(v);
-    const key = normalizeDepotText(depotLabel);
-    const aliases = DEPOT_ALIASES[key] ?? [key];
-
-    return aliases.some((a) => hay.includes(normalizeDepotText(a)));
-  };
-
   const { categoryVehicles, displayVehicles } = useMemo(() => {
     const now = Date.now();
 
@@ -373,7 +373,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
     searchTerm,
     sortOption,
-    matchesSelectedDepot,
   ]);
 
   const highlightFigures = useMemo(() => {
