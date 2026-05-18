@@ -53,13 +53,12 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
     <div className="login-root">
       {/* LEFT PANEL */}
       <div className="login-left">
-        <img
-          src="/buffaload-logo.png"
-          alt="Buffaload"
-          className="login-logo"
-        />
         <form className="login-form" onSubmit={handleSubmit}>
-          <h1>Sign in</h1>
+          <img
+            src="/buffaload-logo.png"
+            alt="Buffaload"
+            className="login-logo"
+          />
           <input
             type="text"
             placeholder="Username"
