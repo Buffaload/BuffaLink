@@ -1,3 +1,10 @@
+:root {
+  --login-input-bg: rgba(255, 255, 255, 0.06);
+  --login-input-bg-focus: rgba(255, 255, 255, 0.09);
+  --login-input-border: rgba(255, 255, 255, 0.12);
+  --login-input-border-focus: rgba(55, 214, 122, 0.55);
+}
+
 /* Make the form and container occupy full height */
 body,
 html {
@@ -13,30 +20,25 @@ html {
 }
 
 
-/* Edge/Chrome autofill dark theme fix */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus,
-select:-webkit-autofill,
-select:-webkit-autofill:hover,
-select:-webkit-autofill:focus {
+/* Chromium autofill (Edge/Chrome) - match app input styling */
+.login-container input:-webkit-autofill,
+.login-container input:-webkit-autofill:hover,
+.login-container input:-webkit-autofill:focus,
+.login-container textarea:-webkit-autofill,
+.login-container textarea:-webkit-autofill:hover,
+.login-container textarea:-webkit-autofill:focus,
+.login-container select:-webkit-autofill,
+.login-container select:-webkit-autofill:hover,
+.login-container select:-webkit-autofill:focus {
   -webkit-text-fill-color: #ffffff;
   caret-color: #ffffff;
-  /* Force dark background instead of Edge’s off-white */
-  -webkit-box-shadow: 0 0 0px 1000px #0b1c2d inset;
-  box-shadow: 0 0 0px 1000px #0b1c2d inset;
-  transition: background-color 9999s ease-in-out 0s;
-}
 
-/* Ensure normal state matches */
-input,
-textarea,
-select {
-  background-color: #0b1c2d;
-  color: #ffffff;
+  /* Paint the autofill background to match your input surface (subtle, not navy) */
+  -webkit-box-shadow: 0 0 0px 1000px var(--login-input-bg) inset;
+  box-shadow: 0 0 0px 1000px var(--login-input-bg) inset;
+
+  /* Stops the browser from animating the background back */
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 /* Layout */
@@ -84,6 +86,23 @@ select {
 .login-form input:focus {
   outline: none;
   border-color: #15a841;
+}
+
+.login-container input,
+.login-container textarea,
+.login-container select {
+  background: var(--login-input-bg);
+  border: 1px solid var(--login-input-border);
+  color: #fff;
+}
+
+.login-container input:focus,
+.login-container textarea:focus,
+.login-container select:focus {
+  background: var(--login-input-bg-focus);
+  border-color: var(--login-input-border-focus);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(55, 214, 122, 0.18);
 }
 
 /* Error */

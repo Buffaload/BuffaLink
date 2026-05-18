@@ -80,21 +80,23 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
 
   return (
     <div className="profile-button-container">
-      <button
-        className={isAdmin ? "profile-button profile-button--admin" : "profile-button"}
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Admin menu"
-      >
-        <span className="profile-initial">{userInitial}</span>
-      </button>
+      <div className="profile-row">
+        <button
+          className={isAdmin ? "profile-button profile-button--admin" : "profile-button"}
+          onClick={() => setOpen((v) => !v)}
+          aria-label="Admin menu"
+        >
+          <span className="profile-initial">{userInitial}</span>
+        </button>
 
-      <button className="logout-button" onClick={handleLogout}>
-        <LogOut size={16} className="logout-icon" />
-        <span>Logout</span>
-      </button>
+        <button className="logout-button" onClick={handleLogout}>
+          <LogOut size={16} className="logout-icon" />
+          <span>Logout</span>
+        </button>
+      </div>
 
       {open && isAdmin && (
-        <div className="adminMenu" role="dialog" aria-label="Admin portal">
+        <div className="admin-menu" role="dialog" aria-label="Admin portal">
           {/* Header */}
           <div className="admin-portal-header">
             <div className="admin-portal-title">
