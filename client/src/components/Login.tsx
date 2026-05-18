@@ -54,7 +54,7 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
       {/* LEFT PANEL */}
       <div className="login-left">
         <img
-          src="/public/buffaload-logo.png"
+          src="/buffaload-logo.png"
           alt="Buffaload"
           className="login-logo"
         />
@@ -84,10 +84,10 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
       {/* RIGHT PANEL */}
       <div className="login-right">
         <div className="image-grid">
-          <img src="/public/login1.png" alt="Buffaload HGV left view" />
-          <img src="/public/login2.png" alt="Buffaload HGV right view" />
-          <img src="/public/login3.png" alt="HQ buffalo statue" />
-          <img src="/public/login4.png" alt="Buffaload HGV and vans" />
+          <img src="/login1.png" alt="Buffaload HGV left view" />
+          <img src="/login2.png" alt="Buffaload HGV right view" />
+          <img src="/login3.png" alt="HQ buffalo statue" />
+          <img src="/login4.png" alt="Buffaload HGV and vans" />
         </div>
       </div>
     </div>
