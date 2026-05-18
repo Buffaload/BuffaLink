@@ -22,40 +22,40 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
   const filterTitles: Record<string, DashboardTitle> = {
     HGVs: {
-      prefix: "HGVs - ",
-      suffix: "stopped >1.5 hrs",
+      prefix: "HGVs ",
+      suffix: "- stopped >1.5 hrs",
     },
     Services: {
-      prefix: "Services - ",
-      suffix: "stopped vehicles",
+      prefix: "Services ",
+      suffix: "- stopped vehicles",
     },
     "Night-Out": {
-      prefix: "Night-Out - ",
-      suffix: "flagged as Night-Out",
+      prefix: "Night-Out ",
+      suffix: "- flagged as Night-Out",
     },
     Delays: {
-      prefix: "Map - ",
-      suffix: "stopped vehicles (past 30 days)",
+      prefix: "Map ",
+      suffix: "- stopped vehicles (past 30 days)",
     },
     Depots: {
-      prefix: "Depots - ",
-      suffix: "vehicles located",
+      prefix: "Depots ",
+      suffix: "- vehicles located",
     },
     Maintenance: {
-      prefix: "Maintenance - ",
-      suffix: "vehicles in maintenance",
+      prefix: "Maintenance ",
+      suffix: "- vehicles in maintenance",
     }, 
     Critical: {
-      prefix: "Critical Alerts - ",
-      suffix: "immediate attention vehicles",
+      prefix: "Critical Alerts ",
+      suffix: "- immediate attention vehicles",
     },
     Tippers: {
-      prefix: "Tippers - ",
-      suffix: "TFP Tipper operation",
+      prefix: "Tippers ",
+      suffix: "- TFP Tipper operation",
     },
     Debrief: {
-      prefix: "Debrief - ",
-      suffix: "driver debrief form",
+      prefix: "Debrief ",
+      suffix: "- driver debrief form",
     },
     default: {
       prefix: "Dashboard",
