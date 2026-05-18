@@ -43,7 +43,7 @@
   justify-content: space-between; /* Space between the title and the toggle */
   align-items: center;
   width: calc(100% - 340px);
-  margin-left: 260px;
+  margin-left: 290px;
   font-size: small;
   z-index: 1;
 }
