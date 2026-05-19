@@ -619,6 +619,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
           ? sourceCache.michelin.data
           : [];
       }
+      // Tag Michelin vehicles as canonical source
+      existingVehicles = existingVehicles.map(v => ({
+        ...v,
+        __source: "michelin"
+      }));
+
       if (blueCrystalResponse.status === "fulfilled") {
         const arr = normaliseToArray(blueCrystalResponse.value.data);
         maintenanceDetails = cacheIfNonEmpty("blueCrystal", arr);
@@ -639,6 +645,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
           ? sourceCache.volvoMapped.data
           : [];
       }
+      // Tag Volvo vehicles as canonical source    
+      volvoMapped = volvoMapped.map(v => ({
+        ...v,
+        __source: "volvo"
+      }));
+
+
       if (nightOutMetadataResult.status !== "fulfilled") {
         console.warn("Night-Out metadata from MongoDB API failed — continuing");
         nightOutMetadata = isFresh(sourceCache.nightOut.ts) ? sourceCache.nightOut.data : [];
@@ -721,6 +734,100 @@ router.get("/", auth, diagnostics, async (req, res) => {
       })
     );
 
+    // Dedupe & canonical merge
+    // Prefer VIN → registration → assetName
+    const getVehicleKey = (v) =>
+      v.assetVin ||
+      v.assetRegistration ||
+      v.assetName?.replace(/\s+/g, "").toUpperCase();
+
+    // Michelin is canonical, Volvo is enrichment
+    const mergeMichelinAndVolvo = (a, b) => {
+      const michelin = a.__source === "michelin" ? a : b;
+      const volvo = a.__source === "volvo" ? a : b;
+
+      // If both exist, Michelin always wins for operational state
+      if (michelin && volvo) {
+        return {
+          ...michelin,
+
+          // Take Volvo GNSS only if Michelin is missing it
+          latitude: michelin.latitude ?? volvo.latitude,
+          longitude: michelin.longitude ?? volvo.longitude,
+
+          // Never allow Volvo driving to override Michelin stopped
+          eventType: michelin.eventType ?? volvo.eventType,
+          status: michelin.status ?? volvo.status,
+
+          __mergedFrom: ["michelin", "volvo"]
+        };
+      }
+
+      // Only one source exists
+      return a.__source === "michelin" ? a : b;
+    };
+
+    const dedupedMap = new Map();
+
+    for (const vehicle of mergedVehicles) {
+      const key = getVehicleKey(vehicle);
+      if (!key) continue;
+
+      if (!dedupedMap.has(key)) {
+        dedupedMap.set(key, vehicle);
+      } else {
+        const existing = dedupedMap.get(key);
+        dedupedMap.set(key, mergeMichelinAndVolvo(existing, vehicle));
+      }
+    }
+
+    const dedupedVehicles = Array.from(dedupedMap.values());
+
+    const getVehicleKey = (v) =>
+      v.assetVin ||
+      v.assetRegistration ||
+      v.assetName?.replace(/\s+/g, "").toUpperCase();
+
+    const pickBestVehicle = (a, b) => {
+      // Prefer depot-aware record
+      const aIsDepot = a.locationGroupName === "Buffaload";
+      const bIsDepot = b.locationGroupName === "Buffaload";
+      if (aIsDepot !== bIsDepot) return aIsDepot ? a : b;
+
+      // Prefer stopped over driving
+      const aStopped = a.eventType === "stopped";
+      const bStopped = b.eventType === "stopped";
+      if (aStopped !== bStopped) return aStopped ? a : b;
+
+      // Prefer most recent update
+      const aTs = new Date(a.date).getTime();
+      const bTs = new Date(b.date).getTime();
+      if (aTs !== bTs) return aTs > bTs ? a : b;
+
+      // Prefer Michelin over Volvo if still tied
+      const aIsVolvo = a.assetName?.startsWith("[VOLVO]");
+      const bIsVolvo = b.assetName?.startsWith("[VOLVO]");
+      if (aIsVolvo !== bIsVolvo) return aIsVolvo ? b : a;
+
+      return a;
+    };
+
+    const dedupedMap = new Map();
+
+    for (const vehicle of mergedVehicles) {
+      const key = getVehicleKey(vehicle);
+      if (!key) continue;
+
+      if (!dedupedMap.has(key)) {
+        dedupedMap.set(key, vehicle);
+      } else {
+        const existing = dedupedMap.get(key);
+        dedupedMap.set(key, pickBestVehicle(existing, vehicle));
+      }
+    }
+
+    const dedupedVehicles = Array.from(dedupedMap.values());
+
     const filteredVehicles = mergedVehicles; // All users see all vehicles
     
     if (forceDebug) {
@@ -741,7 +848,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
       return res.json(sourceCache.combined.data);
     }
 
-    res.json(mergedVehicles);
+    res.json(dedupedVehicles);
   } catch (err) {
     if (forceDebug) {
       return res.status(500).json({
