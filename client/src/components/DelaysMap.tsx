@@ -47,6 +47,19 @@ const toDate = (value: string | number | Date): Date => {
   return value instanceof Date ? value : new Date(value);
 };
 
+const formatRegistration = (value?: string) => {
+  if (!value) return value;
+
+  const reg = value.trim();
+
+  // Only act on exactly 7 characters with no existing space
+  if (reg.length === 7 && !reg.includes(" ")) {
+    return `${reg.slice(0, 4)} ${reg.slice(4)}`;
+  }
+
+  return reg;
+};
+
 const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   // Refs to persist map and markers across re-renders
   const mapRef = useRef<L.Map | null>(null);
@@ -340,11 +353,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         });
 
         // Add registration text in the center of the circle
-        const regValue = vehicle.assetName;
-        const reg =
-          regValue !== undefined && regValue !== null 
-            ? regValue.split(" - ")[0] // Extract registration from assetName
-            : 'N/A';
+        const rawReg = formatRegistration(
+          vehicle.assetRegistration ??
+          vehicle.assetName?.replace(/^\[VOLVO\]\s*/i, "")
+        );
+
+        const reg = formatRegistration(rawReg) ?? "N/A";
+
         circleMarker.bindTooltip(reg, {
           permanent: true,
           direction: 'center',
