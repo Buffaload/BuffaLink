@@ -82,6 +82,19 @@ const hasAssetName = (
   return typeof v.assetName === "string" && v.assetName.length > 0;
 };
 
+const formatRegistration = (value?: string) => {
+  if (!value) return value;
+
+  const reg = value.trim();
+
+  // Only act on exactly 7 characters with no existing space
+  if (reg.length === 7 && !reg.includes(" ")) {
+    return `${reg.slice(0, 4)} ${reg.slice(4)}`;
+  }
+
+  return reg;
+};
+
 // Helper function for percentage calculation and color coding for service/MOT due dates
 const getProgressColorClass = (percentage: number) => {
   if (percentage < 33.33) return "progress-red";
@@ -724,7 +737,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     {/* Top / Header */}                 
                     <header className="vehicle-card__header">
                       <div className="vehicle-card__title">
-                        <h2 className="vehicle-reg">{vehicle.assetName}</h2>
+                        <h2 className="vehicle-reg">
+                          {formatRegistration(vehicle.assetRegistration ?? vehicle.assetName)}
+                        </h2>
                       </div>
 
                       <div className="vehicle-card__top-right">

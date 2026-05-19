@@ -404,7 +404,8 @@
 .vehicle-reg {
   font-size: 18px;
   font-weight: 900;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin: 0;
   color: #111827;
 }
@@ -492,6 +493,7 @@
   align-items: center;
   justify-content: center;
   line-height: 0;
+  margin-right: 6px;
 }
 
 .status-pill__icon svg {

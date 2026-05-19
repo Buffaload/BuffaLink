@@ -286,12 +286,18 @@
   font-weight: bold !important;
   font-size: 10px !important;
   text-align: center !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  text-align: center !important;
+  line-height: 1.1 !important;
+  max-width: 32px !important;
   box-shadow: none !important;
   padding: 2px 4px !important;
   min-width: 32px !important;
   min-height: 16px !important;
   line-height: 1 !important;
   pointer-events: none !important;
+  transform: translateY(-1px);
 }
 
 /* Ensure Leaflet popup styling is consistent */
