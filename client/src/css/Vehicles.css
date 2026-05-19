@@ -302,6 +302,26 @@
 }
 
 /* Styling for the vehicle list */
+/* Vehicle list grid (cards side-by-side) */
+.vehicle-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+  /* Responsive columns */
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  align-items: start;
+}
+
+.vehicle-list--depots {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.vehicle-list--critical {
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
 .vehicle-card {
   position: relative;
   display: flex;
@@ -427,6 +447,7 @@
 .status-pill {
   display: inline-flex;
   align-items: center;
+  line-height: 1;
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -435,6 +456,21 @@
   border: 1px solid rgba(17,24,39,0.12);
   background: rgba(255,255,255,0.65);
   color: #111827;
+}
+
+.status-pill__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.status-pill__icon svg {
+  display: block;
+}
+
+.status-pill__text {
+  line-height: 1;
 }
 
 .status-pill--stopped { --pill: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.25); background: var(--pill); color: #991b1b; }
@@ -577,7 +613,7 @@
 }
 
 /* Add a subtle industrial pattern for VOR */
-.vehicle-card.vor-muted::after {
+/* .vehicle-card.vor-muted::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -589,7 +625,7 @@
       rgba(255,255,255,0.00) 10px 20px
     );
   opacity: 0.6;
-}
+} */
 
 /* Night-Out styling (sleek navy theme) */
 .vehicle-card.night-out {
@@ -1116,10 +1152,12 @@
 }
 
 .vehicle-card.vor-muted {
-  position: relative;
-  background: #f3f4f6; /* light grey */
-  color: #111827; /* dark text */
-  border: 1px solid #9ca3af; /* mid grey border */
+  --card-accent: #6b7280;
+  --card-tint: rgba(243, 244, 246, 0.96);
+  --card-border: rgba(107,114,128,0.30);
+  background: linear-gradient(180deg, var(--card-tint), #ffffff);
+  border: 1px solid var(--card-border);
+  color: #111827;
 }
 
 /* subtle grey spine */
@@ -1134,21 +1172,6 @@
     #9ca3af 0 10px,
     #e5e7eb 10px 20px
   );
-}
-
-/* VOR badge (grey) */
-.vehicle-card.vor-muted::after {
-  content: "VOR";
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  background: #6b7280;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* Mobile responsiveness */
