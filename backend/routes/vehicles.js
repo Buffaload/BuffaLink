@@ -735,11 +735,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
     );
 
     // Dedupe & canonical merge
-    // Prefer VIN → registration → assetName
-    const getVehicleKey = (v) =>
-      v.assetVin ||
-      v.assetRegistration ||
-      v.assetName?.replace(/\s+/g, "").toUpperCase();
+    // Prefer Registration (present in both Michelin + Volvo) → VIN → assetName
+    const normalizeKey = (val) =>
+      String(val ?? "").replace(/\s+/g, "").toUpperCase().trim();
+
+    const getVehicleKey = (v) => {
+      const reg = normalizeKey(v.assetRegistration);
+      if (reg) return `REG:${reg}`;
+
+      const vin = normalizeKey(v.assetVin);
+      if (vin) return `VIN:${vin}`;
+
+      const name = normalizeKey(v.assetName);
+      if (name) return `NAME:${name}`;
+
+      return null;
+    };
 
     // Michelin is canonical, Volvo is enrichment
     const mergeMichelinAndVolvo = (a, b) => {
@@ -782,38 +793,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     const dedupedVehicles = Array.from(dedupedMap.values());
-
-    const pickBestVehicle = (a, b) => {
-      // Prefer depot-aware record
-      const aIsDepot = a.locationGroupName === "Buffaload";
-      const bIsDepot = b.locationGroupName === "Buffaload";
-      if (aIsDepot !== bIsDepot) return aIsDepot ? a : b;
-
-      // Prefer stopped over driving
-      const aStopped = a.eventType === "stopped";
-      const bStopped = b.eventType === "stopped";
-      if (aStopped !== bStopped) return aStopped ? a : b;
-
-      // Prefer most recent update
-      const aTs = new Date(a.date).getTime();
-      const bTs = new Date(b.date).getTime();
-      if (aTs !== bTs) return aTs > bTs ? a : b;
-
-      // Prefer Michelin over Volvo if still tied
-      const aIsVolvo = a.assetName?.startsWith("[VOLVO]");
-      const bIsVolvo = b.assetName?.startsWith("[VOLVO]");
-      if (aIsVolvo !== bIsVolvo) return aIsVolvo ? b : a;
-
-      return a;
-    };
-
-    const filteredVehicles = mergedVehicles; // All users see all vehicles
     
     if (forceDebug) {
       res.set("X-Debug-Info", JSON.stringify(volvoDebug));
     }
 
-    if (mergedVehicles.length > 0) {
+    if (dedupedVehicles.length > 0) {
       sourceCache.combined = {
         ts: Date.now(),
         data: mergedVehicles,
@@ -821,7 +806,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     if (
-      mergedVehicles.length === 0 &&
+      dedupedVehicles.length === 0 &&
       isFresh(sourceCache.combined?.ts)
     ) {
       return res.json(sourceCache.combined.data);
