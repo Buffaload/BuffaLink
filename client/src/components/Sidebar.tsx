@@ -41,6 +41,7 @@ const Sidebar: React.FC<{
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Loader icons
   const showDepotSubTabs = filterOption === "Depots";
 
   const DEPOTS = [
@@ -89,7 +90,6 @@ const Sidebar: React.FC<{
   const { 
     data: vehicles = [],
     isLoading,
-    isFetching,
   } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
@@ -97,9 +97,15 @@ const Sidebar: React.FC<{
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
-  const isVehiclesLoading = isLoading || isFetching;
+  useEffect(() => {
+    if (!isLoading && vehicles.length >= 0) {
+      setHasLoadedOnce(true);
+    }
+  }, [isLoading, vehicles.length]);
+
+  const shouldShowInitialLoader = isLoading && !hasLoadedOnce;
   const renderSidebarValue = (value: number) =>
-    isVehiclesLoading  ? <InlineLoader size={14} /> : value;
+    shouldShowInitialLoader  ? <InlineLoader size={14} color="#ffffff" /> : value;
 
   // Calculate counts for badges
   const counts = useMemo(() => {
