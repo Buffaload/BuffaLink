@@ -82,9 +82,9 @@
 /* Sidebar Logo */
 .sidebar-logo {
   width: 100%;
-  max-width: 180px;
+  max-width: 200px;
   height: auto;
-  padding: 10px 0;
+  padding: 0;
   display: block;
   margin: 0 auto;
   object-fit: contain;
