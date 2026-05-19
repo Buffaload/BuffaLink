@@ -181,7 +181,7 @@
   gap: 10px;
 }
 
-/* Tiles - consistent with your depot tile visual language */
+/* Tiles */
 .admin-setting-tile {
   display: flex;
   align-items: center;

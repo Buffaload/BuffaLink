@@ -174,6 +174,80 @@ const getTimeSinceUpdate = (lastUpdated: string) => {
   return result;
 };
 
+const renderStatusIcon = (rawType?: string) => {
+  const type = (rawType ?? "unknown").toLowerCase();
+
+  // Simple inline SVGs (tiny + consistent + no extra imports)
+  const baseProps = {
+    width: 14,
+    height: 14,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    "aria-hidden": true as const,
+    focusable: "false" as const,
+  };
+
+  switch (type) {
+    case "stopped":
+      // pause icon
+      return (
+        <svg {...baseProps}>
+          <path d="M7 6h3v12H7V6Zm7 0h3v12h-3V6Z" fill="currentColor" />
+        </svg>
+      );
+
+    case "driving":
+      // arrow-right icon
+      return (
+        <svg {...baseProps}>
+          <path
+            d="M5 12h12m0 0-5-5m5 5-5 5"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+
+    case "idling":
+      // clock-ish icon
+      return (
+        <svg {...baseProps}>
+          <path
+            d="M12 8v5l3 2"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0Z"
+            stroke="currentColor"
+            strokeWidth="2.2"
+          />
+        </svg>
+      );
+
+    default:
+      // dot icon
+      return (
+        <svg {...baseProps}>
+          <path
+            d="M12 12a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 0 1 3.6 0Z"
+            fill="currentColor"
+          />
+          <path
+            d="M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0Z"
+            stroke="currentColor"
+            strokeWidth="2.2"
+          />
+        </svg>
+      );
+  }
+};
+
 type DepotMatchableVehicle = {
   locationName?: string | null;
   formattedAddress?: string | null;
@@ -635,180 +709,123 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   // Display Dashboard wizard on all pages other than Map/Kiosk mode
                   <li
                     key={vehicle.assetName}
+                    data-vor={isVor ? "true" : "false"}
+                    data-nightout={vehicle.isNightOut ? "true" : "false"}
                     className={`vehicle-card ${vorSkin} ${
                       vehicle.isNightOut ? "night-out" : ""
                     } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
                   >
-                    <span className="vehicle-card-content-header">
-                      {/* Ping dot only when alerting */}
-                      {!isVor && animationClass && (
-                        <span className="alert-ping" aria-hidden="true" />
-                      )}
 
-                      <div
-                        className={`vehicle-card-header ${
-                          filterOption === "Services" || filterOption === "Night-Out"
-                            ? "with-toggle"
-                            : "centered"
-                        }`}
-                      >
+                    {/* Top / Header */}
+                    <header className="vehicle-card__header">
+                      <div className="vehicle-card__title">
                         <h2 className="vehicle-reg">{vehicle.assetName}</h2>
-                        {filterOption === "Services" ||
-                        filterOption === "Night-Out" ? (
-                          <label className="toggle-container">
-                            <input
-                              type="checkbox"
-                              checked={!!vehicle.isNightOut}
-                              onChange={() => {
-                                  if (hasAssetName(vehicle)) {
-                                    toggleNightOut(vehicle);
-                                  }
-                              }}
-                            />
-                            <span className="toggle-slider"></span>
-                          </label>
-                        ) : null}
+
+                        <div className="vehicle-card__chips">
+                          {isVor && <span className="chip chip--vor">VOR</span>}
+                          {vehicle.LiveDefects && (
+                            <span className="chip chip--defects">LIVE DEFECTS</span>
+                          )}
+                        </div>
                       </div>
-                      <p>
-                        <br />
-                        <b className="vehicle-status">{vehicle.eventType}</b>
-                        <br />
-                        <span className="vehicle-time-since-update">
-                          {vehicle.date ? getTimeSinceUpdate(vehicle.date) : "--- : --- : ---"}
-                        </span>
-                      </p>
-                      <br />
-                      <hr></hr>
-                    </span>
-                    <span className="vehicle-card-main">
-                      <br />
-                      {serviceProgress ? (
-                        <div className="due-progress-block">
-                          <div className="due-progress-row">
-                            <span className="due-progress-label">Service health</span>
-                            <span className="due-progress-days">
-                              {serviceProgress.label}
-                            </span>
-                          </div>
-                          <div className="due-progress-bar">
-                            <div
-                              className={`due-progress-bar-inner ${serviceProgress.colorClass}`}
-                              style={{ width: `${serviceProgress.percentage}%` }}
-                            />
-                          </div>
+
+                      {(filterOption === "Services" || filterOption === "Night-Out") && (
+                        <label className="toggle-container" aria-label="Toggle night out">
+                          <input
+                            type="checkbox"
+                            checked={!!vehicle.isNightOut}
+                            onChange={() => {
+                              if (hasAssetName(vehicle)) toggleNightOut(vehicle);
+                            }}
+                          />
+                          <span className="toggle-slider" />
+                        </label>
+                      )}
+                    </header>
+
+                    {/* Meta row */}
+                    <div className="vehicle-card__meta">   
+                      <span className={`status-pill status-pill--${(vehicle.eventType || "unknown").toLowerCase()}`}>
+                        <span className="status-pill__icon">{renderStatusIcon(vehicle.eventType)}</span>
+                        <span className="status-pill__text">{(vehicle.eventType || "UNKNOWN").toUpperCase()}</span>
+                      </span>
+
+                      <span className="vehicle-time-since-update">
+                        {vehicle.date ? getTimeSinceUpdate(vehicle.date) : "--- : --- : ---"}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-card__divider" />
+
+                    {/* Health */}
+                    <section className="vehicle-card__health" aria-label="Vehicle compliance health">
+                      {/* Service */}
+                      <div className="health-block">
+                        <div className="health-block__row">
+                          <span className="health-block__label">Service health</span>
+                          <span className="health-block__hint">{serviceProgress?.label ?? ""}</span>
                         </div>
-                      ) : (
-                        <div className="due-progress-block">
-                          <div className="due-progress-row">
-                            <span className="due-progress-label">Service health</span>
-                            <span className="due-progress-days"></span>
-                          </div>
-                          <div className="due-progress-bar empty-progress-bar">
-                            <div
-                              className={`due-progress-bar-inner`}
-                              style={{ width: `0` }}
-                            />
-                          </div>
+
+                        <div className={`due-progress-bar ${serviceProgress ? "" : "empty-progress-bar"}`}>
+                          <div
+                            className={`due-progress-bar-inner ${serviceProgress?.colorClass ?? ""}`}
+                            style={{ width: `${serviceProgress?.percentage ?? 0}%` }}
+                          />
                         </div>
-                      )}
-                      {serviceProgress ? (
-                        <p className="vehicle-subheading"
-                          style={{
-                            color: isDatePast(vehicle.ServiceDueDate ?? "")
-                              ? "red"
-                              : "#555",
-                          }}
-                        >
-                          <span className="vehicle-due-span">Due:</span>{" "}
-                          <b className="vehicle-due-dates">
-                            {vehicle.ServiceDueDate
-                            ? formatDate(vehicle.ServiceDueDate)
-                            : "N/A"}
-                          </b>
-                        </p>
-                      ) : (
-                        <p className="vehicle-subheading"
-                          style={{
-                            color: "#555",
-                          }}
-                        >
-                          <span className="vehicle-due-span">Data not available</span>
-                        </p>
-                      )}
-                      <br />
-                      {motProgress ? (
-                        <div className="due-progress-block">
-                          <div className="due-progress-row">
-                            <span className="due-progress-label">MOT health</span>
-                            <span className="due-progress-days">
-                              {motProgress.label}
-                            </span>
-                          </div>
-                          <div className="due-progress-bar">
-                            <div
-                              className={`due-progress-bar-inner ${motProgress.colorClass}`}
-                              style={{ width: `${motProgress.percentage}%` }}
-                            />
-                          </div>
+
+                        <div className={`health-block__sub ${isDatePast(vehicle.ServiceDueDate ?? "") ? "is-overdue" : ""}`}>
+                          {serviceProgress ? (
+                            <>
+                              <span className="vehicle-due-span">Due:</span>{" "}
+                              <b className="vehicle-due-dates">
+                                {vehicle.ServiceDueDate ? formatDate(vehicle.ServiceDueDate) : "N/A"}
+                              </b>
+                            </>
+                          ) : (
+                            <span className="muted">Data not available</span>
+                          )}
                         </div>
-                      ) : (
-                        <div className="due-progress-block">
-                          <div className="due-progress-row">
-                            <span className="due-progress-label">MOT health</span>
-                            <span className="due-progress-days"></span>
-                          </div>
-                          <div className="due-progress-bar empty-progress-bar">
-                            <div
-                              className={`due-progress-bar-inner`}
-                              style={{ width: `0` }}
-                            />
-                          </div>
+                      </div>
+
+                      {/* MOT */}
+                      <div className="health-block">
+                        <div className="health-block__row">
+                          <span className="health-block__label">MOT health</span>
+                          <span className="health-block__hint">{motProgress?.label ?? ""}</span>
                         </div>
-                      )}
-                      {motProgress ? (
-                        <p className="vehicle-subheading"
-                          style={{
-                            color: isDatePast(vehicle.MotDueDate ?? "")
-                              ? "red"
-                              : "#555",
-                          }}
-                        >
-                          <span className="vehicle-due-span">Due:</span>{" "}
-                          <b className="vehicle-due-dates">
-                            {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
-                          </b>
-                        </p>
-                      ) : (
-                        <p className="vehicle-subheading"
-                          style={{
-                            color: "#555",
-                          }}
-                        >
-                          <span className="vehicle-due-span">Data not available</span>
-                        </p>
-                      )}
-                      <br />
-                      {/* Conditionally show VOR and Live Defects only if true */}
-                      {vehicle.LiveDefects && (
-                        <p style={{ color: "red" }}>
-                          <b>LIVE DEFECTS</b>
-                        </p>
-                      )}
-                      <br />
-                    </span>
-                    <span className="vehicle-card-footer">
-                      <hr></hr>
-                      <br />
-                      <p className="vehicle-subheading">
-                        Location:{" "}
-                        <span className="vehicle-location">
-                          {vehicle.locationName ??
-                            vehicle.formattedAddress ??
-                            "undefined"}
-                        </span>
-                      </p>
-                      <br />
-                    </span>
+
+                        <div className={`due-progress-bar ${motProgress ? "" : "empty-progress-bar"}`}>
+                          <div
+                            className={`due-progress-bar-inner ${motProgress?.colorClass ?? ""}`}
+                            style={{ width: `${motProgress?.percentage ?? 0}%` }}
+                          />
+                        </div>
+
+                        <div className={`health-block__sub ${isDatePast(vehicle.MotDueDate ?? "") ? "is-overdue" : ""}`}>
+                          {motProgress ? (
+                            <>
+                              <span className="vehicle-due-span">Due:</span>{" "}
+                              <b className="vehicle-due-dates">
+                                {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+                              </b>
+                            </>
+                          ) : (
+                            <span className="muted">Data not available</span>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="vehicle-card__footer">
+                      <span className="vehicle-card__footer-label">Location</span>
+                      <span 
+                        className="vehicle-location"
+                        title={vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION"}
+                      >
+                        {vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION"}
+                      </span>
+                    </footer>
                   </li>
                 );
               })}

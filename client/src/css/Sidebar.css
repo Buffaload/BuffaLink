@@ -351,6 +351,64 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
+/* Services tile (derived from depot-tile) */
+.service-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  margin: 6px 20px 0 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.service-tile:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.service-tile:active {
+  transform: translateY(1px);
+}
+
+.service-tile.active {
+  border-color: #37d67a;
+  background: linear-gradient(
+    135deg,
+    rgba(55, 214, 122, 0.25),
+    rgba(55, 214, 122, 0.12)
+  );
+}
+
+/* Left label */
+.service-tile-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.service-tile-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right icon (replaces depot radio) */
+.service-tile-icon {
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
 /* Sidebar toggle button for mobile */
 .hamburger-menu {
   display: none;

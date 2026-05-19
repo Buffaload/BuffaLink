@@ -245,11 +245,12 @@ const Sidebar: React.FC<{
                     fontSize: "14px", // Smaller font size
                     paddingLeft: "50px", // Left indentation
                   }}
-                >
-                  <span className="sidebar-nav--submenu"> 
-                    <Moon className="sidebar-icon" />
-                    Night-Out
-                  </span> 
+                > 
+                  <span className="service-tile-left">
+                    <span className="service-tile-text">Night‑Out</span>
+                  </span>
+
+                  <Moon className="service-tile-icon" size={18} />
                 </button>
               </li>
               <li className="map-sidebar-link">
@@ -266,10 +267,11 @@ const Sidebar: React.FC<{
                     paddingLeft: "50px", // Left indentation
                   }}
                 >
-                  <span className="sidebar-nav--submenu"> 
-                    <Map className="sidebar-icon" />
-                    Map
+                  <span className="service-tile-left">
+                    <span className="service-tile-text">Map</span>
                   </span>
+
+                  <Map className="service-tile-icon" size={18} />
                 </button>
               </li>
             </ul>
