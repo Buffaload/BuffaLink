@@ -192,9 +192,10 @@ const SOURCE_CACHE_TTL_MS = Number(process.env.SOURCE_CACHE_TTL_MS ?? 120000);
 
 const sourceCache = {
   michelin: { ts: 0, data: [] },
-  volvo: { ts: 0, data: [] },
+  volvoMapped: { ts: 0, data: [] },
   blueCrystal: { ts: 0, data: [] },
   nightOut: { ts: 0, data: [] },
+  combined: { ts: 0, data: [] },
 };
 
 const normaliseToArray = (payload) => {
@@ -483,6 +484,47 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return axios.get(url, config);
       };
 
+      const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
+        // Build an index for O(1) lookup by VIN
+        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
+        return volvoVehicles
+          .map((v) => {
+            const p = posByVin.get(v.vin);
+            if (!p) return null;
+            const gnss = p.gnssPosition;
+            if (!gnss || gnss.latitude == null || gnss.longitude == null) return null; 
+            const rawSpeed = p.wheelBasedSpeed ?? gnss.speed ?? 0;
+            const speed = Number(rawSpeed);
+            // Volvo feeds often jitter around 0 when stationary; use a small threshold.
+            const MOVING_THRESHOLD = 1;
+            const isMoving = Number.isFinite(speed) && speed > MOVING_THRESHOLD;
+            const reg = v?.volvoGroupVehicle?.registrationNumber;
+            const name = v.customerVehicleName;
+            const lat = gnss.latitude;
+            const lon = gnss.longitude;
+
+            // Geofence match (depots / maintenance)
+            const site = matchGeofenceSite(lat, lon);
+
+            return {
+              assetName: `[VOLVO] ${reg || name || v.vin}`,
+              assetRegistration: reg || undefined,
+              assetType: "HGV",
+              assetGroupName: "HGVs",
+              eventType: isMoving ? "driving" : "stopped",
+              status: isMoving ? "In Transit" : "Available",
+              latitude: lat,
+              longitude: lon,
+              // Prefer GNSS timestamp; fallback to received/created times
+              date: gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
+              // If geofenced, set depot/maintenance name + group
+              locationName: site?.name ?? "Unknown location",
+              locationGroupName: site?.group ?? null,
+            };
+          })
+          .filter(Boolean);
+      };
+
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
         await Promise.allSettled([
           safeGet(apiUrl, {
@@ -597,49 +639,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
         nightOutMetadata = nightOutMetadataResult.value;
         sourceCache.nightOut = { ts: Date.now(), data: nightOutMetadata };
       }
-
-      const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
-        // Build an index for O(1) lookup by VIN
-        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
-        return volvoVehicles
-          .map((v) => {
-            const p = posByVin.get(v.vin);
-            if (!p) return null;
-            const gnss = p.gnssPosition;
-            if (!gnss || gnss.latitude == null || gnss.longitude == null) return null; 
-            const rawSpeed = p.wheelBasedSpeed ?? gnss.speed ?? 0;
-            const speed = Number(rawSpeed);
-            // Volvo feeds often jitter around 0 when stationary; use a small threshold.
-            const MOVING_THRESHOLD = 1;
-            const isMoving = Number.isFinite(speed) && speed > MOVING_THRESHOLD;
-            const reg = v?.volvoGroupVehicle?.registrationNumber;
-            const name = v.customerVehicleName;
-            const lat = gnss.latitude;
-            const lon = gnss.longitude;
-
-            // Geofence match (depots / maintenance)
-            const site = matchGeofenceSite(lat, lon);
-
-            return {
-              assetName: `[VOLVO] ${reg || name || v.vin}`,
-              assetRegistration: reg || undefined,
-              assetType: "HGV",
-              assetGroupName: "HGVs",
-              eventType: isMoving ? "driving" : "stopped",
-              status: isMoving ? "In Transit" : "Available",
-              latitude: lat,
-              longitude: lon,
-              // Prefer GNSS timestamp; fallback to received/created times
-              date: gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
-              // If geofenced, set depot/maintenance name + group
-              locationName: site?.name ?? "Unknown location",
-              locationGroupName: site?.group ?? null,
-            };
-          })
-          .filter(Boolean);
-      };
-
-      const volvoMapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
 
       volvoDebug = {
         useMockData,
