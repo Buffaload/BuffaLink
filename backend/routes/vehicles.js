@@ -783,11 +783,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     const dedupedVehicles = Array.from(dedupedMap.values());
 
-    const getVehicleKey = (v) =>
-      v.assetVin ||
-      v.assetRegistration ||
-      v.assetName?.replace(/\s+/g, "").toUpperCase();
-
     const pickBestVehicle = (a, b) => {
       // Prefer depot-aware record
       const aIsDepot = a.locationGroupName === "Buffaload";
