@@ -273,6 +273,7 @@
 .depots-info-banner, 
 .critical-info-banner {
   position: fixed;
+  top: 105px;
   display: flex;
   gap: 8px;
   justify-content: center;
@@ -282,7 +283,6 @@
   width: calc(100vw - 300px);
   max-width: 1000px;
   margin: 8px auto;
-  margin-top: -45px;
   padding: 8px;
   background-color: #fff4cc;          /* soft yellow */
   border: 2px solid #f0c040;           /* darker yellow border */
