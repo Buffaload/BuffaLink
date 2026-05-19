@@ -716,31 +716,33 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
                   >
 
-                    {/* Top / Header */}
+                    {/* Top / Header */}                 
                     <header className="vehicle-card__header">
                       <div className="vehicle-card__title">
                         <h2 className="vehicle-reg">{vehicle.assetName}</h2>
+                      </div>
 
+                      <div className="vehicle-card__top-right">
                         <div className="vehicle-card__chips">
                           {isVor && <span className="chip chip--vor">VOR</span>}
                           {vehicle.LiveDefects && (
                             <span className="chip chip--defects">LIVE DEFECTS</span>
                           )}
                         </div>
-                      </div>
 
-                      {(filterOption === "Services" || filterOption === "Night-Out") && (
-                        <label className="toggle-container" aria-label="Toggle night out">
-                          <input
-                            type="checkbox"
-                            checked={!!vehicle.isNightOut}
-                            onChange={() => {
-                              if (hasAssetName(vehicle)) toggleNightOut(vehicle);
-                            }}
-                          />
-                          <span className="toggle-slider" />
-                        </label>
-                      )}
+                        {(filterOption === "Services" || filterOption === "Night-Out") && (
+                          <label className="toggle-container" aria-label="Toggle night out">
+                            <input
+                              type="checkbox"
+                              checked={!!vehicle.isNightOut}
+                              onChange={() => {
+                                if (hasAssetName(vehicle)) toggleNightOut(vehicle);
+                              }}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                        )}
+                      </div>
                     </header>
 
                     {/* Meta row */}

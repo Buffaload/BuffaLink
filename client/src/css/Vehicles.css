@@ -367,6 +367,33 @@
   gap: 10px;
 }
 
+/* Top-right cluster: chips then toggle */
+.vehicle-card__top-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* Ensure chips sit in the top-right */
+.vehicle-card__chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+/* Keep header height consistent across cards */
+.vehicle-card__header {
+  min-height: 42px;
+  align-items: center;
+}
+
+.vehicle-card__title {
+  min-width: 0;
+}
+
 .vehicle-card__title {
   min-width: 0;
   display: flex;
@@ -386,6 +413,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-width: 220px;
+  justify-content: flex-end;
 }
 
 .chip {
@@ -612,46 +641,19 @@
   --card-border: rgba(107,114,128,0.30);
 }
 
-/* Add a subtle industrial pattern for VOR */
-/* .vehicle-card.vor-muted::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      -45deg,
-      rgba(107,114,128,0.08) 0 10px,
-      rgba(255,255,255,0.00) 10px 20px
-    );
-  opacity: 0.6;
-} */
-
 /* Night-Out styling (sleek navy theme) */
 .vehicle-card.night-out {
-  --card-accent: #60a5fa;
-  --card-tint: rgba(17, 24, 39, 0.92);
-  --card-border: rgba(148, 163, 184, 0.22);
-  color: #e5e7eb;
-}
+  --card-accent: #3b82f6; /* soft blue accent stripe */
+  --card-tint: rgba(239, 246, 255, 0.92); /* very light blue tint */
+  --card-border: rgba(59, 130, 246, 0.18);
 
-.vehicle-card.night-out .vehicle-reg,
-.vehicle-card.night-out .health-block__label,
-.vehicle-card.night-out .vehicle-time-since-update,
-.vehicle-card.night-out .health-block__hint,
-.vehicle-card.night-out .health-block__sub,
-.vehicle-card.night-out .vehicle-card__footer-label {
-  color: #e5e7eb;
-}
-
-.vehicle-card.night-out .status-pill {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.14);
-  color: #e5e7eb;
+  background: linear-gradient(180deg, var(--card-tint), #ffffff);
+  border: 1px solid var(--card-border);
+  color: inherit;
 }
 
 .vehicle-card.night-out .vehicle-location {
-  color: #93c5fd;
+  color: #0a70f7;
 }
 
 /* Toggle */
