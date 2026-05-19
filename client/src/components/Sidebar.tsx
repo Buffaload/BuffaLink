@@ -247,15 +247,6 @@ const Sidebar: React.FC<{
                   }}
                 >
                   <span className="sidebar-nav--submenu"> 
-                    <span
-                      style={{
-                        display: "inline-block",
-                        transform: "scaleX(-1)", // Flip horizontally
-                        marginRight: "8px",
-                      }}
-                    >
-                      ↩
-                    </span>
                     <Moon className="sidebar-icon" />
                     Night-Out
                   </span> 
@@ -276,15 +267,6 @@ const Sidebar: React.FC<{
                   }}
                 >
                   <span className="sidebar-nav--submenu"> 
-                    <span
-                      style={{
-                        display: "inline-block",
-                        transform: "scaleX(-1)", // Flip horizontally
-                        marginRight: "8px",
-                      }}
-                    >
-                      ↩
-                    </span>
                     <Map className="sidebar-icon" />
                     Map
                   </span>
