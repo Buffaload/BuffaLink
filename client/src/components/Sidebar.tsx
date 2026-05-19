@@ -89,6 +89,7 @@ const Sidebar: React.FC<{
   const { 
     data: vehicles = [],
     isLoading,
+    isFetching,
   } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
@@ -96,8 +97,9 @@ const Sidebar: React.FC<{
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
+  const isVehiclesLoading = isLoading || isFetching;
   const renderSidebarValue = (value: number) =>
-    isLoading ? <InlineLoader size={14} /> : value;
+    isVehiclesLoading  ? <InlineLoader size={14} /> : value;
 
   // Calculate counts for badges
   const counts = useMemo(() => {
@@ -244,7 +246,7 @@ const Sidebar: React.FC<{
               <button
                 type="button"
                 className={`depot-tile ${
-                  activeButton === "Night-Out" ? "active" : ""
+                  activeButton === "Night-Out" ? "depot-tile--active" : ""
                 }`}
                 onClick={() => {
                   forceScrollToTop();
@@ -262,7 +264,7 @@ const Sidebar: React.FC<{
               <button
                 type="button"
                 className={`depot-tile ${
-                  activeButton === "Delays" ? "active" : ""
+                  activeButton === "Delays" ? "depot-tile--active" : ""
                 }`}
                 onClick={() => {
                   forceScrollToTop();

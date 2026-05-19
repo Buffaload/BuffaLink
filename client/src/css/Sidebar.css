@@ -308,6 +308,19 @@
   outline-offset: 2px;
 }
 
+/* Active Night-Out / Map (green border highlight) */
+.depot-tile--active {
+  border-color: #37d67a;
+  background: linear-gradient(
+    135deg,
+    rgba(55, 214, 122, 0.22),
+    rgba(55, 214, 122, 0.10)
+  );
+  box-shadow:
+    0 0 0 2px rgba(55, 214, 122, 0.25),
+    0 0 12px rgba(55, 214, 122, 0.35);
+}
+
 /* Left side content */
 .depot-tile-left {
   display: inline-flex;
