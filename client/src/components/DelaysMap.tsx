@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef, useState, useCallback } from "react"
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import InlineLoader from "./InlineLoader";
 import "../css/DelaysMap.css";
 import API_BASE_URL from "../config";
 import { Pause, Play } from "lucide-react";
@@ -428,7 +429,11 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   }, [activeKioskPill, isCarouselPaused]);
   
   // Loading state
-  if (isLoading) return <p>Loading vehicles...</p>;
+  if (isLoading) return (
+    <div className="map-loading">
+      <InlineLoader size={28} />
+    </div>
+  );
 
   // Error state
   if (isError) {

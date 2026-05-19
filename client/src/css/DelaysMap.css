@@ -37,6 +37,13 @@
   flex: 1 1 auto;
 }
 
+.map-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
 .highlight-figures-map {
   position: fixed;
   top: 45px;

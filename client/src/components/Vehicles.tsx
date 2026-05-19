@@ -7,6 +7,7 @@ import {
   TriangleAlert,
   ChevronUp,
 } from "lucide-react";
+import InlineLoader from "./InlineLoader";
 import "../css/Vehicles.css";
 import API_BASE_URL from "../config";
 
@@ -557,7 +558,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
   };
 
   // Loading state
-  if (isLoading) return <p className="vehicle-placeholder-text">Loading vehicles...</p>;
+  if (isLoading) return (
+    <div className="vehicle-placeholder-text">
+      <InlineLoader size={24} />
+    </div>
+  );
 
   // Error state
   if (isError) {

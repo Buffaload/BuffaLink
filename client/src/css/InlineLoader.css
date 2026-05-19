@@ -1,0 +1,13 @@
+.inline-loader {
+    display: inline-block;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    animation: inline-spin 0.8s linear infinite;
+}
+
+@keyframes inline-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

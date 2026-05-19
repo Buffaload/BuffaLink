@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import InlineLoader from "./InlineLoader";
 import "../css/Sidebar.css";
 import ProfileButton from "./ProfileButton";
 
@@ -85,12 +86,18 @@ const Sidebar: React.FC<{
     throw new Error("Failed to fetch vehicles");
   };
 
-  const { data: vehicles = [] } = useQuery<Vehicle[]>({
+  const { 
+    data: vehicles = [],
+    isLoading,
+  } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
     refetchInterval: false,
     staleTime: 60000, // Data is fresh for 1 minute
   });
+
+  const renderSidebarValue = (value: number) =>
+    isLoading ? <InlineLoader size={14} /> : value;
 
   // Calculate counts for badges
   const counts = useMemo(() => {
@@ -201,7 +208,9 @@ const Sidebar: React.FC<{
               }}
             >
               <span className="sidebar-link-text"><Truck className="sidebar-icon" />HGVs</span>
-              <span className="sidebar-link-meta sidebar-value--grey">{counts.hgvsCount}</span>
+              <span className="sidebar-link-meta sidebar-value--grey">
+                {renderSidebarValue(counts.hgvsCount)}
+              </span>
             </button>
           </li>
           <li>
@@ -343,7 +352,9 @@ const Sidebar: React.FC<{
               }}
             >
               <span className="sidebar-link-text"><Wrench className="sidebar-icon" />Maintenance</span>
-              <span className="sidebar-link-meta sidebar-value--grey">{counts.maintenanceCount}</span>
+              <span className="sidebar-link-meta sidebar-value--grey">
+                {renderSidebarValue(counts.maintenanceCount)}
+              </span>
             </button>
           </li>
           <li>
@@ -357,7 +368,9 @@ const Sidebar: React.FC<{
               }}
             >
               <span className="sidebar-link-text"><TriangleAlert className="sidebar-icon" />Critical Alerts</span>
-              <span className={`sidebar-link-meta ${counts.criticalCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>{counts.criticalCount}</span>
+              <span className={`sidebar-link-meta ${counts.criticalCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>
+                {renderSidebarValue(counts.criticalCount)}
+              </span>
             </button>
           </li>
           {userRole === "admin" && (
@@ -374,7 +387,9 @@ const Sidebar: React.FC<{
                   }}
                 >
                   <span className="sidebar-link-text"><FileText className="sidebar-icon" />Tippers</span>
-                  <span className="sidebar-link-meta sidebar-value--grey">{counts.tippersCount}</span>
+                  <span className="sidebar-link-meta sidebar-value--grey">
+                    {renderSidebarValue(counts.tippersCount)}
+                  </span>
                 </button>
               </li>
             </>
