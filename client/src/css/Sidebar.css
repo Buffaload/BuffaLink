@@ -266,6 +266,10 @@
   margin-top: 6px;
 }
 
+.depot-grid--single {
+  grid-template-columns: 1fr;
+}
+
 /* 1 column on smaller screens */
 @media screen and (max-width: 768px) {
   .depot-grid {

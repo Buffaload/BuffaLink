@@ -231,50 +231,43 @@ const Sidebar: React.FC<{
           </li>
           {/* Sub-tab for "Services" */}
           {(filterOption === "Services" || filterOption === "Night-Out" || filterOption === "Delays") && (
-            <ul className="sidebar-nav">
-              <li>
-                <button
-                  className={`sidebar-link ${
-                    activeButton === "Night-Out" ? "active" : ""
-                  }`}            
-                  onClick={() => {
-                    forceScrollToTop();
-                    handleSubTabClick("Night-Out");
-                  }}
-                  style={{
-                    fontSize: "14px", // Smaller font size
-                    paddingLeft: "50px", // Left indentation
-                  }}
-                > 
-                  <span className="service-tile-left">
-                    <span className="service-tile-text">Night‑Out</span>
-                  </span>
+            <div className="depot-grid depot-grid--single">
+              <button
+                type="button"
+                className={`depot-tile ${
+                  activeButton === "Night-Out" ? "active" : ""
+                }`}
+                onClick={() => {
+                  forceScrollToTop();
+                  handleSubTabClick("Night-Out");
+                }}
+                aria-pressed={activeButton === "Night-Out"}
+              >
+                <span className="depot-tile-left">
+                  <span className="depot-name">Night-Out</span>
+                </span>
 
-                  <Moon className="service-tile-icon" size={18} />
-                </button>
-              </li>
-              <li className="map-sidebar-link">
-                <button
-                  className={`sidebar-link ${
-                    activeButton === "Delays" ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    forceScrollToTop();
-                    handleSubTabClick("Delays");
-                  }}
-                  style={{
-                    fontSize: "14px", // Smaller font size
-                    paddingLeft: "50px", // Left indentation
-                  }}
-                >
-                  <span className="service-tile-left">
-                    <span className="service-tile-text">Map</span>
-                  </span>
+                <Moon className="service-right-icon" size={18} />
+              </button>
 
-                  <Map className="service-tile-icon" size={18} />
-                </button>
-              </li>
-            </ul>
+              <button
+                type="button"
+                className={`depot-tile ${
+                  activeButton === "Delays" ? "active" : ""
+                }`}
+                onClick={() => {
+                  forceScrollToTop();
+                  handleSubTabClick("Delays");
+                }}
+                aria-pressed={activeButton === "Delays"}
+              >
+                <span className="depot-tile-left">
+                  <span className="depot-name">Map</span>
+                </span>
+
+                <Map className="service-right-icon" size={18} />
+              </button>
+            </div>
           )}
           <li>
             <button
