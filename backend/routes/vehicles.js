@@ -807,22 +807,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       return a;
     };
 
-    const dedupedMap = new Map();
-
-    for (const vehicle of mergedVehicles) {
-      const key = getVehicleKey(vehicle);
-      if (!key) continue;
-
-      if (!dedupedMap.has(key)) {
-        dedupedMap.set(key, vehicle);
-      } else {
-        const existing = dedupedMap.get(key);
-        dedupedMap.set(key, pickBestVehicle(existing, vehicle));
-      }
-    }
-
-    const dedupedVehicles = Array.from(dedupedMap.values());
-
     const filteredVehicles = mergedVehicles; // All users see all vehicles
     
     if (forceDebug) {
