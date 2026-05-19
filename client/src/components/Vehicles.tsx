@@ -277,16 +277,22 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     if (response.status === 200) {
       const data = response.data;
-      
-      if (Array.isArray(data)) {
-        return data;
+
+      const arr =
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.vehicles)
+          ? data.vehicles
+          : [];
+
+      if (arr.length === 0) {
+        const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
+        if (previous?.length) {
+          return previous;
+        }
       }
 
-      if (Array.isArray(data?.vehicles)) {
-        return data.vehicles;
-      }
-
-      return [];
+      return arr;
     }
     throw new Error("Failed to fetch vehicles");
   };

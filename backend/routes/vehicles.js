@@ -73,6 +73,27 @@ const GEOFENCE_SITES = [
     latitude: 53.540878,
     longitude: -2.786520,
   },
+  {
+    key: "BELSHILL",
+    name: "BUFFALOAD BELSHILL",
+    group: "Buffaload",
+    latitude: 55.8203,
+    longitude: -3.9803,
+  },
+  {
+    key: "COVENTRY",
+    name: "BUFFALOAD COVENTRY",
+    group: "Buffaload",
+    latitude: 52.4068,
+    longitude: -1.5197,
+  },
+  {
+    key: "AVONMOUTH",
+    name: "BUFFALOAD AVONMOUTH",
+    group: "Buffaload",
+    latitude: 51.5009,
+    longitude: -2.7003,
+  },
 ];
 
 // Returns the matching geofence site (or null) for given coordinates
@@ -92,6 +113,36 @@ const matchGeofenceSite = (latitude, longitude) => {
 
   if (best && bestDist <= GEOFENCE_RADIUS_METERS) {
     return { ...best, distanceMeters: bestDist };
+  }
+  return null;
+};
+
+const normalizeText = (s) =>
+  String(s ?? "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const DEPOT_TEXT_MATCHERS = [
+  { depot: "Ellington", patterns: [/ELLINGTON/i] },
+  { depot: "Crewe", patterns: [/CREWE/i] },
+  { depot: "Skelmersdale", patterns: [/SKELMERSDALE/i] },
+  { depot: "Belshill", patterns: [/BELSHILL/i] },
+  { depot: "Coventry", patterns: [/COVENTRY/i, /CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i] },
+  { depot: "Avonmouth", patterns: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i] },
+];
+
+const matchDepotByText = (vehicle) => {
+  const hay = normalizeText(
+    [
+      vehicle?.locationName,
+      vehicle?.formattedAddress,
+      vehicle?.locationGroupName,
+    ].filter(Boolean).join(" | ")
+  );
+
+  for (const entry of DEPOT_TEXT_MATCHERS) {
+    if (entry.patterns.some((re) => re.test(hay))) return entry.depot;
   }
   return null;
 };
@@ -136,6 +187,35 @@ async function fetchVolvoPaged({
 
   return all;
 }
+
+const SOURCE_CACHE_TTL_MS = Number(process.env.SOURCE_CACHE_TTL_MS ?? 120000);
+
+const sourceCache = {
+  michelin: { ts: 0, data: [] },
+  volvo: { ts: 0, data: [] },
+  blueCrystal: { ts: 0, data: [] },
+  nightOut: { ts: 0, data: [] },
+};
+
+const normaliseToArray = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.vehicles)) return payload.vehicles;
+  return null;
+};
+
+const cacheIfNonEmpty = (key, arr) => {
+  if (Array.isArray(arr) && arr.length > 0) {
+    sourceCache[key] = { ts: Date.now(), data: arr };
+    return arr;
+  }
+
+  // Do NOT wipe cache on empty-but-successful responses
+  return isFresh(sourceCache[key]?.ts)
+    ? sourceCache[key].data
+    : [];
+};
+
+const isFresh = (ts) => Date.now() - ts <= SOURCE_CACHE_TTL_MS;
 
 const router = express.Router();
 
@@ -476,33 +556,46 @@ router.get("/", auth, diagnostics, async (req, res) => {
         console.log("[VOLVO /vehiclepositions] fulfilled", { count: volvoPositionsResponse.value?.length ?? 0 });
       }
 
-      if (vehicleResponse.status !== "fulfilled") {
+      let volvoMapped = [];
+
+      const volvoVehiclesOk = volvoVehiclesResponse.status === "fulfilled";
+      const volvoPositionsOk = volvoPositionsResponse.status === "fulfilled";
+
+      if (vehicleResponse.status === "fulfilled") {
+        const arr = normaliseToArray(vehicleResponse.value.data);
+        existingVehicles = cacheIfNonEmpty("michelin", arr);
+      } else {
         console.warn("Primary vehicle API failed — continuing");
-        existingVehicles = [];
-      } else {
-        existingVehicles = vehicleResponse.value.data;
+        existingVehicles = isFresh(sourceCache.michelin.ts)
+          ? sourceCache.michelin.data
+          : [];
       }
-      if (blueCrystalResponse.status !== "fulfilled") {
+      if (blueCrystalResponse.status === "fulfilled") {
+        const arr = normaliseToArray(blueCrystalResponse.value.data);
+        maintenanceDetails = cacheIfNonEmpty("blueCrystal", arr);
+      } else {
         console.warn("BlueCrystal API failed — continuing");
-        maintenanceDetails = [];
-      } else {
-        maintenanceDetails = blueCrystalResponse.value.data;
+        maintenanceDetails = isFresh(sourceCache.blueCrystal.ts)
+          ? sourceCache.blueCrystal.data
+          : [];
       }
-      if (volvoVehiclesResponse.status === "fulfilled") {
+      if (volvoVehiclesOk && volvoPositionsOk) {
         volvoVehicles = volvoVehiclesResponse.value;
-      } else {
-        volvoVehicles = [];
-      }
-      if (volvoPositionsResponse.status === "fulfilled") {
         volvoPositions = volvoPositionsResponse.value;
+
+        const mapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
+        volvoMapped = cacheIfNonEmpty("volvoMapped", mapped);
       } else {
-        volvoPositions = [];
+        volvoMapped = isFresh(sourceCache.volvoMapped.ts)
+          ? sourceCache.volvoMapped.data
+          : [];
       }
       if (nightOutMetadataResult.status !== "fulfilled") {
         console.warn("Night-Out metadata from MongoDB API failed — continuing");
-        nightOutMetadata = [];
+        nightOutMetadata = isFresh(sourceCache.nightOut.ts) ? sourceCache.nightOut.data : [];
       } else {
         nightOutMetadata = nightOutMetadataResult.value;
+        sourceCache.nightOut = { ts: Date.now(), data: nightOutMetadata };
       }
 
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
@@ -602,8 +695,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
           nightOutMap[normalisedAssetName] = false; // Update in-memory map
         }
 
+        const depotByText = matchDepotByText(vehicle);
+
         return {
           ...vehicle,
+          depotMatch: depotByText ?? null,
+          locationGroupName: depotByText ? "Buffaload" : vehicle.locationGroupName,
           ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
           MotDueDate: maintenance?.MotDueDate || "N/A",
           IsVor: maintenance?.IsVor ?? false,
@@ -616,12 +713,24 @@ router.get("/", auth, diagnostics, async (req, res) => {
     const filteredVehicles = mergedVehicles; // All users see all vehicles
     
     if (forceDebug) {
-      return res.json({ 
-        vehicles: filteredVehicles, 
-        _debug: volvoDebug 
-      });
+      res.set("X-Debug-Info", JSON.stringify(volvoDebug));
     }
-    res.json(filteredVehicles);
+
+    if (mergedVehicles.length > 0) {
+      sourceCache.combined = {
+        ts: Date.now(),
+        data: mergedVehicles,
+      };
+    }
+
+    if (
+      mergedVehicles.length === 0 &&
+      isFresh(sourceCache.combined?.ts)
+    ) {
+      return res.json(sourceCache.combined.data);
+    }
+
+    res.json(mergedVehicles);
   } catch (err) {
     if (forceDebug) {
       return res.status(500).json({
