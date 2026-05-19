@@ -275,12 +275,13 @@ const normalizeDepotText = (value: string | null | undefined) =>
     .trim();
 
 const DEPOT_ALIASES: Record<string, string[]> = {
-  COVENTRY: ["COVENTRY", "CO-OP COVENTRY", "COOP COVENTRY"],
-  AVONMOUTH: ["AVONMOUTH", "CO-OP AVONMOUTH", "COOP AVONMOUTH"],
-  BELSHILL: ["BELSHILL"],
   ELLINGTON: ["ELLINGTON"],
   CREWE: ["CREWE"],
   SKELMERSDALE: ["SKELMERSDALE", "SKELMERSDALE DEPOT"],
+  COVENTRY: ["CO-OP COVENTRY", "COOP COVENTRY"],
+  // Geofence-only depots (backend decides)
+  AVONMOUTH: [],
+  BELSHILL: [],
 };
 
 const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>

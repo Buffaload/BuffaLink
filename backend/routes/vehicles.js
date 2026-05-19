@@ -58,6 +58,7 @@ const GEOFENCE_SITES = [
     group: "Buffaload",
     latitude: 52.335571,
     longitude: -0.294590,
+    radius: 700,
   },
   {
     key: "CREWE",
@@ -65,6 +66,7 @@ const GEOFENCE_SITES = [
     group: "Buffaload",
     latitude: 53.088139,
     longitude: -2.420820,
+    radius: 700,
   },
   {
     key: "SKELMERSDALE",
@@ -72,6 +74,7 @@ const GEOFENCE_SITES = [
     group: "Buffaload",
     latitude: 53.540878,
     longitude: -2.786520,
+    radius: 700,
   },
   {
     key: "BELSHILL",
@@ -79,6 +82,7 @@ const GEOFENCE_SITES = [
     group: "Buffaload",
     latitude: 55.8203,
     longitude: -3.9803,
+    radius: 350,
   },
   {
     key: "COVENTRY",
@@ -86,6 +90,7 @@ const GEOFENCE_SITES = [
     group: "Buffaload",
     latitude: 52.4068,
     longitude: -1.5197,
+    radius: 600,
   },
   {
     key: "AVONMOUTH",
@@ -93,6 +98,7 @@ const GEOFENCE_SITES = [
     group: "Buffaload",
     latitude: 51.5009,
     longitude: -2.7003,
+    radius: 350,
   },
 ];
 
@@ -111,7 +117,7 @@ const matchGeofenceSite = (latitude, longitude) => {
     }
   }
 
-  if (best && bestDist <= GEOFENCE_RADIUS_METERS) {
+  if (best && bestDist <= (best.radius ?? 650)) {
     return { ...best, distanceMeters: bestDist };
   }
   return null;
@@ -127,9 +133,10 @@ const DEPOT_TEXT_MATCHERS = [
   { depot: "Ellington", patterns: [/ELLINGTON/i] },
   { depot: "Crewe", patterns: [/CREWE/i] },
   { depot: "Skelmersdale", patterns: [/SKELMERSDALE/i] },
-  { depot: "Belshill", patterns: [/BELSHILL/i] },
-  { depot: "Coventry", patterns: [/COVENTRY/i, /CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i] },
-  { depot: "Avonmouth", patterns: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i] },
+  { 
+    depot: "Coventry", 
+    patterns: [/CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i] 
+  },
 ];
 
 const matchDepotByText = (vehicle) => {
@@ -694,7 +701,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
           nightOutMap[normalisedAssetName] = false; // Update in-memory map
         }
 
-        const depotByText = matchDepotByText(vehicle);
+        const site = matchGeofenceSite(vehicle.latitude, vehicle.longitude);
+
+        const depotByText =
+          site?.key === "AVONMOUTH" || site?.key === "BELSHILL"
+            ? null
+            : matchDepotByText(vehicle);
 
         return {
           ...vehicle,
