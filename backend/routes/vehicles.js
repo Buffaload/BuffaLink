@@ -222,43 +222,6 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
-  try {
-    const { data } = await axios.get(
-      "https://nominatim.openstreetmap.org/reverse",
-      {
-        params: {
-          lat,
-          lon,
-          format: "json",
-          zoom: 18,
-          addressdetails: 1,
-        },
-        headers: {
-          "User-Agent": "BuffaLink/1.0 (ops@buffaload.co.uk)",
-        },
-        timeout: 8000,
-      }
-    );
-
-    const name =
-      data?.name ||
-      data?.address?.supermarket ||
-      data?.address?.road ||
-      data?.address?.industrial ||
-      data?.display_name ||
-      null;
-
-    if (name) {
-      reverseGeocodeCache.set(key, { ts: Date.now(), value: name });
-    }
-
-    return name;
-  } catch (err) {
-    console.warn("Reverse geocode failed", err.message);
-    return null;
-  }
-}
-
 async function fetchVolvoPaged({
   axiosInstance,
   path,
