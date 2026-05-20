@@ -2,10 +2,13 @@ import express from "express";
 import axios from "axios";
 import crypto from "crypto";
 import pLimit from "p-limit";
+import https from "https";
 import auth from "../middleware/auth.js";
 import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
 import { depotVisibilityRules } from "../config/visibilityRules.js";
+
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
 
 const VOLVO_BASE_URL = "https://api.volvotrucks.com/vehicle";
 
@@ -252,6 +255,9 @@ async function fetchVolvoPaged({
 }
 
 const SOURCE_CACHE_TTL_MS = Number(process.env.SOURCE_CACHE_TTL_MS ?? 120000);
+const MICHELIN_RETRY_ATTEMPTS = Number(process.env.MICHELIN_RETRY_ATTEMPTS ?? 1); // 1 retry => 2 total tries
+const BLUE_RETRY_ATTEMPTS = Number(process.env.BLUE_RETRY_ATTEMPTS ?? 0);
+const REQUIRE_MICHELIN_COMPLETE = String(process.env.REQUIRE_MICHELIN_COMPLETE ?? "1") === "1";
 
 const sourceCache = {
   michelin: { ts: 0, data: [] },
@@ -261,9 +267,24 @@ const sourceCache = {
   combined: { ts: 0, data: [] },
 };
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function withRetry(fn, { attempts = 1, baseDelayMs = 250 } = {}) {
+  let lastErr;
+  for (let i = 0; i <= attempts; i++) {
+    try {
+      return await fn(i);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts) await sleep(baseDelayMs * Math.pow(2, i));
+    }
+  }
+  throw lastErr;
+}
+
 const normaliseToArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.vehicles)) return payload.vehicles;
+  if (Array.isArray(payload?.vehicleResponse?.vehicles)) return payload.vehicleResponse.vehicles;
   return null;
 };
 
@@ -308,6 +329,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
     let volvoPositions = [];
     let nightOutMetadata = [];
     let volvoDebug = {};
+    let sourceDebug = { michelin: null, blueCrystal: null, volvoVehicles: null, volvoPositions: null };
 
     if (useMockData) {
       // DEVELOPMENT MODE: Return mock data for local development
@@ -538,13 +560,18 @@ router.get("/", auth, diagnostics, async (req, res) => {
         baseURL: VOLVO_BASE_URL,
         auth: { username: volvoUsername, password: volvoPassword },
         timeout: 15000,
+        httpsAgent,
       });
 
       const safeGet = (url, config) => {
         if (!url) {
           return Promise.reject(new Error("Missing required URL env var"));
         }
-        return axios.get(url, config);
+        return axios.get(url, {
+          httpsAgent,
+          timeout: 25000,
+          ...config,
+        });
       };
 
       
@@ -597,18 +624,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
         await Promise.allSettled([
-          safeGet(apiUrl, {
-            auth: {
-              username: apiUsername,
-              password: apiPassword,
-            },
-          }),
-          safeGet(blueCrystalApiUrl, {
-            headers: {
-              "x-api-key": blueCrystalApiKey,
-              "x-end-point": "public.v1",
-            },
-          }),
+          // Michelin with retry: prevents Volvo-only first loads when Michelin is flaky/cold
+          withRetry(
+            () =>
+              safeGet(apiUrl, {
+                auth: { username: apiUsername, password: apiPassword },
+              }),
+            { attempts: MICHELIN_RETRY_ATTEMPTS, baseDelayMs: 300 }
+          ),
+          // BlueCrystal optional retry
+          withRetry(
+            () =>
+              safeGet(blueCrystalApiUrl, {
+                headers: { "x-api-key": blueCrystalApiKey, "x-end-point": "public.v1" },
+              }),
+            { attempts: BLUE_RETRY_ATTEMPTS, baseDelayMs: 300 }
+          ),
           fetchVolvoPaged({
             axiosInstance: volvoAxios,
             path: "/vehicles",
@@ -628,25 +659,15 @@ router.get("/", auth, diagnostics, async (req, res) => {
           VehicleMetadata.find({}),
         ]);
     
-      // Catch 401/403/406 errors
-      const logSettled = (name, r) => {
-        if (r.status === "rejected") {
-          const e = r.reason;
-          console.warn(`[${name}] rejected`, {
-            message: e?.message,
-            status: e?.response?.status,
-            data: e?.response?.data,
-          });
-        } else {
-          console.log(`[${name}] fulfilled`, {
-            status: r.value?.status,
-            contentType: r.value?.headers?.["content-type"],
-            topLevelKeys: r.value?.data && typeof r.value.data === "object"
-              ? Object.keys(r.value.data)
-              : null,
-          });
-        }
-      };
+      const settledToDebug = (r) =>
+        r.status === "fulfilled"
+          ? { status: "fulfilled", http: r.value?.status, contentType: r.value?.headers?.["content-type"] }
+          : { status: "rejected", error: unwrapAxiosError(r.reason) };
+
+      sourceDebug.michelin = settledToDebug(vehicleResponse);
+      sourceDebug.blueCrystal = settledToDebug(blueCrystalResponse);
+      sourceDebug.volvoVehicles = { status: volvoVehiclesResponse.status, count: volvoVehiclesResponse.value?.length ?? 0 };
+      sourceDebug.volvoPositions = { status: volvoPositionsResponse.status, count: volvoPositionsResponse.value?.length ?? 0 };
   
       if (volvoVehiclesResponse.status === "rejected") {
         console.warn("[VOLVO /vehicles] rejected", {
@@ -856,22 +877,33 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     const dedupedVehicles = Array.from(dedupedMap.values());
+    const hasMichelin = existingVehicles.length > 0;
+    const isComplete = !REQUIRE_MICHELIN_COMPLETE || hasMichelin;
+
     
     if (forceDebug) {
       res.set("X-Debug-Info", JSON.stringify(volvoDebug));
+      res.set("X-Source-Debug", JSON.stringify({
+        ...sourceDebug,
+        counts: {
+          michelin: existingVehicles.length,
+          volvoMapped: (Array.isArray(sourceCache.volvoMapped.data) ? sourceCache.volvoMapped.data.length : 0),
+          blueCrystal: maintenanceDetails.length,
+          returned: dedupedVehicles.length
+        },
+        requireMichelinComplete: REQUIRE_MICHELIN_COMPLETE
+      }));
     }
 
-    if (dedupedVehicles.length > 0) {
-      sourceCache.combined = {
-        ts: Date.now(),
-        data: mergedVehicles,
-      };
+    // Only let a COMPLETE response update the "combined" cache
+    if (dedupedVehicles.length > 0 && isComplete) {
+      sourceCache.combined = { ts: Date.now(), data: dedupedVehicles };
     }
 
-    if (
-      dedupedVehicles.length === 0 &&
-      isFresh(sourceCache.combined?.ts)
-    ) {
+    // If Michelin is missing (incomplete) but we have a recent complete cache, serve that instead
+    if (!isComplete && isFresh(sourceCache.combined?.ts) && sourceCache.combined.data?.length) {
+      res.set("X-Partial-Data", "1");
+      res.set("X-Served-From", "combined-cache");
       return res.json(sourceCache.combined.data);
     }
 
