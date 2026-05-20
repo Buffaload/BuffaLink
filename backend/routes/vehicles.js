@@ -138,6 +138,10 @@ const DEPOT_TEXT_MATCHERS = [
     depot: "Coventry", 
     patterns: [/CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i] 
   },
+  {
+    depot: "Avonmouth",
+    patterns: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i,]
+  },
 ];
 
 const matchDepotByText = (vehicle) => {
