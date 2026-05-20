@@ -78,8 +78,8 @@ const GEOFENCE_SITES = [
     radius: 700,
   },
   {
-    key: "BELSHILL",
-    name: "BUFFALOAD BELSHILL",
+    key: "BELLSHILL",
+    name: "BUFFALOAD BELLSHILL",
     group: "Buffaload",
     latitude: 55.8203,
     longitude: -3.9803,
@@ -697,7 +697,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         volvoVehicles = volvoVehiclesResponse.value;
         volvoPositions = volvoPositionsResponse.value;
 
-        const mapped = mapVolvoVehicles(volvoVehicles, volvoPositions);
+        const mapped = await mapVolvoVehicles(volvoVehicles, volvoPositions);
         volvoMapped = cacheIfNonEmpty("volvoMapped", mapped);
       } else {
         volvoMapped = isFresh(sourceCache.volvoMapped.ts)
@@ -776,7 +776,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const site = matchGeofenceSite(vehicle.latitude, vehicle.longitude);
 
         const depotByText =
-          site?.key === "AVONMOUTH" || site?.key === "BELSHILL"
+          site?.key === "AVONMOUTH" || site?.key === "BELLSHILL"
             ? null
             : matchDepotByText(vehicle);
 

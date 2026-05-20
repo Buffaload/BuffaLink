@@ -49,7 +49,7 @@ const Sidebar: React.FC<{
     "Crewe",
     "Coventry",
     "Skelmersdale",
-    "Belshill",
+    "Bellshill",
     "Avonmouth",
   ];
 

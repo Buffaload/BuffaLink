@@ -281,7 +281,7 @@ const DEPOT_ALIASES: Record<string, string[]> = {
   COVENTRY: ["CO-OP COVENTRY", "COOP COVENTRY"],
   // Geofence-only depots (backend decides)
   AVONMOUTH: [],
-  BELSHILL: [],
+  BELLSHILL: [],
 };
 
 const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
