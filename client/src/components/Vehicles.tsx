@@ -294,12 +294,25 @@ const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
     .join(" | ")
 );
 
-const matchesSelectedDepot = (v: DepotMatchableVehicle, depotLabel: string) => {
-  const hay = vehicleDepotHaystack(v);
+const matchesSelectedDepot = (
+  v: DepotMatchableVehicle & { locationName?: string },
+  depotLabel: string
+) => {
   const key = normalizeDepotText(depotLabel);
+
+  // Strong signal: backend says this is a Buffaload depot
+  if (v.locationGroupName === "Buffaload") {
+    const loc = normalizeDepotText(v.locationName);
+    if (loc.includes(key)) return true;
+  }
+
+  // Fallback to alias text matching (non-geofenced cases)
+  const hay = vehicleDepotHaystack(v);
   const aliases = DEPOT_ALIASES[key] ?? [key];
 
-  return aliases.some((a) => hay.includes(normalizeDepotText(a)));
+  return aliases.some((a) =>
+    hay.includes(normalizeDepotText(a))
+  );
 };
 
 const Vehicles: React.FC<VehiclesProps> = ({
@@ -341,6 +354,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     el.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [filterOption, isKioskMode]);
+
+  useEffect(() => {
+    setSearchTerm("");
+  }, [filterOption]);
 
   useEffect(() => {
     const onTimelineChanged = () => setTimelineTick((t) => t + 1);
