@@ -1,6 +1,7 @@
 import express from "express";
 import axios from "axios";
 import crypto from "crypto";
+import pLimit from "p-limit";
 import auth from "../middleware/auth.js";
 import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
@@ -153,6 +154,57 @@ const matchDepotByText = (vehicle) => {
   }
   return null;
 };
+
+// Simple in-memory cache (can later move to Redis or Mongo)
+const reverseGeocodeCache = new Map();
+const REVERSE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+// Limit concurrent reverse-geocode HTTP calls
+const reverseGeocodeLimit = pLimit(5);
+
+async function reverseGeocode(lat, lon) {
+  const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+  const cached = reverseGeocodeCache.get(key);
+
+  if (cached && Date.now() - cached.ts < REVERSE_CACHE_TTL_MS) {
+    return cached.value;
+  }
+
+  try {
+    const { data } = await axios.get(
+      "https://nominatim.openstreetmap.org/reverse",
+      {
+        params: {
+          lat,
+          lon,
+          format: "json",
+          zoom: 18,
+          addressdetails: 1,
+        },
+        headers: {
+          "User-Agent": "BuffaLink/1.0 (ops@buffaload.co.uk)",
+        },
+        timeout: 8000,
+      }
+    );
+
+    const name =
+      data?.name ||
+      data?.address?.supermarket ||
+      data?.address?.road ||
+      data?.address?.industrial ||
+      data?.display_name ||
+      null;
+
+    if (name) {
+      reverseGeocodeCache.set(key, { ts: Date.now(), value: name });
+    }
+
+    return name;
+  } catch (err) {
+    console.warn("Reverse geocode failed", err.message);
+    return null;
+  }
+}
 
 async function fetchVolvoPaged({
   axiosInstance,
@@ -491,30 +543,35 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return axios.get(url, config);
       };
 
+      
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
         // Build an index for O(1) lookup by VIN
-        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
-        return volvoVehicles
-          .map((v) => {
+        const posByVin = new Map(volvoPositions.map(p => [p.vin, p]));
+
+        return Promise.all(
+          volvoVehicles.map(async (v) => {
             const p = posByVin.get(v.vin);
-            if (!p) return null;
+            if (!p?.gnssPosition) return null;
             const gnss = p.gnssPosition;
-            if (!gnss || gnss.latitude == null || gnss.longitude == null) return null; 
+            if (gnss.latitude == null || gnss.longitude == null) return null;
             const rawSpeed = p.wheelBasedSpeed ?? gnss.speed ?? 0;
             const speed = Number(rawSpeed);
-            // Volvo feeds often jitter around 0 when stationary; use a small threshold.
+            // Volvo feeds often jitter around 0 when stationary
             const MOVING_THRESHOLD = 1;
             const isMoving = Number.isFinite(speed) && speed > MOVING_THRESHOLD;
             const reg = v?.volvoGroupVehicle?.registrationNumber;
             const name = v.customerVehicleName;
             const lat = gnss.latitude;
             const lon = gnss.longitude;
-
             // Geofence match (depots / maintenance)
             const site = matchGeofenceSite(lat, lon);
+            // Reverse geocode ONLY if not geofenced
+            const reverseName = !site
+              ? await reverseGeocodeLimit(() => reverseGeocode(lat, lon))
+              : null;
 
             return {
-              assetName: `[VOLVO] ${reg || name || v.vin}`,
+              assetName: `[VOLVO] ${reg ?? v.vin}`,
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
@@ -522,14 +579,16 @@ router.get("/", auth, diagnostics, async (req, res) => {
               status: isMoving ? "In Transit" : "Available",
               latitude: lat,
               longitude: lon,
-              // Prefer GNSS timestamp; fallback to received/created times
-              date: gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
-              // If geofenced, set depot/maintenance name + group
-              locationName: site?.name ?? "Unknown location",
+              date:
+                gnss.positionDateTime ||
+                p.receivedDateTime ||
+                p.createdDateTime ||
+                new Date().toISOString(),
+              locationName: site?.name ?? reverseName ?? "Unknown location",
               locationGroupName: site?.group ?? null,
             };
           })
-          .filter(Boolean);
+        ).then(arr => arr.filter(Boolean));
       };
 
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =

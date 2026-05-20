@@ -273,7 +273,7 @@
 .depots-info-banner, 
 .critical-info-banner {
   position: fixed;
-  top: 102px;
+  top: 98px;
   display: flex;
   gap: 8px;
   justify-content: center;
