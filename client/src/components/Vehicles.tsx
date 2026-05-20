@@ -602,7 +602,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   checked={isVorFilterActive}
                   onChange={(e) => setIsVorFilterActive(e.target.checked)}
                 />
-                <span className="wizard-pill-text">VOR only</span>
+                <span className="wizard-pill-text">VOR/Defects only</span>
               </label>
 
               {/* Sort dropdown (pill) */}
@@ -651,7 +651,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                 <span className="figure-pill figure-pill--red">
                   <span className="figure-dot figure-dot--red" aria-hidden="true" />
-                  {highlightFigures.vor} VOR
+                  {highlightFigures.vor} VOR/Defects
                 </span>
               </div>
             </div>
@@ -698,7 +698,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           {displayVehicles.length === 0 ? (      
             <p className="vehicle-placeholder-text">
               {categoryVehicles.length === 0
-                ? "No stopped vehicles to show."
+                ? "No stopped vehicles to show in this category."
                 : "No vehicles match your current filters (Search/VOR)."}
             </p>
           ) : (
