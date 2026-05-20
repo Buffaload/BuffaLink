@@ -544,6 +544,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     const previousState = vehicle.isNightOut;
     const updatedState = !vehicle.isNightOut;
 
+    // Optimistic update
     queryClient.setQueryData(["vehicles"], (old: any[] | undefined) =>
       old
         ? old.map((v) =>
@@ -555,13 +556,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
 
     try {
+      const token = localStorage.getItem("token");
+
       const response = await fetch(
-        `${API_BASE_URL}/vehicles/${encodeURIComponent(
-          vehicle.assetName
-        )}/night-out`,
+        `${API_BASE_URL}/vehicles/${encodeURIComponent(vehicle.assetName)}/night-out`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ isNightOut: updatedState }),
         }
       );
@@ -570,11 +574,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
         throw new Error("Failed to toggle Night-Out status");
       }
 
+      // Re-sync with backend
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
     } catch (error) {
       console.error("Error toggling Night-Out status:", error);
 
-      // rollback
+      // Roll back optimistic update on failure
       queryClient.setQueryData(["vehicles"], (old: any[] | undefined) =>
         old
           ? old.map((v) =>

@@ -162,19 +162,65 @@ const matchDepotByText = (vehicle) => {
   return null;
 };
 
-// Simple in-memory cache (can later move to Redis or Mongo)
+// Reverse geocode tuning (avoid 429 + Vercel timeouts)
+const REVERSE_GEOCODE_ENABLED =
+  String(process.env.REVERSE_GEOCODE_ENABLED ?? "0") === "1"; // default OFF
+const REVERSE_GEOCODE_PRECISION = Number(process.env.REVERSE_GEOCODE_PRECISION ?? 3); // ~110m grid
+const REVERSE_GEOCODE_BUDGET = Number(process.env.REVERSE_GEOCODE_BUDGET ?? 10); // max calls/request
+const REVERSE_GEOCODE_COOLDOWN_MS = Number(process.env.REVERSE_GEOCODE_COOLDOWN_MS ?? 15 * 60 * 1000);
+let reverseGeocodeDisabledUntil = 0;
+// Limit concurrent reverse-geocode HTTP calls (lower concurrency helps)
+const reverseGeocodeLimit = pLimit(Number(process.env.REVERSE_GEOCODE_CONCURRENCY ?? 2));
+// Simple in-memory cache (24h)
 const reverseGeocodeCache = new Map();
-const REVERSE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
-// Limit concurrent reverse-geocode HTTP calls
-const reverseGeocodeLimit = pLimit(5);
+const REVERSE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 async function reverseGeocode(lat, lon) {
-  const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
-  const cached = reverseGeocodeCache.get(key);
+  if (Date.now() < reverseGeocodeDisabledUntil) return null;
 
+  // Coarser grid => fewer unique keys => fewer HTTP calls
+  const key = `${lat.toFixed(REVERSE_GEOCODE_PRECISION)},${lon.toFixed(REVERSE_GEOCODE_PRECISION)}`;
+  const cached = reverseGeocodeCache.get(key);
   if (cached && Date.now() - cached.ts < REVERSE_CACHE_TTL_MS) {
     return cached.value;
   }
+
+  try {
+    const { data } = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+      params: {
+        lat,
+        lon,
+        format: "json",
+        zoom: 18,
+        addressdetails: 1,
+      },
+      headers: {
+        "User-Agent": "BuffaLink/1.0 (ops@buffaload.co.uk)",
+      },
+      timeout: 2500, // keep it short to avoid serverless runtime blowups
+    });
+
+    const name =
+      data?.name ??
+      data?.address?.supermarket ??
+      data?.address?.road ??
+      data?.address?.industrial ??
+      data?.display_name ??
+      null;
+
+    if (name) reverseGeocodeCache.set(key, { ts: Date.now(), value: name });
+    return name;
+  } catch (err) {
+    const status = err?.response?.status;
+    if (status === 429) {
+      console.warn("Reverse geocode rate-limited (429). Cooling down.");
+      reverseGeocodeDisabledUntil = Date.now() + REVERSE_GEOCODE_COOLDOWN_MS;
+      return null;
+    }
+    console.warn("Reverse geocode failed", err.message);
+    return null;
+  }
+}
 
   try {
     const { data } = await axios.get(
@@ -303,6 +349,29 @@ const cacheIfNonEmpty = (key, arr) => {
 const isFresh = (ts) => Date.now() - ts <= SOURCE_CACHE_TTL_MS;
 
 const router = express.Router();
+
+// CORS (route-level)
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ??
+  "https://buffalink.vercel.app,http://localhost:5173,http://localhost:3000")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+router.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,PATCH,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
+});
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
@@ -573,11 +642,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
           ...config,
         });
       };
-
       
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
         // Build an index for O(1) lookup by VIN
         const posByVin = new Map(volvoPositions.map(p => [p.vin, p]));
+        let budget = REVERSE_GEOCODE_BUDGET;
+        let reverseGeocodeBudget = Number(process.env.REVERSE_GEOCODE_BUDGET ?? 10);
 
         return Promise.all(
           volvoVehicles.map(async (v) => {
@@ -596,10 +666,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
             const lon = gnss.longitude;
             // Geofence match (depots / maintenance)
             const site = matchGeofenceSite(lat, lon);
-            // Reverse geocode ONLY if not geofenced
-            const reverseName = !site
-              ? await reverseGeocodeLimit(() => reverseGeocode(lat, lon))
-              : null;
+            // Reverse geocode ONLY if enabled, NOT geofenced, vehicle is stopped, still have budget
+            let reverseName = null;
+            if (REVERSE_GEOCODE_ENABLED && !site && !isMoving && budget > 0) {
+              budget -= 1;
+              reverseName = await reverseGeocodeLimit(() => reverseGeocode(lat, lon));
+            }
 
             return {
               assetName: `[VOLVO] ${reg ?? v.vin}`,
