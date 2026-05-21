@@ -90,10 +90,10 @@
 }
 
 .iso-week-banner {
-  width: 150px;
+  width: 75px;
   min-height: 62px;
-  padding: 10px 12px;
-  margin-top: -10px;
+  padding: 0;
+  margin-top: 2px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 2px #0000000a;
@@ -109,13 +109,6 @@
   z-index: 6;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
-
-.iso-week-banner:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.20);
-  transform: translateY(-1px);
-}
-
 .iso-week-banner__label {
   font-size: 12px;
   font-weight: 400;
@@ -132,20 +125,37 @@
   text-align: center;
 }
 
+.iso-week-banner:focus,
+.iso-week-banner:focus-visible,
+.iso-week-banner[aria-expanded="true"] {
+  outline: none;
+  border-color: #28a745; /* same green used elsewhere in dashboard accents */
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.22);
+  background: #eef7f0; /* subtle green-tinted fill so it reads as “active” */
+}
+
+.iso-week-banner:active {
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.18);
+}
+
 /* Frost overlay */
 .iso-week-overlay {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: rgba(8, 10, 14, 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
   opacity: 0;
-  transition: opacity 180ms ease;
+  transition: opacity 260ms ease, backdrop-filter 260ms ease;
+  will-change: opacity, backdrop-filter;
 }
 
 .iso-week-overlay--open {
   opacity: 1;
+  backdrop-filter: blur(3px);       /* less harsh */
+  -webkit-backdrop-filter: blur(3px);
 }
 
 /* Tooltip (scroll after 3/4 page height) */
@@ -154,12 +164,12 @@
   z-index: 9999;
   width: min(520px, calc(100vw - 24px));
   max-height: 75vh;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(18, 20, 26, 0.92);
-  color: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  color: #111827; /* dark text */
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
   transform: translateY(-6px);
   opacity: 0;
   transition: transform 180ms ease, opacity 180ms ease;
@@ -175,7 +185,7 @@
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-bottom: 10px solid rgba(18, 20, 26, 0.92);
+  border-bottom: 10px solid rgba(255, 255, 255, 0.98);
 }
 
 .iso-week-tooltip::after {
@@ -188,7 +198,7 @@
   height: 0;
   border-left: 11px solid transparent;
   border-right: 11px solid transparent;
-  border-bottom: 11px solid rgba(255, 255, 255, 0.16);
+  border-bottom: 11px solid rgba(17, 24, 39, 0.12);
   z-index: -1;
 }
 
@@ -225,7 +235,7 @@
 
 .iso-week-tooltip__header {
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(17, 24, 39, 0.10);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -238,7 +248,7 @@
 
 .iso-week-tooltip__subtitle {
   font-size: 12px;
-  opacity: 0.75;
+  color: rgba(17, 24, 39, 0.65);
 }
 
 .iso-week-tooltip__list {
@@ -250,8 +260,8 @@
 .iso-week-tooltip__item {
   padding: 10px 10px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(17, 24, 39, 0.10);
+  background: rgba(17, 24, 39, 0.03);
   margin: 8px 0;
 }
 
@@ -280,7 +290,7 @@
 
 .iso-week-tooltip__loc {
   font-size: 12px;
-  opacity: 0.75;
+  color: rgba(17, 24, 39, 0.70);
   max-width: 360px;
 }
 

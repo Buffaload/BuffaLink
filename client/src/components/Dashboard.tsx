@@ -116,7 +116,9 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     }
 
     const compute = () => {
-      const el = document.querySelector(".vehicle-container") as HTMLElement | null; // from Vehicles.tsx [1](https://buffaloadlogistics-my.sharepoint.com/personal/jake_leonce_buffaload_co_uk/Documents/Microsoft%20Copilot%20Chat%20Files/Vehicles.tsx)
+      const el = 
+        (document.querySelector(".dashboard-content") as HTMLElement | null) ||
+        (document.querySelector(".vehicle-container") as HTMLElement | null);
       if (!el) return;
       const r = el.getBoundingClientRect();
       setContentOverlayRect({
