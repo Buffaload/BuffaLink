@@ -39,6 +39,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const weekBtnRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+  const [tooltipArrowX, setTooltipArrowX] = useState(24);
   const token = localStorage.getItem("token");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
 
@@ -101,7 +102,41 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     }
   }, [token, handleLogout]);
 
+  const [contentOverlayRect, setContentOverlayRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
   
+  useEffect(() => {
+    if (!weekTooltipOpen) {
+      setContentOverlayRect(null);
+      return;
+    }
+
+    const compute = () => {
+      const el = document.querySelector(".vehicle-container") as HTMLElement | null; // from Vehicles.tsx [1](https://buffaloadlogistics-my.sharepoint.com/personal/jake_leonce_buffaload_co_uk/Documents/Microsoft%20Copilot%20Chat%20Files/Vehicles.tsx)
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setContentOverlayRect({
+        top: r.top,
+        left: r.left,
+        width: r.width,
+        height: r.height,
+      });
+    };
+
+    compute();
+
+    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", compute, true);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("scroll", compute, true);
+    };
+  }, [weekTooltipOpen]);
+
   useEffect(() => {
     // next tick + after layout changes
     const t1 = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 0);
@@ -174,6 +209,24 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       window.removeEventListener("scroll", handler, true);
     };
   }, [weekTooltipOpen]);
+
+  useLayoutEffect(() => {
+    if (!weekTooltipOpen) return;
+
+    const btn = weekBtnRef.current;
+    if (!btn) return;
+
+    const btnRect = btn.getBoundingClientRect();
+    const bannerCenterX = btnRect.left + btnRect.width / 2;
+
+    // tooltipPos.left is fixed-position left
+    const arrowX = bannerCenterX - tooltipPos.left;
+
+    // Clamp arrow within tooltip bounds so it never goes outside rounded corners
+    const min = 22;
+    const max = 520 - 22; // matches tooltip max width in CSS
+    setTooltipArrowX(Math.max(min, Math.min(arrowX, max)));
+  }, [weekTooltipOpen, tooltipPos.left]);
 
   useEffect(() => {
     if (!weekTooltipOpen) return;
@@ -348,17 +401,29 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       {weekTooltipOpen &&
       createPortal(
         <>
-          {/* Frost overlay (clicking it closes) */}
-          <div
-            className="iso-week-overlay iso-week-overlay--open"
-            onClick={() => setWeekTooltipOpen(false)}
-          />
+          {/* Frost overlay (clicking it closes) */}     
+          {contentOverlayRect && (
+            <div
+              className="iso-week-overlay iso-week-overlay--open"
+              style={{
+                top: contentOverlayRect.top,
+                left: contentOverlayRect.left,
+                width: contentOverlayRect.width,
+                height: contentOverlayRect.height,
+              }}
+              onClick={() => setWeekTooltipOpen(false)}
+            />
+          )}
 
           {/* Tooltip */}
           <div
             ref={tooltipRef}
             className="iso-week-tooltip iso-week-tooltip--open"
-            style={{ top: tooltipPos.top, left: tooltipPos.left }}
+            style={{ 
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+              ["--arrow-x" as any]: `${tooltipArrowX}px`, 
+            }}
           >
             <div className="iso-week-tooltip__header">
               <div className="iso-week-tooltip__title">Services due this ISO week</div>
