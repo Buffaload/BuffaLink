@@ -39,6 +39,79 @@ const formatRegistration = (value?: string) => {
   return reg;
 };
 
+const renderStatusIcon = (rawType?: string) => {
+  const type = (rawType ?? "unknown").toLowerCase();
+
+  const baseProps = {
+    width: 14,
+    height: 14,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    "aria-hidden": true as const,
+    focusable: "false" as const,
+  };
+
+  switch (type) {
+    case "stopped":
+      // pause icon
+      return (
+        <svg {...baseProps}>
+          <path d="M7 6h3v12H7V6Zm7 0h3v12h-3V6Z" fill="currentColor" />
+        </svg>
+      );
+
+    case "driving":
+      // arrow-right icon
+      return (
+        <svg {...baseProps}>
+          <path
+            d="M5 12h12m0 0-5-5m5 5-5 5"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+
+    case "idling":
+      // clock-ish icon
+      return (
+        <svg {...baseProps}>
+          <path
+            d="M12 8v5l3 2"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0Z"
+            stroke="currentColor"
+            strokeWidth="2.2"
+          />
+        </svg>
+      );
+
+    default:
+      // dot icon
+      return (
+        <svg {...baseProps}>
+          <path
+            d="M12 12a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 0 1 3.6 0Z"
+            fill="currentColor"
+          />
+          <path
+            d="M21 12a9 9 0 1 1-18 0a9 9 0 0 1 18 0Z"
+            stroke="currentColor"
+            strokeWidth="2.2"
+          />
+        </svg>
+      );
+  }
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
