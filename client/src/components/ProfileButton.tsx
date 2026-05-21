@@ -1,3 +1,4 @@
+import { APP_VERSION } from "../config/appMeta";
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -101,13 +102,15 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         <div className="admin-menu" role="dialog" aria-label="Admin portal">
           {/* Header */}
           <div className="admin-portal-header">
-            <div className="admin-portal-title">
-              <span className="admin-menu-title-icon" aria-hidden="true">
-                <SlidersHorizontal size={16} />
-              </span>
-              <span>Admin Portal</span>
+            <div className="admin-portal-title-block">
+              <div className="admin-portal-title">
+                <span className="admin-menu-title-icon" aria-hidden="true">
+                  <SlidersHorizontal size={16} />
+                </span>
+                <span>Admin Portal</span>
+              </div>
+              <div className="admin-portal-version">{APP_VERSION}</div>
             </div>
-
             <button
               type="button"
               className="admin-portal-close"

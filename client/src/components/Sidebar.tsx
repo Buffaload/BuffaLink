@@ -1,5 +1,4 @@
 import API_BASE_URL from "../config";
-import { APP_VERSION } from "../config/appMeta";
 import React, { useEffect, useMemo, useState } from "react";
 import { countFor, isCriticalAlert } from "../utils/vehicleRules"
 import axios from "axios";
@@ -197,7 +196,6 @@ const Sidebar: React.FC<{
       </button>
 
       <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div className="sidebar-version">{APP_VERSION}</div>
         <div className="sidebar-header">
           <img
               src="/fleetpulse-logo.png"
