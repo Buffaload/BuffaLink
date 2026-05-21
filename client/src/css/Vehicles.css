@@ -17,6 +17,9 @@
 .vehicle-inner {
   max-width: 1600px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 /* scrollbar width */
@@ -76,6 +79,10 @@
   width: 14px;
   height: 14px;
   accent-color: #15a841; /* Buffaload green */
+}
+
+.wizard-vor:hover {
+  cursor: pointer;
 }
 
 .wizard-pill-text {
@@ -797,10 +804,12 @@
 }
 
 .vehicle-disclaimer {
-  margin-top: 3rem;
-  margin-bottom: 8rem;
+  margin-top: auto;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
   font-size: 0.85rem;
   color: #888;
+  text-align: center;
 }
 
 /* Base alert (uses CSS vars) */
