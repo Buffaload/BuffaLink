@@ -143,6 +143,11 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     };
   }, [vehicles]);
 
+  const dashboardServiceVehicles = useMemo(() => {
+    const now = Date.now();
+    return filterVehicles(vehicles, "Services", [], now);
+  }, [vehicles]);
+
   // Destructure counts for easy access in the component
   const { counts: kioskCounts } = kioskVehicleBuckets;
 
@@ -174,7 +179,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
 
   const vehiclesToPlot = useMemo(() => {
     // Non-kiosk mode remains unchanged: plot the Delays subset only
-    if (!isKioskMode) return filteredVehicles;
+    if (!isKioskMode) return dashboardServiceVehicles;
 
     // Kiosk mode: plot only the selected category
     switch (activeKioskPill) {
@@ -195,7 +200,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   }, [
     isKioskMode,
     activeKioskPill,
-    filteredVehicles,
+    dashboardServiceVehicles,
     kioskVehicleBuckets,
   ]);
 
@@ -462,8 +467,8 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
           <div className="highlight-figures highlight-figures-map" aria-label="Vehicle highlights">
             <span className="figure-pill figure-pill--red">
               <span className="figure-dot figure-dot--red" aria-hidden="true" />
-              {filteredVehicles.length}{" "} Vehicle {" "}
-              {filteredVehicles.length === 1 ? "stop" : "stops"}
+              {dashboardServiceVehicles.length}{" "} Vehicle {" "}
+              {dashboardServiceVehicles.length === 1 ? "stop" : "stops"}
             </span>
           </div>
         ) : (
