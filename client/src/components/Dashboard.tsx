@@ -30,6 +30,15 @@ function getISOWeekYear(date = new Date()): number {
   return d.getUTCFullYear();
 }
 
+const formatRegistration = (value?: string) => {
+  if (!value) return value;
+  const reg = value.trim();
+  if (reg.length === 7 && !reg.includes(" ")) {
+    return `${reg.slice(0, 4)} ${reg.slice(4)}`;
+  }
+  return reg;
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
@@ -102,42 +111,16 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     }
   }, [token, handleLogout]);
 
-  const [contentOverlayRect, setContentOverlayRect] = useState<{
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  } | null>(null);
-  
-  useEffect(() => {
-    if (!weekTooltipOpen) {
-      setContentOverlayRect(null);
-      return;
-    }
+  const SIDEBAR_WIDTH = 260;
+  const HEADER_HEIGHT = isKioskMode ? 80 : 120;
 
-    const compute = () => {
-      const el = 
-        (document.querySelector(".dashboard-content") as HTMLElement | null) ||
-        (document.querySelector(".vehicle-container") as HTMLElement | null);
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      setContentOverlayRect({
-        top: r.top,
-        left: r.left,
-        width: r.width,
-        height: r.height,
-      });
-    };
-
-    compute();
-
-    window.addEventListener("resize", compute);
-    window.addEventListener("scroll", compute, true);
-    return () => {
-      window.removeEventListener("resize", compute);
-      window.removeEventListener("scroll", compute, true);
-    };
-  }, [weekTooltipOpen]);
+  const contentOverlayStyle: React.CSSProperties = {
+    position: "fixed",
+    top: HEADER_HEIGHT,
+    left: SIDEBAR_WIDTH,
+    right: 0,
+    bottom: 0,
+  };
 
   useEffect(() => {
     // next tick + after layout changes
@@ -298,11 +281,18 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
         if (!dueDate) return false;
         return getISOWeek(dueDate) === isoWeek && getISOWeekYear(dueDate) === isoWeekYear;
       })
-      .map((v) => ({
-        reg: (v.assetRegistration ?? v.assetName).trim(),
-        action: (v.eventType ?? "UNKNOWN").toUpperCase(),
-        locationText: (v.locationName ?? v.formattedAddress ?? "UNKNOWN LOCATION").trim(),
-      }));
+      .map((v) => {
+        const regRaw = (v.assetRegistration ?? v.assetName ?? "").trim();
+        const actionRaw = (v.eventType ?? "unknown").toLowerCase().trim();
+        const locationText = (v.locationName ?? v.formattedAddress ?? "UNKNOWN LOCATION").trim();
+
+        return {
+          reg: regRaw,
+          actionRaw,
+          actionLabel: actionRaw.toUpperCase(),
+          locationText,
+        };
+      });
   }, [vehiclesSnapshot, isoWeek, isoWeekYear]);
 
   if (!token) {
@@ -403,19 +393,12 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       {weekTooltipOpen &&
       createPortal(
         <>
-          {/* Frost overlay (clicking it closes) */}     
-          {contentOverlayRect && (
-            <div
-              className="iso-week-overlay iso-week-overlay--open"
-              style={{
-                top: contentOverlayRect.top,
-                left: contentOverlayRect.left,
-                width: contentOverlayRect.width,
-                height: contentOverlayRect.height,
-              }}
-              onClick={() => setWeekTooltipOpen(false)}
-            />
-          )}
+          {/* Frost overlay (clicking it closes) */}         
+          <div
+            className="iso-week-overlay iso-week-overlay--open"
+            style={contentOverlayStyle}
+            onClick={() => setWeekTooltipOpen(false)}
+          />
 
           {/* Tooltip */}
           <div
@@ -427,31 +410,36 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
               ["--arrow-x" as any]: `${tooltipArrowX}px`, 
             }}
           >
-            <div className="iso-week-tooltip__header">
-              <div className="iso-week-tooltip__title">Services due this ISO week</div>
-              <div className="iso-week-tooltip__subtitle">
-                Week {isoWeek} • {vehiclesDueThisISOWeek.length} vehicle{vehiclesDueThisISOWeek.length === 1 ? "" : "s"}
-              </div>
-            </div>
-
-            <div className="iso-week-tooltip__list">
-              {vehiclesDueThisISOWeek.length === 0 ? (
-                <div style={{ padding: 10, opacity: 0.8, fontSize: 13 }}>
-                  No vehicles due a service in this ISO week.
+            <div className="iso-week-tooltip__panel">
+              <div className="iso-week-tooltip__header">
+                <div className="iso-week-tooltip__title">Services due this ISO week</div>
+                <div className="iso-week-tooltip__subtitle">
+                  Week {isoWeek} • {vehiclesDueThisISOWeek.length} vehicle{vehiclesDueThisISOWeek.length === 1 ? "" : "s"}
                 </div>
-              ) : (
-                vehiclesDueThisISOWeek.map((v) => (
-                  <div className="iso-week-tooltip__item" key={v.reg}>
-                    <div className="iso-week-tooltip__row">
-                      <div className="iso-week-tooltip__reg">{v.reg}</div>
-                      <div className="iso-week-tooltip__meta">
-                        <div className="iso-week-tooltip__status">{v.action ?? "-"}</div>
-                        <div className="iso-week-tooltip__loc">{v.locationText ?? "-"}</div>
+              </div>
+
+              <div className="iso-week-tooltip__list">
+                {vehiclesDueThisISOWeek.length === 0 ? (
+                  <div style={{ padding: 10, opacity: 0.8, fontSize: 13 }}>
+                    No vehicles due a service in this ISO week.
+                  </div>
+                ) : (
+                  vehiclesDueThisISOWeek.map((v) => (
+                    <div className="iso-week-tooltip__item" key={v.reg}>
+                      <div className="iso-week-tooltip__row">
+                        <div className="iso-week-tooltip__reg">{formatRegistration(v.reg)}</div>
+                        <div className="iso-week-tooltip__meta">
+                          <span className={`status-pill status-pill--${(v.actionRaw ?? "unknown").toLowerCase()}`}>
+                            <span className="status-pill__icon">{renderStatusIcon(v.actionRaw)}</span>
+                            <span className="status-pill__text">{(v.actionRaw ?? "UNKNOWN").toUpperCase()}</span>
+                          </span>
+                          <div className="iso-week-tooltip__loc">{v.locationText ?? "-"}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </>,
