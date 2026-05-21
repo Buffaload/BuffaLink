@@ -228,16 +228,15 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     return unsubscribe;
   }, [queryClient]);
 
-  // Helper: parse service due date safely (ServiceDueDate comes from BlueCrystal API)
-  const parseServiceDue = (v: VehicleForWeekTooltip): Date | null => {
-    const raw = v.ServiceDueDate?.trim();
-    if (!raw) return null;
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
   // Vehicles due a service in the CURRENT ISO week/year
   const vehiclesDueThisISOWeek = useMemo(() => {
+    const parseServiceDue = (v: VehicleForWeekTooltip): Date | null => {
+      const raw = v.ServiceDueDate?.trim();
+      if (!raw) return null;
+      const d = new Date(raw);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
     return vehiclesSnapshot
       .filter((v) => {
         const dueDate = parseServiceDue(v);
