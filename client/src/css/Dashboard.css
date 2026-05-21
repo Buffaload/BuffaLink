@@ -72,6 +72,47 @@
   margin-left: 0;
 }
 
+.dashboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iso-week-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  line-height: 1;
+}
+
+.iso-week-banner__label {
+  font-size: 12px;
+  opacity: 0.8;
+  letter-spacing: 0.2px;
+}
+
+.iso-week-banner__value {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Mobile: keep it compact if needed */
+@media (max-width: 520px) {
+  .iso-week-banner__label {
+    display: none;
+  }
+  .iso-week-banner {
+    padding: 6px 8px;
+  }
+}
+
 .kiosk-toggle-wrapper {
   display: flex;
   flex-direction: column;

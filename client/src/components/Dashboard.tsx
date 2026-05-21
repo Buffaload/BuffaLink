@@ -8,9 +8,23 @@ interface DashboardProps {
   handleLogout: () => void;
 }
 
+// ISO week number (Monday–Sunday)
+function getISOWeek(date = new Date()): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // ISO day of week: Mon=1 ... Sun=7
+  const dayNum = d.getUTCDay() || 7;
+  // Shift date to Thursday of this ISO week
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  // ISO week-year start
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Calculate week number
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
 const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
+  const [isoWeek, setIsoWeek] = useState<number>(() => getISOWeek());
   const token = localStorage.getItem("token");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
 
@@ -84,6 +98,29 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     };
   }, [isKioskMode]);
 
+  useEffect(() => {
+    const update = () => setIsoWeek(getISOWeek());
+    // Set immediately on mount
+    update();
+    // Schedule the next update just after local midnight
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 5, 0); // 00:00:05 to avoid edge timing
+    const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+    const timeoutId = window.setTimeout(() => {
+      update();
+      // Then update every 24 hours
+      const intervalId = window.setInterval(update, 24 * 60 * 60 * 1000);
+      (window as any).__isoWeekIntervalId = intervalId;
+    }, msUntilMidnight);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      const intervalId = (window as any).__isoWeekIntervalId;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, []);
+
   if (!token) {
     return null;
   }
@@ -109,20 +146,28 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
               </>
             </h2>
           )}
-        </div>
-        <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
-          <span className="kiosk-toggle-label">Kiosk Mode</span>
-          <button
-            className={`kiosk-toggle ${isKioskMode ? "on" : "off"}`}
-            onClick={toggleKioskMode}
-            aria-pressed={isKioskMode}
-            type="button"
-          >
-            <span className="sr-only">Toggle kiosk mode</span>
-            <span className="kiosk-slider">
-              <span className="kiosk-thumb" />
-            </span>
-          </button>
+        </div>     
+        <div className="dashboard-header-right">
+          <div className="iso-week-banner" title="ISO week (Monday-Sunday)">
+            <span className="iso-week-banner__label">ISO Week</span>
+            <span className="iso-week-banner__value">{isoWeek}</span>
+          </div>
+          <div className="kiosk-toggle">
+            <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
+              <span className="kiosk-toggle-label">Kiosk Mode</span>
+              <button
+                className={`kiosk-toggle ${isKioskMode ? "on" : "off"}`}
+                onClick={toggleKioskMode}
+                aria-pressed={isKioskMode}
+                type="button"
+              >
+                <span className="sr-only">Toggle Kiosk Mode</span>
+                <span className="kiosk-slider">
+                  <span className="kiosk-thumb" />
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
