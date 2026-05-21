@@ -151,31 +151,31 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   // Destructure counts for easy access in the component
   const { counts: kioskCounts } = kioskVehicleBuckets;
 
-  const filteredVehicles = useMemo(() => {
-    const now = Date.now();
+  // const filteredVehicles = useMemo(() => {
+  //   const now = Date.now();
 
-    return vehicles.filter((vehicle) => {
-      const vehicleTime = adjustedMs(vehicle.date);
-      const timeStopped = now - vehicleTime;
+  //   return vehicles.filter((vehicle) => {
+  //     const vehicleTime = adjustedMs(vehicle.date);
+  //     const timeStopped = now - vehicleTime;
 
-      // Filter for vehicles that stopped for > 1.5 hours (90 minutes) in the past 30 days
-      // at Services/Truckstops/Unknown locations
-      return (
-        vehicle.assetType === "HGV" &&
-        vehicle.latitude !== undefined &&
-        vehicle.longitude !== undefined &&
-        (vehicle.locationGroupName === "Services and Truckstops" ||
-          !vehicle.locationGroupName) &&
-        timeStopped > 90 * 60 * 1000 && // Stopped for more than 90 minutes (1.5 hours)
-        timeStopped <= 30 * 24 * 60 * 60 * 1000 && // Within the past 30 days
-        vehicle.eventType !== "driving" &&
-        vehicle.locationGroupName !== "Buffaload" && // Exclude depots
-        vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
-        vehicle.assetGroupName !== "TFP Tipper Operation" && // Exclude tippers
-        !vehicle.isNightOut // Exclude Night-Out vehicles
-      );
-    });
-  }, [vehicles]);
+  //     // Filter for vehicles that stopped for > 1.5 hours (90 minutes) in the past 30 days
+  //     // at Services/Truckstops/Unknown locations
+  //     return (
+  //       vehicle.assetType === "HGV" &&
+  //       vehicle.latitude !== undefined &&
+  //       vehicle.longitude !== undefined &&
+  //       (vehicle.locationGroupName === "Services and Truckstops" ||
+  //         !vehicle.locationGroupName) &&
+  //       timeStopped > 90 * 60 * 1000 && // Stopped for more than 90 minutes (1.5 hours)
+  //       timeStopped <= 30 * 24 * 60 * 60 * 1000 && // Within the past 30 days
+  //       vehicle.eventType !== "driving" &&
+  //       vehicle.locationGroupName !== "Buffaload" && // Exclude depots
+  //       vehicle.locationGroupName !== "Maintenance" && // Exclude maintenance
+  //       vehicle.assetGroupName !== "TFP Tipper Operation" && // Exclude tippers
+  //       !vehicle.isNightOut // Exclude Night-Out vehicles
+  //     );
+  //   });
+  // }, [vehicles]);
 
   const vehiclesToPlot = useMemo(() => {
     // Non-kiosk mode remains unchanged: plot the Delays subset only
