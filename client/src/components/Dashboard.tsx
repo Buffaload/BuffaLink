@@ -395,22 +395,24 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
           )}
         </div>     
         <div className="dashboard-header-right"> 
-          <div
-            ref={weekBtnRef}
-            className="iso-week-banner"
-            role="button"
-            tabIndex={0}
-            aria-label={`ISO Week ${isoWeek}`}
-            aria-expanded={weekTooltipOpen}
-            onClick={() => setWeekTooltipOpen((v) => !v)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") setWeekTooltipOpen((v) => !v);
-              if (e.key === "Escape") setWeekTooltipOpen(false);
-            }}
-          >
-            <div className="iso-week-banner__label">ISO Week</div>
-            <div className="iso-week-banner__value">{isoWeek}</div>
-          </div>
+          {!isKioskMode && (
+            <div
+              ref={weekBtnRef}
+              className="iso-week-banner"
+              role="button"
+              tabIndex={0}
+              aria-label={`ISO Week ${isoWeek}`}
+              aria-expanded={weekTooltipOpen}
+              onClick={() => setWeekTooltipOpen((v) => !v)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") setWeekTooltipOpen((v) => !v);
+                if (e.key === "Escape") setWeekTooltipOpen(false);
+              }}
+            >
+              <div className="iso-week-banner__label">ISO Week</div>
+              <div className="iso-week-banner__value">{isoWeek}</div>
+            </div>
+          )}
           <div className="kiosk-toggle">
             <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
               <span className="kiosk-toggle-label">Kiosk Mode</span>

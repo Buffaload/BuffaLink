@@ -303,7 +303,7 @@
 }
 
 .iso-week-tooltip__meta .status-pill {
-  width: 132px;
+  width: 90px;
   justify-content: center;
   white-space: nowrap;
 }
@@ -411,6 +411,7 @@
 
   .map-sidebar-link,
   .kiosk-toggle-wrapper,
+  .iso-week-banner,
   .vehicles-wizard {
     display: none !important;
   }
