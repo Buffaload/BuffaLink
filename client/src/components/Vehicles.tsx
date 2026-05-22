@@ -827,12 +827,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
           ) : null}
 
           {/* Check if there are filtered vehicles */}
-          {displayVehicles.length === 0 ? (      
-            <p className="vehicle-placeholder-text">
-              {categoryVehicles.length === 0
-                ? "No stopped vehicles to show in this category."
-                : "No vehicles match your current filters (Search/VOR)."}
-            </p>
+          {displayVehicles.length === 0 ? (       
+            <div className="vehicle-empty-state">
+              <TriangleAlert className="vehicle-empty-icon" aria-hidden />
+              <p className="vehicle-empty-text">
+                {categoryVehicles.length === 0
+                  ? "No stopped vehicles to show in this category."
+                  : "No vehicles match your current filters (Search / VOR)."}
+              </p>
+            </div>
           ) : (
             <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
               {displayVehicles.map((vehicle) => {
