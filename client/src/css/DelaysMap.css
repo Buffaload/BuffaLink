@@ -48,6 +48,7 @@
   position: fixed;
   top: 65px;
   left: 275px;
+  padding-top: 20px;
   width: calc(100% - 340px);
   z-index: 1100;
   margin: 0;
@@ -82,7 +83,6 @@
   align-items: flex-end;
   flex-wrap: wrap;
   justify-content: flex-start;
-  padding-bottom: 24px;
   text-align: center;
 }
 
