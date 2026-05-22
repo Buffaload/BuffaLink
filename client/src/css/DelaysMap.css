@@ -51,12 +51,13 @@
   width: calc(100% - 340px);
   z-index: 1100;
   margin: 0;
-  padding: 10px 12px;
 }
 
 .app-header .highlight-figures-header {
   position: absolute;
-  top: 50%;
+  display: flex;
+  justify-content: space-between;
+  top: 75%;
   right: 16px;
   z-index: 2;
   transform: translateY(-50%);
