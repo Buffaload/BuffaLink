@@ -8,7 +8,19 @@ import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
 import { depotVisibilityRules } from "../config/visibilityRules.js";
 
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
+// Keep-alive agent for your main upstream APIs
+const upstreamHttpsAgent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  keepAliveMsecs: 10_000,
+});
+
+// No keep-alive for Nominatim (prevents socket reuse + listener stacking)
+const nominatimHttpsAgent = new https.Agent({
+  keepAlive: false,
+  maxSockets: 5,
+});
 
 const VOLVO_BASE_URL = "https://api.volvotrucks.com/vehicle";
 
@@ -104,6 +116,22 @@ const GEOFENCE_SITES = [
     longitude: -2.7003,
     radius: 350,
   },
+  {
+    key: "PYMOOR",
+    name: "Buffaload Pymoor",
+    group: "Maintenance",
+    latitude: 52.455170,
+    longitude: 0.201258,
+    radius: 500,
+  },
+  {
+    key: "WELLINGBOROUGH_VOLVO",
+    name: "Wellingborough Volvo center",
+    group: "Maintenance",
+    latitude: 52.318713,
+    longitude: -0.686575,
+    radius: 400,
+  },
 ];
 
 // Returns the matching geofence site (or null) for given coordinates
@@ -132,6 +160,22 @@ const normalizeText = (s) =>
     .toUpperCase()
     .replace(/\s+/g, " ")
     .trim();
+
+const MAINTENANCE_TEXT_OVERRIDES = [
+  /BUFFALOAD\s+PYMOOR/i,
+];
+
+const matchesMaintenanceByText = (vehicle) => {
+  const hay = normalizeText(
+    [
+      vehicle?.locationName,
+      vehicle?.formattedAddress,
+      vehicle?.locationGroupName,
+    ].filter(Boolean).join(" ")
+  );
+
+  return MAINTENANCE_TEXT_OVERRIDES.some((re) => re.test(hay));
+};
 
 const DEPOT_TEXT_MATCHERS = [
   { depot: "Ellington", patterns: [/ELLINGTON/i] },
@@ -187,6 +231,7 @@ async function reverseGeocode(lat, lon) {
 
   try {
     const { data } = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+      httpsAgent: nominatimHttpsAgent,
       params: {
         lat,
         lon,
@@ -592,7 +637,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         baseURL: VOLVO_BASE_URL,
         auth: { username: volvoUsername, password: volvoPassword },
         timeout: 15000,
-        httpsAgent,
+        upstreamHttpsAgent,
       });
 
       const safeGet = (url, config) => {
@@ -600,7 +645,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           return Promise.reject(new Error("Missing required URL env var"));
         }
         return axios.get(url, {
-          httpsAgent,
+          upstreamHttpsAgent,
           timeout: 25000,
           ...config,
         });
@@ -834,16 +879,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
         }
 
         const site = matchGeofenceSite(vehicle.latitude, vehicle.longitude);
+        const maintenanceByText = matchesMaintenanceByText(vehicle);
 
         const depotByText =
-          site?.key === "AVONMOUTH" || site?.key === "BELLSHILL"
-            ? null
-            : matchDepotByText(vehicle);
+          maintenanceByText ||
+            site?.group === "Maintenance"
+              ? null
+              : matchDepotByText(vehicle);
 
         return {
           ...vehicle,
           depotMatch: depotByText ?? null,
-          locationGroupName: depotByText ? "Buffaload" : vehicle.locationGroupName,
+          locationGroupName: maintenanceByText
+            ? "Maintenance"
+            : depotByText
+              ? "Buffaload"
+              : vehicle.locationGroupName,
           ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
           MotDueDate: maintenance?.MotDueDate || "N/A",
           IsVor: maintenance?.IsVor ?? false,
