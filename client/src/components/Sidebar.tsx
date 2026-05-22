@@ -264,6 +264,7 @@ const Sidebar: React.FC<{
       hgvsCount: countFor(vehicles, "HGVs", [], now),
       maintenanceCount: countFor(vehicles, "Maintenance", [], now),
       criticalCount: vehicles.filter(isCriticalAlert).length,
+      arrivalsCount: countFor(vehicles, "Critical-Arrivals", [], now),
       tippersCount: countFor(vehicles, "Tippers", [], now),
     };
   }, [vehicles]);
@@ -542,9 +543,9 @@ const Sidebar: React.FC<{
                 closeArrivalTooltip(); // closes tooltip when you click it
               }}
             >
-              <span className="sidebar-link-text">
-                <Building2 className="sidebar-icon" />
-                Critical Arrivals
+              <span className="sidebar-link-text"><Building2 className="sidebar-icon" />Critical Arrivals</span>
+              <span className={`sidebar-link-meta ${counts.arrivalsCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>
+                {renderSidebarValue(counts.arrivalsCount)}
               </span>
             </button>
 
