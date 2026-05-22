@@ -12,6 +12,7 @@ import {
   Building2,
   Wrench,
   TriangleAlert,
+  OctagonAlert,
   FileText,
   ChevronDown,
   ChevronUp,
@@ -543,7 +544,7 @@ const Sidebar: React.FC<{
                 closeArrivalTooltip(); // closes tooltip when you click it
               }}
             >
-              <span className="sidebar-link-text"><Building2 className="sidebar-icon" />Critical Arrivals</span>
+              <span className="sidebar-link-text"><OctagonAlert className="sidebar-icon" />Critical Arrivals</span>
               <span className={`sidebar-link-meta ${counts.arrivalsCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>
                 {renderSidebarValue(counts.arrivalsCount)}
               </span>
