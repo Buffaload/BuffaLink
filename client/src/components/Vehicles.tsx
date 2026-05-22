@@ -4,6 +4,7 @@ import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Building2,
+  Bug,
   TriangleAlert,
   ChevronUp,
 } from "lucide-react";
@@ -711,7 +712,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Error state
   if (isError) {
-    return <p className="vehicle-placeholder-text">{String(error) || "Failed to fetch vehicles."}</p>;
+    if (isError) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch vehicles.";
+
+    return (
+      <>
+        <div className="vehicle-empty-state">
+          <Bug className="vehicle-empty-icon" aria-hidden />
+          <p className="vehicle-empty-text">{errorMessage}</p>
+        </div>
+      </>
+    );
   }
 
   return (
