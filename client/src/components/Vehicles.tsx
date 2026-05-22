@@ -585,7 +585,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
     }
 
-    let list: VehicleWithSince[] = categoryVehicles;
+    const depotFilteredVehicles =
+      filterOption === "Depots" && selectedDepots.length > 0
+        ? categoryVehicles.filter(v =>
+            selectedDepots.some(d => matchesSelectedDepot(v, d))
+          )
+        : categoryVehicles;
+
+    let list = depotFilteredVehicles;
 
     if (isVorFilterActive) {
       list = list.filter((v) => !!(v.IsVor || v.LiveDefects));
@@ -664,7 +671,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   const highlightFigures = useMemo(() => {
     // Reflect ALL active client-side filters (VOR-only + Search)
-    const total = displayVehicles.length;
+    const total = categoryVehicles.length;
     const vor = displayVehicles.reduce(
       (count, v) => count + ((v.IsVor || v.LiveDefects) ? 1 : 0),
       0
