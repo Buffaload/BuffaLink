@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
-import { matchesDepot, ALL_DEPOT_LABELS } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
