@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
+import { matchesDepot, ALL_DEPOT_LABELS } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -405,8 +406,6 @@ const DEPOT_DEFINITIONS: Record<
   AVONMOUTH: { mode: "strict", patterns: ["CO-OP AVONMOUTH", "COOP AVONMOUTH"] },
   BELLSHILL: { mode: "strict", patterns: ["BUFFALOAD BELLSHILL"] },
 };
-
-const ALL_DEPOT_LABELS = Object.keys(DEPOT_DEFINITIONS);
 
 const matchesSelectedDepot = (
   v: DepotMatchableVehicle & { locationName?: string },
