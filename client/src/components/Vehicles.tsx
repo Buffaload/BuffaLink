@@ -145,6 +145,15 @@ function formatWeeksUntilDueLabel(info: ServiceDueISOInfo): string {
   return `${w} week${w === 1 ? "" : "s"} until due`;
 }
 
+function formatDueISOWeekWithYear(info: ServiceDueISOInfo): string {
+  const now = new Date();
+  const currentISOYear = getISOWeekYear(now);
+
+  return info.dueWeekYear !== currentISOYear
+    ? `ISO week ${info.dueWeek} (${info.dueWeekYear})`
+    : `ISO week ${info.dueWeek}`;
+}
+
 // Helper function to format date from BlueCrystal data
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -817,7 +826,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                 //Aply conditional formatting only for "Services"
                 const BackgroundColourClass =
-                  !isVor && (filterOption === "Services" || filterOption === "Critical")
+                  (filterOption === "Services" || filterOption === "Critical")
                     ? getServiceDueCardClass(vehicle.ServiceDueDate ?? "")
                     : "";
 
@@ -826,7 +835,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   ? getTipperAlertClass(vehicle, filterOption, now)
                   : "";
 
-                const vorSkin = isVor ? "vor-muted" : "";
+                const vorSkin = isVor ? "vor-banner" : "";
                 const serviceProgress = getServiceDueProgress(vehicle.ServiceDueDate ?? "");
                 const motProgress = getDueProgress(vehicle.MotDueDate ?? "");
 
@@ -910,7 +919,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                                 const info = getServiceDueISOInfo(vehicle.ServiceDueDate);
                                 return (
                                   <b className="vehicle-due-dates">
-                                    {info ? `ISO week ${info.dueWeek}` : "N/A"}
+                                    {info ? formatDueISOWeekWithYear(info) : "N/A"}
                                   </b>
                                 );
                               })()}
