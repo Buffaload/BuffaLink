@@ -407,36 +407,23 @@ const STRICT_GEOFENCED_DEPOTS: Record<string, string> = {
   AVONMOUTH: "CO-OP AVONMOUTH",
 };
 
-const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
-  normalizeDepotText(
-  [
-    v.locationName,
-    v.formattedAddress,
-    v.locationGroupName,
-  ]
-    .filter(Boolean)
-    .join(" | ")
-);
-
 const matchesSelectedDepot = (
   v: DepotMatchableVehicle & { locationName?: string },
   depotLabel: string
 ) => {
   const key = normalizeDepotText(depotLabel);
   // Must be inside Buffaload geofence
-  if (v.locationGroupName === "Buffaload") {
-    const locName = normalizeDepotText(v.locationName);
-    // If this depot has a strict name, enforce it
-    const strictName = STRICT_GEOFENCED_DEPOTS[key];
-    if (strictName) {
-      return locName.includes(strictName);
-    }
-    // Otherwise allow normal geofenced matching
-    return locName.includes(key);
+  if (v.locationGroupName !== "Buffaload") return false;
+  const locName = normalizeDepotText(v.locationName);
+  const strictName = STRICT_GEOFENCED_DEPOTS[key];
+  if (strictName) {
+    return locName.includes(strictName);
   }
 
-  //Outside geofence → never count as depot
-  return false;
+  const aliases = DEPOT_ALIASES[key] ?? [key];
+  return aliases.some(alias =>
+    locName.includes(normalizeDepotText(alias))
+  );
 };
 
 const Vehicles: React.FC<VehiclesProps> = ({
