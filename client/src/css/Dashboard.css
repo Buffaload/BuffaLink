@@ -30,6 +30,7 @@
   height: 120px;                 /* matches design proportion */
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb; /* subtle grey divider */
+  overflow: visible;
   z-index: 1;
 }
 
@@ -55,10 +56,6 @@
 .dashboard-header,
 .dashboard-header-right {
   overflow: visible;
-}
-
-.dashboard-title {
-  margin-top: -20px;
 }
 
 .dashboard-title-suffix {
