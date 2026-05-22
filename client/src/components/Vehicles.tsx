@@ -678,7 +678,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
 
     return { total, vor };
-  }, [displayVehicles]);
+  }, [categoryVehicles, displayVehicles]);
 
   const getTipperAlertClass = (
     vehicle: {
