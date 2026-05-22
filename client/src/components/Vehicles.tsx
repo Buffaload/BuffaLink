@@ -712,11 +712,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Error state
   if (isError) {
-    if (isError) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch vehicles.";
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch vehicles.";
 
     return (
       <>
