@@ -44,6 +44,16 @@
   height: 100%;
 }
 
+.highlight-figures-header {
+  position: fixed;
+  top: 10px;
+  left: 275px;
+  width: calc(100% - 340px);
+  z-index: 1100;
+  margin: 0;
+  padding: 10px 12px;
+}
+
 .highlight-figures-map {
   position: fixed;
   top: 45px;
