@@ -585,7 +585,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         return (dueService || dueMot) && inDepot;
       });
     } else {
-      categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, selectedDepots, now) as VehicleWithSince[];
+      categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, [], now) as VehicleWithSince[];
       if (filterOption === "Depots" && selectedDepots.length > 0) {
         categoryVehicles = categoryVehicles.filter((v) =>
           selectedDepots.some((d) => matchesSelectedDepot(v, d))
