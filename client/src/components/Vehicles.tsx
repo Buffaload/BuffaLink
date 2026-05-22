@@ -54,6 +54,97 @@ const getMotTimelineDays = () =>
   Number(localStorage.getItem(MOT_TIMELINE_DAYS_KEY)) ||
   DEFAULT_MOT_TIMELINE_DAYS;
 
+// ISO week number (Monday–Sunday)
+function getISOWeek(date = new Date()): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // ISO day of week: Mon=1 ... Sun=7
+  const dayNum = d.getUTCDay() || 7;
+  // Shift date to Thursday of this ISO week
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  // ISO week-year start
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Calculate week number
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function getISOWeekYear(date = new Date()): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  return d.getUTCFullYear();
+}
+
+// Start of ISO week (Monday 00:00 UTC) for stable week-diff math
+function startOfISOWeekUTC(date: Date): Date {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7; // Mon=1..Sun=7
+  d.setUTCDate(d.getUTCDate() - (dayNum - 1));
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+function parseDateSafe(dateString?: string): Date | null {
+  const raw = (dateString ?? "").trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ISO-week difference: 0 = this week, 1 = next week, 2 = in 2 weeks, etc.
+function getISOWeekDiffFromToday(dueDate: Date): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const thisWeekStart = startOfISOWeekUTC(today).getTime();
+  const dueWeekStart = startOfISOWeekUTC(dueDate).getTime();
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+
+  return Math.round((dueWeekStart - thisWeekStart) / msPerWeek);
+}
+
+type ServiceDueISOInfo = {
+  dueWeek: number;
+  dueWeekYear: number;
+  weekDiff: number;      // 0=this ISO week, 1=next ISO week, etc.
+  isOverdue: boolean;    // overdue by date (not just week)
+};
+
+function getServiceDueISOInfo(dateString?: string): ServiceDueISOInfo | null {
+  const dueDate = parseDateSafe(dateString);
+  if (!dueDate) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return {
+    dueWeek: getISOWeek(dueDate),
+    dueWeekYear: getISOWeekYear(dueDate),
+    weekDiff: getISOWeekDiffFromToday(dueDate),
+    isOverdue: dueDate.getTime() < today.getTime(),
+  };
+}
+
+// Card colour rules for service due urgency
+function getServiceDueCardClass(dateString?: string): string {
+  const info = getServiceDueISOInfo(dateString);
+  if (!info) return "";
+
+  // Red: due this ISO week OR overdue
+  if (info.isOverdue || info.weekDiff <= 0) return "pastel-red";
+  // Orange: due next ISO week
+  if (info.weekDiff === 1) return "pastel-orange";
+  // Yellow: due in 2 ISO weeks
+  if (info.weekDiff === 2) return "pastel-yellow";
+
+  return "";
+}
+
+function formatWeeksUntilDueLabel(info: ServiceDueISOInfo): string {
+  if (info.isOverdue) return "OVERDUE";
+  const w = Math.max(0, info.weekDiff);
+  return `${w} week${w === 1 ? "" : "s"} until due`;
+}
+
 // Helper function to format date from BlueCrystal data
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -128,12 +219,8 @@ const getServiceDueProgress = (dateString: string): DueProgress | null => {
   }
 
   const colorClass = getProgressColorClass(percentage);
-
-  const label = isOverdue
-    ? `OVERDUE by ${Math.abs(daysUntilDue)} day${Math.abs(daysUntilDue) === 1 ? "" : "s"}`
-    : daysUntilDue <= 1
-    ? "Due within 1 day"
-    : `${daysUntilDue} day${daysUntilDue === 1 ? "" : "s"} until due`;
+  const isoInfo = getServiceDueISOInfo(dateString);
+  const label = isoInfo ? formatWeeksUntilDueLabel(isoInfo) : "";
 
   return { percentage, colorClass, label };
 };
@@ -497,13 +584,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return { total, vor };
   }, [displayVehicles]);
 
-  // Colours for time stopped
-  const getBackgroundColour = (timeStopped: number) => {
-    if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
-    if (timeStopped >= 30 * 60 * 1000) return "pastel-orange"; // Orange for >= 30min
-    if (timeStopped >= 15 * 60 * 1000) return "pastel-yellow"; // Yellow for >= 15min
-    return ""; // Default: no special colour
-  };
+  // // Colours for time stopped
+  // const getBackgroundColour = (timeStopped: number) => {
+  //   if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
+  //   if (timeStopped >= 30 * 60 * 1000) return "pastel-orange"; // Orange for >= 30min
+  //   if (timeStopped >= 15 * 60 * 1000) return "pastel-yellow"; // Yellow for >= 15min
+  //   return ""; // Default: no special colour
+  // };
 
   const getTipperAlertClass = (
     vehicle: {
@@ -727,13 +814,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
               {displayVehicles.map((vehicle) => {
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
-                const lastUpdate = adjustedMs(vehicle.date);
-                const timeStopped = now - lastUpdate;
 
                 //Aply conditional formatting only for "Services"
                 const BackgroundColourClass =
                   !isVor && (filterOption === "Services" || filterOption === "Critical")
-                    ? getBackgroundColour(timeStopped)
+                    ? getServiceDueCardClass(vehicle.ServiceDueDate ?? "")
                     : "";
 
                 // Apply breathing red effect
@@ -820,10 +905,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         <div className={`health-block__sub ${isDatePast(vehicle.ServiceDueDate ?? "") ? "is-overdue" : ""}`}>
                           {serviceProgress ? (
                             <>
-                              <span className="vehicle-due-span">Due:</span>{" "}
-                              <b className="vehicle-due-dates">
-                                {vehicle.ServiceDueDate ? formatDate(vehicle.ServiceDueDate) : "N/A"}
-                              </b>
+                              <span className="vehicle-due-span">Due:</span>{" "}                
+                              {(() => {
+                                const info = getServiceDueISOInfo(vehicle.ServiceDueDate);
+                                return (
+                                  <b className="vehicle-due-dates">
+                                    {info ? `ISO week ${info.dueWeek}` : "N/A"}
+                                  </b>
+                                );
+                              })()}
                             </>
                           ) : (
                             <span className="muted">Data not available</span>
