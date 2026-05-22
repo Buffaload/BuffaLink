@@ -285,7 +285,34 @@ const getDueProgress = (dateString: string): DueProgress | null => {
   return { percentage, colorClass, label };
 };
 
-// Helper function to calculate duration since last status change
+// Track when a vehicle entered its current state (eventType)
+type StatusSince = {
+  eventType: string;   // normalized lowercase
+  sinceMs: number;     // epoch ms when state began
+};
+
+type VehicleWithSince = Vehicle & {
+  statusSinceMs?: number;
+};
+
+// Format "time in state" (clamps negative durations to 0)
+const formatTimeInState = (sinceMs: number) => {
+  const now = Date.now();
+  const duration = Math.max(0, now - sinceMs); // prevents "-1 minutes ago"
+
+  const days = Math.floor(duration / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+
+  // "full duration" but still compact
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} day${days === 1 ? "" : "s"}`);
+  if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+  parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+
+  return parts.join(", ");
+};
+
 const getTimeSinceUpdate = (lastUpdated: string) => {
   const now = Date.now();
   const lastUpdate = adjustedMs(lastUpdated);
@@ -532,24 +559,56 @@ const Vehicles: React.FC<VehiclesProps> = ({
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
+  // Tracks when each vehicle entered its current eventType (state)
+  type StatusSince = {
+    eventType: string; // normalized lowercase
+    sinceMs: number;
+  };
+
+  const statusSinceRef = useRef<Map<string, StatusSince>>(new Map());
+
   // Depot matching helpers (geofence + text/address fallback)
   const { categoryVehicles, displayVehicles } = useMemo(() => {
     const now = Date.now();
-    let categoryVehicles: Vehicle[] = [];
+    const currentKeys = new Set<string>();
+    const vehiclesWithSince: VehicleWithSince[] = vehicles.map((v) => {
+      const key = v.assetName;
+      currentKeys.add(key);
+
+      const currentType = (v.eventType ?? "unknown").toLowerCase();
+
+      // Use vehicle.date as the transition timestamp when state changes
+      // If it's invalid, fall back to "now"
+      const incomingMs = v.date ? adjustedMs(v.date) : NaN;
+      const incomingSafeMs = isNaN(incomingMs) ? now : incomingMs;
+
+      const prev = statusSinceRef.current.get(key);
+
+      const sinceMs =
+        !prev || prev.eventType !== currentType
+          ? incomingSafeMs
+          : prev.sinceMs;
+
+      statusSinceRef.current.set(key, { eventType: currentType, sinceMs });
+
+      return { ...v, statusSinceMs: sinceMs };
+    });
+
+    for (const k of statusSinceRef.current.keys()) {
+      if (!currentKeys.has(k)) statusSinceRef.current.delete(k);
+    }
+
+    let categoryVehicles: VehicleWithSince[] = [];
 
     if (filterOption === "Critical-Arrivals") {
-      categoryVehicles = vehicles.filter((v) => {
+      categoryVehicles = vehiclesWithSince.filter((v) => {
         const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
         const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
-
-        // Vehicle must currently be in a depot
         const inDepot = (v.locationGroupName ?? "") === "Buffaload";
-
         return (dueService || dueMot) && inDepot;
       });
     } else {
-      categoryVehicles = filterVehicles(vehicles, filterOption, selectedDepots, now);
-
+      categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, selectedDepots, now) as VehicleWithSince[];
       if (filterOption === "Depots" && selectedDepots.length > 0) {
         categoryVehicles = categoryVehicles.filter((v) =>
           selectedDepots.some((d) => matchesSelectedDepot(v, d))
@@ -557,7 +616,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
     }
 
-    let list = categoryVehicles;
+    let list: VehicleWithSince[] = categoryVehicles;
 
     if (isVorFilterActive) {
       list = list.filter((v) => !!(v.IsVor || v.LiveDefects));
@@ -578,42 +637,49 @@ const Vehicles: React.FC<VehiclesProps> = ({
         ]
           .map(normalize)
           .join("\n");
-
         return haystack.includes(q);
       });
     }
 
-    // 3) Sort the DISPLAY list only
     const sorted = [...list].sort((a, b) => {
       if (sortOption === "stoppedTime") {
-        const aStopped = a.date ? now - adjustedMs(a.date) : 0;
-        const bStopped = b.date ? now - adjustedMs(b.date) : 0;
-        if (bStopped !== aStopped) return bStopped - aStopped;
+        // Make "Stopped time" effectively "Time in current state" across all states
+        const aSince = a.statusSinceMs ?? (a.date ? adjustedMs(a.date) : now);
+        const bSince = b.statusSinceMs ?? (b.date ? adjustedMs(b.date) : now);
+        const aDur = now - aSince;
+        const bDur = now - bSince;
+
+        if (bDur !== aDur) return bDur - aDur;
         return (a.assetName ?? "").localeCompare(b.assetName ?? "");
-      } 
+      }
+
+      // ...keep your other sort options unchanged...
       if (sortOption === "serviceDue") {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayMs = today.getTime();
         const aDueMs = a.ServiceDueDate ? adjustedMs(a.ServiceDueDate.trim()) : NaN;
         const bDueMs = b.ServiceDueDate ? adjustedMs(b.ServiceDueDate.trim()) : NaN;
-        // Sort value = ms diff from today (negative = overdue). Missing/invalid dates go last.
+
         const aSortVal = isNaN(aDueMs) ? Number.POSITIVE_INFINITY : (aDueMs - todayMs);
         const bSortVal = isNaN(bDueMs) ? Number.POSITIVE_INFINITY : (bDueMs - todayMs);
+
         if (aSortVal !== bSortVal) return aSortVal - bSortVal;
-        // Tie-breaker: stable, readable order
         return (a.assetName ?? "").localeCompare(b.assetName ?? "");
       }
+
       if (sortOption === "reg") {
         const aReg = (a.assetRegistration || a.assetName || "").toUpperCase();
         const bReg = (b.assetRegistration || b.assetName || "").toUpperCase();
         return aReg.localeCompare(bReg);
       }
+
       if (sortOption === "location") {
         const aLoc = (a.locationName || a.formattedAddress || "").toUpperCase();
         const bLoc = (b.locationName || b.formattedAddress || "").toUpperCase();
         return aLoc.localeCompare(bLoc);
       }
+
       return 0;
     });
 
@@ -642,29 +708,32 @@ const Vehicles: React.FC<VehiclesProps> = ({
     vehicle: {
       eventType?: string | null;
       date?: string | null;
+      statusSinceMs?: number;
       IsVor?: boolean;
     },
     filterOption: string,
     now: number
   ) => {
-    if (vehicle.IsVor) return ""; //no alert if VOR
+    if (vehicle.IsVor) return ""; // no alert if VOR
     if (filterOption !== "Tippers") return "";
 
-    const isDriving = (vehicle.eventType || "").toLowerCase() === "driving";
-    const lastMs = vehicle.date
-        ? adjustedMs(vehicle.date)
-        : NaN;
-    const timeStopped = now - lastMs;
+    const isDriving = (vehicle.eventType ?? "").toLowerCase() === "driving";
 
-    if (isDriving || timeStopped <= 0) return ""; // moving → nothing
-    if (timeStopped >= 45 * 60 * 1000)
-      // ≥45m → red + faster
-      return "pastel-red alert-red alert-critical";
-    if (timeStopped >= 15 * 60 * 1000)
-      // 15–44m → yellow
-      return "pastel-red alert-yellow";
+    const sinceMs =
+      typeof vehicle.statusSinceMs === "number"
+        ? vehicle.statusSinceMs
+        : vehicle.date
+          ? adjustedMs(vehicle.date)
+          : NaN;
 
-    return "pastel-red"; // <15m → just red card
+    const safeSinceMs = Number.isFinite(sinceMs) ? sinceMs : now;
+    const timeInState = Math.max(0, now - safeSinceMs);
+
+    if (isDriving || timeInState <= 0) return ""; // moving → nothing
+
+    if (timeInState >= 45 * 60 * 1000) return "pastel-red alert-red alert-critical";
+    if (timeInState >= 15 * 60 * 1000) return "pastel-red alert-yellow";
+    return "pastel-red";
   };
 
   // Function to toggle the Night-Out status of a vehicle
@@ -843,11 +912,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
               Showing all vehicles that are due a service/MOT within less than 5 days and are currently out of a depot
             </div>
           )}
- 
+
           {filterOption === "Critical-Arrivals" && (
             <div className="critical-info-banner">
               <TriangleAlert size="16" />
-              Showing vehicles that have a Service or MOT due soon (or overdue) and have just arrived at a depot
+              Showing vehicles that are due (or overdue) Maintenance and have just arrived at a depot
             </div>
           )}
 
@@ -949,8 +1018,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         <span className="status-pill__text">{(vehicle.eventType || "UNKNOWN").toUpperCase()}</span>
                       </span>
 
-                      <span className="vehicle-time-since-update">
-                        {vehicle.date ? getTimeSinceUpdate(vehicle.date) : "--- : --- : ---"}
+                      <span className="vehicle-time-since-update">        
+                        {typeof (vehicle as any).statusSinceMs === "number"
+                          ? formatTimeInState((vehicle as any).statusSinceMs)
+                          : vehicle.date
+                            ? formatTimeInState(adjustedMs(vehicle.date))
+                            : "--- : --- : ---"}
                       </span>
                     </div>
 
