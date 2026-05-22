@@ -418,7 +418,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
-  const [sortOption, setSortOption] = useState<"stoppedTime" | "reg" | "location">("stoppedTime");
+  const [sortOption, setSortOption] = useState<"stoppedTime" | "serviceDue" | "reg" | "location">("stoppedTime");
   const [timelineTick, setTimelineTick] = useState(0);
   void timelineTick;
   const [searchTerm, setSearchTerm] = useState("");
@@ -557,6 +557,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
         const aStopped = a.date ? now - adjustedMs(a.date) : 0;
         const bStopped = b.date ? now - adjustedMs(b.date) : 0;
         if (bStopped !== aStopped) return bStopped - aStopped;
+        return (a.assetName ?? "").localeCompare(b.assetName ?? "");
+      } 
+      if (sortOption === "serviceDue") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayMs = today.getTime();
+        const aDueMs = a.ServiceDueDate ? adjustedMs(a.ServiceDueDate.trim()) : NaN;
+        const bDueMs = b.ServiceDueDate ? adjustedMs(b.ServiceDueDate.trim()) : NaN;
+        // Sort value = ms diff from today (negative = overdue). Missing/invalid dates go last.
+        const aSortVal = isNaN(aDueMs) ? Number.POSITIVE_INFINITY : (aDueMs - todayMs);
+        const bSortVal = isNaN(bDueMs) ? Number.POSITIVE_INFINITY : (bDueMs - todayMs);
+        if (aSortVal !== bSortVal) return aSortVal - bSortVal;
+        // Tie-breaker: stable, readable order
         return (a.assetName ?? "").localeCompare(b.assetName ?? "");
       }
       if (sortOption === "reg") {
@@ -731,6 +744,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
                 >
                   <option value="stoppedTime">Stopped time</option>
+                  <option value="serviceDue">Service due</option>
                   <option value="reg">Reg</option>
                   <option value="location">Location</option>
                 </select>
@@ -824,9 +838,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
 
-                //Aply conditional formatting only for "Services"
-                const BackgroundColourClass =
-                  (filterOption === "Services" || filterOption === "Critical")
+                // Apply conditional formatting site-wide except Night-Out/Map
+                const shouldApplySeverityColour =
+                  filterOption !== "Night-Out" && filterOption !== "DelaysMap";
+                const BackgroundColourClass = shouldApplySeverityColour
                     ? getServiceDueCardClass(vehicle.ServiceDueDate ?? "")
                     : "";
 
