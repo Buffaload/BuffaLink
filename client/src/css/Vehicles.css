@@ -81,6 +81,10 @@
   accent-color: #15a841; /* Buffaload green */
 }
 
+.wizard-checkbox:hover {
+  cursor: pointer;
+}
+
 .wizard-vor:hover {
   cursor: pointer;
 }
@@ -131,6 +135,10 @@
 
 .wizard-select option:checked {
   background-color: #e6f6ec;
+}
+
+.wizard-select option:hover {
+  cursor: pointer;
 }
 
 .wizard-pill.wizard-sort {

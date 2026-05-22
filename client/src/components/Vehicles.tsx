@@ -141,6 +141,7 @@ function getServiceDueCardClass(dateString?: string): string {
 
 function formatWeeksUntilDueLabel(info: ServiceDueISOInfo): string {
   if (info.isOverdue) return "OVERDUE";
+  if (info.weekDiff === 0) return "Due this week";
   const w = Math.max(0, info.weekDiff);
   return `${w} week${w === 1 ? "" : "s"} until due`;
 }
