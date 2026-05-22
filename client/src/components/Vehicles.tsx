@@ -180,17 +180,6 @@ function isDueThisISOWeekOrOverdue(dateString?: string): boolean {
   return info.isOverdue || info.weekDiff === 0;
 }
 
-function isCurrentlyInDepot(v: { locationGroupName?: string | null }): boolean {
-  return (v.locationGroupName ?? "") === "Buffaload";
-}
-
-function hasJustArrived(v: { date?: string | null }, now: number): boolean {
-  if (!v.date) return false;
-  const lastMs = adjustedMs(v.date);
-  if (isNaN(lastMs)) return false;
-  return now - lastMs <= CRITICAL_ARRIVAL_WINDOW_MS;
-}
-
 // Helper function to format date from BlueCrystal data
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
