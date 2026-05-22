@@ -45,8 +45,13 @@ const daysUntil = (s?: string): number | null => {
 };
 
 export const isCriticalAlert = (v: VehicleLike): boolean => {
-    // Must be out of a depot
-    if (v.locationGroupName === "Buffaload") return false;
+    // Must be out of a depot OR maintenance
+    if (
+        v.locationGroupName === "Buffaload" ||
+        v.locationGroupName === "Maintenance"
+    ) {
+        return false;
+    }
 
     const threshold = 5;
     const serviceDays = daysUntil(v.ServiceDueDate);
@@ -111,7 +116,7 @@ export const matchesFilter = (
                     Skelmersdale: [/SKELMERSDALE/i, /BUFFALOAD SKELMERSDALE/i],
                     Coventry: [/COVENTRY/i, /CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i],
                     Avonmouth: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i],
-                    Belshill: [/BELSHILL/i],
+                    Bellshill: [/BELLSHILL/i],
                 };
 
                 const matchesAnyDepot = Object.values(depotMatchers).some((patterns) =>
