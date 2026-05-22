@@ -402,6 +402,11 @@ const DEPOT_ALIASES: Record<string, string[]> = {
   BELLSHILL: ["BELLSHILL", "BUFFALOAD BELLSHILL"],
 };
 
+const STRICT_GEOFENCED_DEPOTS: Record<string, string> = {
+  BELLSHILL: "BUFFALOAD BELLSHILL",
+  AVONMOUTH: "CO-OP AVONMOUTH",
+};
+
 const vehicleDepotHaystack = (v: DepotMatchableVehicle) =>
   normalizeDepotText(
   [
@@ -418,20 +423,20 @@ const matchesSelectedDepot = (
   depotLabel: string
 ) => {
   const key = normalizeDepotText(depotLabel);
-
-  // Strong signal: backend says this is a Buffaload depot
+  // Must be inside Buffaload geofence
   if (v.locationGroupName === "Buffaload") {
-    const loc = normalizeDepotText(v.locationName);
-    if (loc.includes(key)) return true;
+    const locName = normalizeDepotText(v.locationName);
+    // If this depot has a strict name, enforce it
+    const strictName = STRICT_GEOFENCED_DEPOTS[key];
+    if (strictName) {
+      return locName.includes(strictName);
+    }
+    // Otherwise allow normal geofenced matching
+    return locName.includes(key);
   }
 
-  // Fallback to alias text matching (non-geofenced cases)
-  const hay = vehicleDepotHaystack(v);
-  const aliases = DEPOT_ALIASES[key] ?? [key];
-
-  return aliases.some((a) =>
-    hay.includes(normalizeDepotText(a))
-  );
+  //Outside geofence → never count as depot
+  return false;
 };
 
 const Vehicles: React.FC<VehiclesProps> = ({
