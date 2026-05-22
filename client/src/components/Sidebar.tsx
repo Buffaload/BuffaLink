@@ -8,7 +8,7 @@ import {
   Truck,
   Fuel,
   Moon,
-  Map,
+  Map as MapIcon,
   Building2,
   Wrench,
   TriangleAlert,
@@ -22,13 +22,79 @@ import ProfileButton from "./ProfileButton";
 
 interface Vehicle {
   assetName?: string;
+  assetRegistration?: string;
   assetType?: string;
   assetGroupName?: string;
   locationGroupName?: string;
   locationName?: string;
+  formattedAddress?: string;
+  eventType?: string;
   date?: string;
   ServiceDueDate?: string;
   MotDueDate?: string;
+}
+
+type CriticalArrivalItem = {
+  signature: string;
+  reg: string;
+  dueType: "Service" | "MOT" | "Service + MOT";
+  depot: string;
+};
+
+const ARRIVALS_LAST_STATE_KEY = "buffalink:criticalArrivals:lastState";
+const ARRIVALS_ACK_KEY = "buffalink:criticalArrivals:ack";
+
+const formatRegistration = (value?: string) => {
+  if (!value) return value ?? "";
+  const reg = value.trim();
+  if (reg.length === 7 && !reg.includes(" ")) return `${reg.slice(0, 4)} ${reg.slice(4)}`;
+  return reg;
+};
+
+const parseDateSafe = (dateString?: string): Date | null => {
+  const raw = (dateString ?? "").trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+function startOfISOWeekUTC(date: Date): Date {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() - (dayNum - 1));
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+function getISOWeekDiffFromToday(dueDate: Date): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const thisWeekStart = startOfISOWeekUTC(today).getTime();
+  const dueWeekStart = startOfISOWeekUTC(dueDate).getTime();
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  return Math.round((dueWeekStart - thisWeekStart) / msPerWeek);
+}
+
+function isDueThisISOWeekOrOverdue(dateString?: string): boolean {
+  const d = parseDateSafe(dateString);
+  if (!d) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isOverdue = d.getTime() < today.getTime();
+  const weekDiff = getISOWeekDiffFromToday(d);
+
+  return isOverdue || weekDiff === 0;
+}
+
+function safeJsonParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 const Sidebar: React.FC<{
@@ -41,6 +107,8 @@ const Sidebar: React.FC<{
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
+  const [arrivalTooltipOpen, setArrivalTooltipOpen] = useState(false);
+  const [arrivalTooltipItems, setArrivalTooltipItems] = useState<CriticalArrivalItem[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Loader icons
   const showDepotSubTabs = filterOption === "Depots";
 
@@ -93,9 +161,91 @@ const Sidebar: React.FC<{
   } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
-    refetchInterval: false,
+    refetchInterval: 30000,
     staleTime: 60000, // Data is fresh for 1 minute
   });
+
+  useEffect(() => {
+    if (!vehicles || vehicles.length === 0) return;
+
+    const lastState = safeJsonParse<Record<string, { inDepot: boolean; depot: string }>>(
+      localStorage.getItem(ARRIVALS_LAST_STATE_KEY),
+      {}
+    );
+
+    const ack = safeJsonParse<Record<string, true>>(
+      localStorage.getItem(ARRIVALS_ACK_KEY),
+      {}
+    );
+
+    const currentState: Record<string, { inDepot: boolean; depot: string }> = { ...lastState };
+    const newArrivals: CriticalArrivalItem[] = [];
+
+    for (const v of vehicles) {
+      const assetKey = (v.assetName ?? v.assetRegistration ?? "").trim();
+      if (!assetKey) continue;
+
+      const inDepot = (v.locationGroupName ?? "") === "Buffaload";
+      const depot = (v.locationName ?? v.formattedAddress ?? "Depot").trim();
+
+      const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
+      const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
+      const isCritical = dueService || dueMot;
+
+      // Always update snapshot so transitions work next poll
+      currentState[assetKey] = { inDepot, depot };
+
+      if (!inDepot || !isCritical) continue;
+
+      const prev = lastState[assetKey];
+      const enteredThisDepot = !prev || !prev.inDepot || prev.depot !== depot;
+
+      if (!enteredThisDepot) continue;
+
+      const dueType: CriticalArrivalItem["dueType"] =
+        dueService && dueMot ? "Service + MOT" : dueService ? "Service" : "MOT";
+
+      const signature = `${assetKey}|${depot}|${dueType}`;
+      if (ack[signature]) continue;
+
+      newArrivals.push({
+        signature,
+        reg: formatRegistration(v.assetRegistration ?? v.assetName),
+        dueType,
+        depot,
+      });
+    }
+
+    localStorage.setItem(ARRIVALS_LAST_STATE_KEY, JSON.stringify(currentState));
+
+    if (newArrivals.length === 0) return;
+
+    setArrivalTooltipItems((prev) => {
+      const seen = new Set(prev.map((p) => p.signature));
+      const merged = [...prev];
+      for (const item of newArrivals) {
+        if (!seen.has(item.signature)) merged.push(item);
+      }
+      return merged.slice(0, 6);
+    });
+
+    setArrivalTooltipOpen(true);
+  }, [vehicles]);
+
+  const acknowledgeTooltipItems = (items: CriticalArrivalItem[]) => {
+    const ack = safeJsonParse<Record<string, true>>(
+      localStorage.getItem(ARRIVALS_ACK_KEY),
+      {}
+    );
+    for (const i of items) ack[i.signature] = true;
+    localStorage.setItem(ARRIVALS_ACK_KEY, JSON.stringify(ack));
+  };
+
+  const closeArrivalTooltip = () => {
+    acknowledgeTooltipItems(arrivalTooltipItems);
+    setArrivalTooltipOpen(false);
+    setArrivalTooltipItems([]);
+  };
 
   useEffect(() => {
     if (!isLoading && vehicles.length >= 0) {
@@ -282,7 +432,7 @@ const Sidebar: React.FC<{
                   <span className="depot-name">Map</span>
                 </span>
 
-                <Map className="service-right-icon" size={18} />
+                <MapIcon className="service-right-icon" size={18} />
               </button>
             </div>
           )}
@@ -380,6 +530,30 @@ const Sidebar: React.FC<{
                 {renderSidebarValue(counts.criticalCount)}
               </span>
             </button>
+          </li>   
+          <li className="sidebar-item sidebar-item--has-popout">
+            <button
+              className={`sidebar-link ${
+                filterOption === "Critical-Arrivals" ? "active" : ""
+              }`}
+              onClick={() => {
+                forceScrollToTop();
+                handleButtonClick("Critical-Arrivals");
+                closeArrivalTooltip(); // closes tooltip when you click it
+              }}
+            >
+              <span className="sidebar-link-text">
+                <Building2 className="sidebar-icon" />
+                Critical Arrivals
+              </span>
+            </button>
+
+            {/* Tooltip anchored ONLY to Critical Arrivals */}
+            {arrivalTooltipOpen && arrivalTooltipItems.length > 0 && (
+              <div className="sidebar-dark-tooltip" role="status" aria-live="polite">
+                ...
+              </div>
+            )}
           </li>
           {userRole === "admin" && (
             <>

@@ -156,6 +156,41 @@ function formatDueISOWeekWithYear(info: ServiceDueISOInfo): string {
     : `ISO week ${info.dueWeek}`;
 }
 
+// Critical Arrivals helpers
+const CRITICAL_ARRIVAL_WINDOW_MINUTES = 60;
+const CRITICAL_ARRIVAL_WINDOW_MS = CRITICAL_ARRIVAL_WINDOW_MINUTES * 60 * 1000;
+
+function getDueISOInfo(dateString?: string): { weekDiff: number; isOverdue: boolean } | null {
+  const dueDate = parseDateSafe(dateString);
+  if (!dueDate) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return {
+    weekDiff: getISOWeekDiffFromToday(dueDate),
+    isOverdue: dueDate.getTime() < today.getTime(),
+  };
+}
+
+function isDueThisISOWeekOrOverdue(dateString?: string): boolean {
+  const info = getDueISOInfo(dateString);
+  if (!info) return false;
+  // "due this week" + include overdue as still critical
+  return info.isOverdue || info.weekDiff === 0;
+}
+
+function isCurrentlyInDepot(v: { locationGroupName?: string | null }): boolean {
+  return (v.locationGroupName ?? "") === "Buffaload";
+}
+
+function hasJustArrived(v: { date?: string | null }, now: number): boolean {
+  if (!v.date) return false;
+  const lastMs = adjustedMs(v.date);
+  if (isNaN(lastMs)) return false;
+  return now - lastMs <= CRITICAL_ARRIVAL_WINDOW_MS;
+}
+
 // Helper function to format date from BlueCrystal data
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -516,17 +551,28 @@ const Vehicles: React.FC<VehiclesProps> = ({
   // Depot matching helpers (geofence + text/address fallback)
   const { categoryVehicles, displayVehicles } = useMemo(() => {
     const now = Date.now();
+    let categoryVehicles: Vehicle[] = [];
 
-    // 1) Base category list (this is what kiosk pills should match)
-    let categoryVehicles = filterVehicles(vehicles, filterOption, selectedDepots, now);
+    if (filterOption === "Critical-Arrivals") {
+      categoryVehicles = vehicles.filter((v) => {
+        const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
+        const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
 
-    if (filterOption === "Depots" && selectedDepots.length > 0) {
-      categoryVehicles = categoryVehicles.filter((v) =>
-        selectedDepots.some((d) => matchesSelectedDepot(v, d))
-      );
+        // Vehicle must currently be in a depot
+        const inDepot = (v.locationGroupName ?? "") === "Buffaload";
+
+        return (dueService || dueMot) && inDepot;
+      });
+    } else {
+      categoryVehicles = filterVehicles(vehicles, filterOption, selectedDepots, now);
+
+      if (filterOption === "Depots" && selectedDepots.length > 0) {
+        categoryVehicles = categoryVehicles.filter((v) =>
+          selectedDepots.some((d) => matchesSelectedDepot(v, d))
+        );
+      }
     }
 
-    // 2) Apply client-only filters for display
     let list = categoryVehicles;
 
     if (isVorFilterActive) {
@@ -607,14 +653,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     return { total, vor };
   }, [displayVehicles]);
-
-  // // Colours for time stopped
-  // const getBackgroundColour = (timeStopped: number) => {
-  //   if (timeStopped >= 45 * 60 * 1000) return "pastel-red"; // Red for >= 45min
-  //   if (timeStopped >= 30 * 60 * 1000) return "pastel-orange"; // Orange for >= 30min
-  //   if (timeStopped >= 15 * 60 * 1000) return "pastel-yellow"; // Yellow for >= 15min
-  //   return ""; // Default: no special colour
-  // };
 
   const getTipperAlertClass = (
     vehicle: {
@@ -821,6 +859,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
               Showing all vehicles that are due a service/MOT within less than 5 days and are currently out of a depot
             </div>
           )}
+ 
+          {filterOption === "Critical-Arrivals" && (
+            <div className="critical-info-banner">
+              <TriangleAlert size="16" />
+              Showing vehicles that have a Service or MOT due soon (or overdue) and have just arrived at a depot
+            </div>
+          )}
 
           {(isKioskMode) ? (
             <div className="kiosk-vehicles-wizard">
@@ -850,7 +895,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
               </p>
             </div>
           ) : (
-            <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" ? "vehicle-list--critical" : ""}`}>
+            <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" || filterOption === "Critical-Arrivals" ? "vehicle-list--critical" : ""}`}>
               {displayVehicles.map((vehicle) => {
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;

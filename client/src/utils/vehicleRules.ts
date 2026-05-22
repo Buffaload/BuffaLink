@@ -63,6 +63,44 @@ export const isCriticalAlert = (v: VehicleLike): boolean => {
     );
 };
 
+function startOfISOWeekUTC(date: Date): Date {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() - (dayNum - 1));
+    d.setUTCHours(0, 0, 0, 0);
+    return d;
+}
+
+function getISOWeekDiffFromToday(dueDate: Date): number {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thisWeekStart = startOfISOWeekUTC(today).getTime();
+    const dueWeekStart = startOfISOWeekUTC(dueDate).getTime();
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    return Math.round((dueWeekStart - thisWeekStart) / msPerWeek);
+}
+
+const isDateDueThisISOWeekOrOverdue = (date?: string): boolean => {
+    if (!date) return false;
+
+    const due = new Date(date);
+    if (Number.isNaN(due.getTime())) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (due < today) return true;
+
+    const weekDiff = getISOWeekDiffFromToday(due);
+    return weekDiff === 0;
+};
+
+export const isServiceDueThisISOWeekOrOverdue = (v: VehicleLike) =>
+    isDateDueThisISOWeekOrOverdue(v.ServiceDueDate);
+
+export const isMotDueThisISOWeekOrOverdue = (v: VehicleLike) =>
+    isDateDueThisISOWeekOrOverdue(v.MotDueDate);
+
 export const matchesFilter = (
     v: VehicleLike,
     filterOption: string,
@@ -143,6 +181,13 @@ export const matchesFilter = (
         case "Critical":
             return isCriticalAlert(v);
 
+        case "Critical-Arrivals": {
+            const inDepot = v.locationGroupName === "Buffaload";
+            const serviceDue = isServiceDueThisISOWeekOrOverdue(v);
+            const motDue = isMotDueThisISOWeekOrOverdue(v);
+            return inDepot && (serviceDue || motDue);
+        }
+            
         case "Tippers":
             return v.assetGroupName === "TFP Tipper Operation";
 
