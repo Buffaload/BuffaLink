@@ -157,9 +157,6 @@ function formatDueISOWeekWithYear(info: ServiceDueISOInfo): string {
 }
 
 // Critical Arrivals helpers
-const CRITICAL_ARRIVAL_WINDOW_MINUTES = 60;
-const CRITICAL_ARRIVAL_WINDOW_MS = CRITICAL_ARRIVAL_WINDOW_MINUTES * 60 * 1000;
-
 function getDueISOInfo(dateString?: string): { weekDiff: number; isOverdue: boolean } | null {
   const dueDate = parseDateSafe(dateString);
   if (!dueDate) return null;
@@ -210,9 +207,7 @@ const hasAssetName = (
 
 const formatRegistration = (value?: string) => {
   if (!value) return value;
-
   const reg = value.trim();
-
   // Only act on exactly 7 characters with no existing space
   if (reg.length === 7 && !reg.includes(" ")) {
     return `${reg.slice(0, 4)} ${reg.slice(4)}`;
