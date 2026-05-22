@@ -393,37 +393,33 @@ const normalizeDepotText = (value: string | null | undefined) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const DEPOT_ALIASES: Record<string, string[]> = {
-  ELLINGTON: ["ELLINGTON"],
-  CREWE: ["CREWE"],
-  SKELMERSDALE: ["SKELMERSDALE", "SKELMERSDALE DEPOT"],
-  COVENTRY: ["CO-OP COVENTRY", "COOP COVENTRY"],
-  AVONMOUTH: ["AVONMOUTH", "BUFFALOAD AVONMOUTH", "CO-OP AVONMOUTH", "COOP AVONMOUTH"],
-  BELLSHILL: ["BELLSHILL", "BUFFALOAD BELLSHILL"],
+const DEPOT_DEFINITIONS: Record<
+  string,
+  { mode: "strict" | "alias"; patterns: string[] }
+> = {
+  ELLINGTON: { mode: "alias", patterns: ["ELLINGTON"] },
+  CREWE: { mode: "alias", patterns: ["CREWE"] },
+  SKELMERSDALE: { mode: "alias", patterns: ["SKELMERSDALE", "SKELMERSDALE DEPOT"] },
+  COVENTRY: { mode: "alias", patterns: ["CO-OP COVENTRY", "COOP COVENTRY", "COVENTRY"] },
+  // Strict depots: must match specific depot naming (but allow hyphenless “COOP”)
+  AVONMOUTH: { mode: "strict", patterns: ["CO-OP AVONMOUTH", "COOP AVONMOUTH"] },
+  BELLSHILL: { mode: "strict", patterns: ["BUFFALOAD BELLSHILL"] },
 };
 
-const STRICT_GEOFENCED_DEPOTS: Record<string, string> = {
-  BELLSHILL: "BUFFALOAD BELLSHILL",
-  AVONMOUTH: "CO-OP AVONMOUTH",
-};
+const ALL_DEPOT_LABELS = Object.keys(DEPOT_DEFINITIONS);
 
 const matchesSelectedDepot = (
   v: DepotMatchableVehicle & { locationName?: string },
   depotLabel: string
 ) => {
   const key = normalizeDepotText(depotLabel);
-  // Must be inside Buffaload geofence
+  // Geofence is mandatory
   if (v.locationGroupName !== "Buffaload") return false;
   const locName = normalizeDepotText(v.locationName);
-  const strictName = STRICT_GEOFENCED_DEPOTS[key];
-  if (strictName) {
-    return locName.includes(strictName);
-  }
+  const def = DEPOT_DEFINITIONS[key] ?? { mode: "alias" as const, patterns: [key] };
 
-  const aliases = DEPOT_ALIASES[key] ?? [key];
-  return aliases.some(alias =>
-    locName.includes(normalizeDepotText(alias))
-  );
+  // strict vs alias uses the same includes test, but strict has *only* safe patterns
+  return def.patterns.some((p) => locName.includes(normalizeDepotText(p)));
 };
 
 const Vehicles: React.FC<VehiclesProps> = ({
@@ -579,6 +575,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
     } else {
       categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, [], now) as VehicleWithSince[];
       if (filterOption === "Depots" && selectedDepots.length > 0) {
+        const effectiveDepots =
+            selectedDepots.length > 0 ? selectedDepots : ALL_DEPOT_LABELS;
         categoryVehicles = categoryVehicles.filter((v) =>
           selectedDepots.some((d) => matchesSelectedDepot(v, d))
         );
