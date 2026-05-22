@@ -594,9 +594,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
       return { ...v, statusSinceMs: sinceMs };
     });
 
-    for (const k of statusSinceRef.current.keys()) {
-      if (!currentKeys.has(k)) statusSinceRef.current.delete(k);
-    }
+    Array.from(statusSinceRef.current.keys()).forEach((k) => {
+      if (!currentKeys.has(k)) {
+        statusSinceRef.current.delete(k);
+      }
+    });
 
     let categoryVehicles: VehicleWithSince[] = [];
 
