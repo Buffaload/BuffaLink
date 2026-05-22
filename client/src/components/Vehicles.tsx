@@ -285,12 +285,6 @@ const getDueProgress = (dateString: string): DueProgress | null => {
   return { percentage, colorClass, label };
 };
 
-// Track when a vehicle entered its current state (eventType)
-type StatusSince = {
-  eventType: string;   // normalized lowercase
-  sinceMs: number;     // epoch ms when state began
-};
-
 type VehicleWithSince = Vehicle & {
   statusSinceMs?: number;
 };
@@ -311,25 +305,6 @@ const formatTimeInState = (sinceMs: number) => {
   parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
 
   return parts.join(", ");
-};
-
-const getTimeSinceUpdate = (lastUpdated: string) => {
-  const now = Date.now();
-  const lastUpdate = adjustedMs(lastUpdated);
-  const duration = now - lastUpdate;
-
-  const days = Math.floor(duration / (1000 * 60 * 60 * 24));
-  const hours = Math.floor(
-    (duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  );
-  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-
-  let result = "";
-  if (days > 0) result += `${days} days, `; // Include days only if > 0
-  if (hours > 0) result += `${hours} hours, `; // Include hours only if > 0
-  result += `${minutes} minutes ago`;
-
-  return result;
 };
 
 const renderStatusIcon = (rawType?: string) => {
