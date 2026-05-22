@@ -574,11 +574,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
       });
     } else {
       categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, [], now) as VehicleWithSince[];
-      if (filterOption === "Depots" && selectedDepots.length > 0) {
+      if (filterOption === "Depots") {
         const effectiveDepots =
             selectedDepots.length > 0 ? selectedDepots : ALL_DEPOT_LABELS;
         categoryVehicles = categoryVehicles.filter((v) =>
-          selectedDepots.some((d) => matchesSelectedDepot(v, d))
+          effectiveDepots.some((d) => matchesSelectedDepot(v, d))
         );
       }
     }
