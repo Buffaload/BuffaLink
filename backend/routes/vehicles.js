@@ -161,6 +161,13 @@ const normalizeText = (s) =>
     .replace(/\s+/g, " ")
     .trim();
 
+// Normalise IDs for cross‑API matching (BlueCrystal / Michelin / Volvo)
+const normalizeId = (val) =>
+  String(val ?? "")
+    .replace(/\s+/g, "")
+    .toUpperCase()
+    .trim();
+
 const MAINTENANCE_TEXT_OVERRIDES = [
   /BUFFALOAD\s+PYMOOR/i,
 ];
@@ -445,6 +452,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
     let vehicles = [];
     let existingVehicles = [];
     let maintenanceDetails = [];
+    let maintenanceByVehicleId = new Map();
     let volvoVehicles = [];
     let volvoPositions = [];
     let nightOutMetadata = [];
@@ -842,7 +850,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         ); 
         
         // Build O(1) lookup by VehicleId
-        const maintenanceByVehicleId = new Map();
+        maintenanceByVehicleId.clear();
         for (const m of maintenanceDetails) {
           const key = normalizeId(m?.VehicleId);
           if (key) maintenanceByVehicleId.set(key, m);
