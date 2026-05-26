@@ -124,6 +124,21 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [tooltipArrowX, setTooltipArrowX] = useState(24);
   const token = localStorage.getItem("token");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
+  type SortOrder = "asc" | "desc";
+  const SERVICES_SORT_KEY = "servicesDueSortOrder";
+
+  const [servicesSortOrder, setServicesSortOrder] = useState<SortOrder>(() => {
+    const saved = localStorage.getItem(SERVICES_SORT_KEY);
+    return saved === "desc" ? "desc" : "asc";
+  });
+
+  const toggleServicesSortOrder = () => {
+    setServicesSortOrder((prev) => {
+      const next: SortOrder = prev === "asc" ? "desc" : "asc";
+      localStorage.setItem(SERVICES_SORT_KEY, next);
+      return next;
+    });
+  };
 
   // Map filter options to their respective titles
   type DashboardTitle = {
@@ -348,7 +363,12 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       return isNaN(d.getTime()) ? null : d;
     };
 
-    return vehiclesSnapshot
+    const collator = new Intl.Collator(undefined, {
+        sensitivity: "base",
+        numeric: true,
+      });
+
+    const sorted = vehiclesSnapshot
       .filter((v) => {
         const dueDate = parseServiceDue(v);
         if (!dueDate) return false;
@@ -365,8 +385,11 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
           actionLabel: actionRaw.toUpperCase(),
           locationText,
         };
-      });
-  }, [vehiclesSnapshot, isoWeek, isoWeekYear]);
+      })
+      .sort((a, b) => collator.compare(a.reg, b.reg));
+    
+    return servicesSortOrder === "asc" ? sorted : sorted.reverse();
+  }, [vehiclesSnapshot, isoWeek, isoWeekYear, servicesSortOrder]);
 
   if (!token) {
     return null;
@@ -394,7 +417,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             </h2>
           )}
         </div>     
-        <div className="dashboard-header-right"> 
+        <div className="dashboard-header-right">
           {!isKioskMode && (
             <div
               ref={weekBtnRef}
@@ -487,10 +510,45 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
           >
             <div className="iso-week-tooltip__panel">
               <div className="iso-week-tooltip__header">
-                <div className="iso-week-tooltip__title">Services due this ISO week</div>
-                <div className="iso-week-tooltip__subtitle">
-                  Week {isoWeek} • {vehiclesDueThisISOWeek.length} vehicle{vehiclesDueThisISOWeek.length === 1 ? "" : "s"}
+                <div className="iso-week-tooltip__header-left">
+                  <div className="iso-week-tooltip__title">Services due this ISO week</div>
+                  <div className="iso-week-tooltip__subtitle">
+                    Week {isoWeek} • {vehiclesDueThisISOWeek.length} vehicle{vehiclesDueThisISOWeek.length === 1 ? "" : "s"}
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  className="iso-week-tooltip__sort-toggle"
+                  onClick={toggleServicesSortOrder}
+                  aria-label={`Sort ${servicesSortOrder === "asc" ? "descending" : "ascending"}`}
+                  title={`Sort ${servicesSortOrder === "asc" ? "Z-A" : "A-Z"}`}
+                >   
+                <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                    className={`iso-week-tooltip__sort-icon ${
+                      servicesSortOrder === "asc" ? "asc" : "desc"
+                    }`}
+                  >
+                    {/* Up arrow */}
+                    <path
+                      d="M12 4l-5 5h10l-5-5Z"
+                      fill="currentColor"
+                      opacity={servicesSortOrder === "asc" ? 1 : 0.35}
+                    />
+                    {/* Down arrow */}
+                    <path
+                      d="M12 20l5-5H7l5 5Z"
+                      fill="currentColor"
+                      opacity={servicesSortOrder === "desc" ? 1 : 0.35}
+                    />
+                  </svg>
+                </button>
               </div>
 
               <div className="iso-week-tooltip__list">
