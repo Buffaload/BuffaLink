@@ -840,17 +840,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           (m) =>
             typeof m.VehicleId === "string" &&
             !m.Category?.toLowerCase().includes("equipment")
-        );    
-        if (Array.isArray(maintenanceDetails) && maintenanceDetails.length > 0) {
-          console.log("🟦 BlueCrystal sample record (first item):");  
-          console.log("🟦 Maintenance due dates", {
-            asset: vehicle.assetName,
-            Mot: maintenance?.MotDueDate,
-            Brake: maintenance?.BrakeDueDate,
-            RFL: maintenance?.RflDueDate,
-            LOLER: maintenance?.LolerDueDate,
-          });
-        }
+        ); 
       } else {
         console.warn("BlueCrystal API failed — continuing");
         maintenanceDetails = isFresh(sourceCache.blueCrystal.ts)
