@@ -118,6 +118,7 @@ const getAllDueDateStrings = (v: VehicleLike): string[] => {
 // Critical Arrivals = vehicle is IN a depot AND has ANY due date that is due this ISO week or overdue
 export const isCriticalArrival = (v: VehicleLike): boolean => {
     if (v.locationGroupName !== "Buffaload") return false;
+    if (v.assetGroupName === "TFP Tipper Operation") return false;
 
     const dueDates = getAllDueDateStrings(v);
     return dueDates.some((d) => isDateDueThisISOWeekOrOverdue(d));
