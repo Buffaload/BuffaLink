@@ -948,7 +948,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
               : vehicle.locationGroupName,
           ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
           MotDueDate: maintenance?.MotDueDate || "N/A",
-          BrakeDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.BrakeTestDueDate) ?? "N/A",         
+          BrakeDueDate: maintenance?.BrakeDueDate || "N/A",         
           TlWeightDueDate: maintenance?.TlWeightDueDate ?? "N/A",
           TachoDueDate: maintenance?.TachoDueDate ?? "N/A",
           TailDueDate: maintenance?.TailDueDate ?? "N/A",
