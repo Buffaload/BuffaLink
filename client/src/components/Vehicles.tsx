@@ -28,11 +28,15 @@ interface Vehicle {
   // New fields from BlueCrystal API
   ServiceDueDate?: string;
   MotDueDate?: string;
-  BrakeTestDueDate?: string;
-  LoadedBrakeTestDueDate?: string;
-  RflFgasDueDate?: string;
-  DeckRopeDueDate?: string;
+  BrakeDueDate?: string;
+  TlWeightDueDate?: string;
+  TachoDueDate?: string;
+  TailDueDate?: string;
+  FridgeDueDate?: string;
+  RflDueDate?: string;
   LolerDueDate?: string;
+  AncillaryOneDueDate?: string;
+  AncillaryTwoDueDate?: string;
   NextMaintenanceType?: string;
   NextMaintenanceDueDate?: string;
   IsVor?: boolean;

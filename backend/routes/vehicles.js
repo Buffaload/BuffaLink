@@ -208,29 +208,17 @@ const matchDepotByText = (vehicle) => {
 
 const MAINTENANCE_DUE_FIELDS = [
   { key: "MotDueDate", label: "MOT" },
-  { key: "BrakeTestDueDate", label: "Brake test" },
-  { key: "LoadedBrakeTestDueDate", label: "Loaded brake test" },
-  { key: "RflFgasDueDate", label: "RFL/FGAS" },
-  { key: "DeckRopeDueDate", label: "Deck rope" },
+  { key: "ServiceDueDate", label: "Service" },
+  { key: "BrakeDueDate", label: "Brake test" },
+  { key: "TlWeightDueDate", label: "Loaded brake test" },
+  { key: "TachoDueDate", label: "Tacho" },
+  { key: "TailDueDate", label: "Tail lift" },
+  { key: "FridgeDueDate", label: "Fridge" }, 
+  { key: "RflDueDate", label: "RFL/FGAS" },
   { key: "LolerDueDate", label: "LOLER" },
+  { key: "AncillaryOneDueDate", label: "Ancillary 1" },
+  { key: "AncillaryTwoDueDate", label: "Ancillary 2" },
 ];
-
-const MAINTENANCE_DUE_KEY_ALIASES = {
-  BrakeTestDueDate: ["BrakeTestDueDate", "BrakeTestDue", "BrakeTestDue_Date"],
-  LoadedBrakeTestDueDate: ["LoadedBrakeTestDueDate", "LoadedBrakeTestDue", "LoadedBrakeTestDue_Date"],
-  RflFgasDueDate: ["RflFgasDueDate", "RFLDueDate", "FgasDueDate", "RflDueDate", "RFL_FGAS_DueDate"],
-  DeckRopeDueDate: ["DeckRopeDueDate", "DeckRopeDue", "DeckRope_DueDate"],
-  LolerDueDate: ["LolerDueDate", "LOLERDueDate", "Loler_DueDate"],
-  MotDueDate: ["MotDueDate", "MOTDueDate", "Mot_DueDate"],
-};
-
-function getFirstDefined(obj, keys) {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (typeof v === "string" && v.trim()) return v.trim();
-  }
-  return null;
-}
 
 function parseMs(dateString) {
   if (!dateString) return null;
@@ -239,8 +227,8 @@ function parseMs(dateString) {
 }
 
 // "Most urgent" = smallest (dueMs - todayMs). Overdue becomes negative → more urgent.
-function computeNextMaintenanceDue(maintenanceRecord) {
-  if (!maintenanceRecord) return { type: null, dueDate: null };
+function computeNextMaintenanceDue(maintenance) {
+  if (!maintenance) return { type: null, dueDate: null };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -249,8 +237,7 @@ function computeNextMaintenanceDue(maintenanceRecord) {
   let best = null;
 
   for (const { key, label } of MAINTENANCE_DUE_FIELDS) {
-    const aliases = MAINTENANCE_DUE_KEY_ALIASES[key] ?? [key];
-    const raw = getFirstDefined(maintenanceRecord, aliases);
+    const raw = maintenance[key];
     const dueMs = parseMs(raw);
     if (dueMs == null) continue;
 
@@ -848,10 +835,21 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
       if (blueCrystalResponse.status === "fulfilled") {
         const arr = normaliseToArray(blueCrystalResponse.value.data);
-        maintenanceDetails = cacheIfNonEmpty("blueCrystal", arr);       
+        maintenanceDetails = cacheIfNonEmpty("blueCrystal", arr);      
+        maintenanceDetails = maintenanceDetails.filter(
+          (m) =>
+            typeof m.VehicleId === "string" &&
+            !m.Category?.toLowerCase().includes("equipment")
+        );    
         if (Array.isArray(maintenanceDetails) && maintenanceDetails.length > 0) {
-          console.log("🟦 BlueCrystal sample record (first item):");
-          console.dir(maintenanceDetails[0], { depth: null });
+          console.log("🟦 BlueCrystal sample record (first item):");  
+          console.log("🟦 Maintenance due dates", {
+            asset: vehicle.assetName,
+            Mot: maintenance?.MotDueDate,
+            Brake: maintenance?.BrakeDueDate,
+            RFL: maintenance?.RflDueDate,
+            LOLER: maintenance?.LolerDueDate,
+          });
         }
       } else {
         console.warn("BlueCrystal API failed — continuing");
@@ -929,6 +927,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
             normalisedAssetName
         );
 
+        const nextMaint = computeNextMaintenanceDue(maintenance);
+
         // Check if the vehicle is "driving"
         if (
           vehicle.eventType === "driving" &&
@@ -958,11 +958,15 @@ router.get("/", auth, diagnostics, async (req, res) => {
               : vehicle.locationGroupName,
           ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
           MotDueDate: maintenance?.MotDueDate || "N/A",
-          BrakeTestDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.BrakeTestDueDate) ?? "N/A",
-          LoadedBrakeTestDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.LoadedBrakeTestDueDate) ?? "N/A",
-          RflFgasDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.RflFgasDueDate) ?? "N/A",
-          DeckRopeDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.DeckRopeDueDate) ?? "N/A",
-          LolerDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.LolerDueDate) ?? "N/A",
+          BrakeDueDate: getFirstDefined(maintenance, MAINTENANCE_DUE_KEY_ALIASES.BrakeTestDueDate) ?? "N/A",         
+          TlWeightDueDate: maintenance?.TlWeightDueDate ?? "N/A",
+          TachoDueDate: maintenance?.TachoDueDate ?? "N/A",
+          TailDueDate: maintenance?.TailDueDate ?? "N/A",
+          FridgeDueDate: maintenance?.FridgeDueDate ?? "N/A",
+          RflDueDate: maintenance?.RflDueDate ?? "N/A",
+          LolerDueDate: maintenance?.LolerDueDate ?? "N/A",
+          AncillaryOneDueDate: maintenance?.AncillaryOneDueDate ?? "N/A",
+          AncillaryTwoDueDate: maintenance?.AncillaryTwoDueDate ?? "N/A",
           NextMaintenanceType: nextMaint.type ?? "N/A",
           NextMaintenanceDueDate: nextMaint.dueDate ?? "N/A",
           IsVor: maintenance?.IsVor ?? false,
