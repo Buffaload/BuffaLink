@@ -1,6 +1,6 @@
 import API_BASE_URL from "../config";
 import React, { useEffect, useMemo, useState } from "react";
-import { countFor, isCriticalAlert } from "../utils/vehicleRules"
+import { countFor } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
