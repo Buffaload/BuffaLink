@@ -28,6 +28,13 @@ interface Vehicle {
   // New fields from BlueCrystal API
   ServiceDueDate?: string;
   MotDueDate?: string;
+  BrakeTestDueDate?: string;
+  LoadedBrakeTestDueDate?: string;
+  RflFgasDueDate?: string;
+  DeckRopeDueDate?: string;
+  LolerDueDate?: string;
+  NextMaintenanceType?: string;
+  NextMaintenanceDueDate?: string;
   IsVor?: boolean;
   LiveDefects?: boolean;
   isNightOut?: boolean;
@@ -567,9 +574,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
     if (filterOption === "Critical-Arrivals") {
       categoryVehicles = vehiclesWithSince.filter((v) => {
         const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
-        const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
+        const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
         const inDepot = (v.locationGroupName ?? "") === "Buffaload";
-        return (dueService || dueMot) && inDepot;
+        return (dueService || dueNextMaintenance) && inDepot;
       });
     } else {
       categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, [], now) as VehicleWithSince[];
@@ -916,8 +923,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
               <TriangleAlert className="vehicle-empty-icon" aria-hidden />
               <p className="vehicle-empty-text">
                 {categoryVehicles.length === 0
-                  ? "No stopped vehicles to show in this category."
-                  : "No vehicles match your current filters (Search / VOR)."}
+                  ? "No stopped vehicles to show in this category"
+                  : "No vehicles match your current filters (Search / VOR)"}
               </p>
             </div>
           ) : (
@@ -940,7 +947,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                 const vorSkin = isVor ? "vor-banner" : "";
                 const serviceProgress = getServiceDueProgress(vehicle.ServiceDueDate ?? "");
-                const motProgress = getDueProgress(vehicle.MotDueDate ?? "");
+                const maintenanceProgress = getDueProgress(vehicle.NextMaintenanceDueDate ?? "");
+                const maintenanceLabel = vehicle.NextMaintenanceType && vehicle.NextMaintenanceType !== "N/A"
+                  ? `${vehicle.NextMaintenanceType} health`
+                  : "Maintenance health";
 
                 return (
                   // Display Dashboard wizard on all pages other than Map/Kiosk mode
@@ -1037,26 +1047,26 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         </div>
                       </div>
 
-                      {/* MOT */}
+                      {/* Maintenance */}
                       <div className="health-block">
                         <div className="health-block__row">
-                          <span className="health-block__label">MOT health</span>
-                          <span className="health-block__hint">{motProgress?.label ?? ""}</span>
+                          <span className="health-block__label">{maintenanceLabel} health</span>
+                          <span className="health-block__hint">{maintenanceProgress?.label ?? ""}</span>
                         </div>
 
-                        <div className={`due-progress-bar ${motProgress ? "" : "empty-progress-bar"}`}>
+                        <div className={`due-progress-bar ${maintenanceProgress ? "" : "empty-progress-bar"}`}>
                           <div
-                            className={`due-progress-bar-inner ${motProgress?.colorClass ?? ""}`}
-                            style={{ width: `${motProgress?.percentage ?? 0}%` }}
+                            className={`due-progress-bar-inner ${maintenanceProgress?.colorClass ?? ""}`}
+                            style={{ width: `${maintenanceProgress?.percentage ?? 0}%` }}
                           />
                         </div>
 
-                        <div className={`health-block__sub ${isDatePast(vehicle.MotDueDate ?? "") ? "is-overdue" : ""}`}>
-                          {motProgress ? (
+                        <div className={`health-block__sub ${isDatePast(vehicle.NextMaintenanceDueDate ?? "") ? "is-overdue" : ""}`}>
+                          {maintenanceProgress ? (
                             <>
                               <span className="vehicle-due-span">Due:</span>{" "}
                               <b className="vehicle-due-dates">
-                                {vehicle.MotDueDate ? formatDate(vehicle.MotDueDate) : "N/A"}
+                                {vehicle.NextMaintenanceDueDate ? formatDate(vehicle.NextMaintenanceDueDate) : "N/A"}
                               </b>
                             </>
                           ) : (
