@@ -725,7 +725,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             }
 
             return {
-              assetName: `[VOLVO] ${reg ?? v.vin}`,
+              assetName: reg ?? v.vin,
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
@@ -840,6 +840,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
             typeof m.VehicleId === "string" &&
             !m.Category?.toLowerCase().includes("equipment")
         ); 
+        
+        // Build O(1) lookup by VehicleId
+        const maintenanceByVehicleId = new Map();
+        for (const m of maintenanceDetails) {
+          const key = normalizeId(m?.VehicleId);
+          if (key) maintenanceByVehicleId.set(key, m);
+        }
       } else {
         console.warn("BlueCrystal API failed — continuing");
         maintenanceDetails = isFresh(sourceCache.blueCrystal.ts)
@@ -905,16 +912,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
     // Merge data
     const mergedVehicles = await Promise.all(
       vehicles.map(async (vehicle) => {
-        const normalisedAssetName = vehicle.assetName
-          .replace(/\s+/g, "")
-          .toUpperCase();
+        // const normalisedAssetName = vehicle.assetName
+        //   .replace(/\s+/g, "")
+        //   .toUpperCase();
+        const normalisedAssetName = normalizeId(vehicle.assetName);
+        const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
-        const maintenance = maintenanceDetails.find(
-          (m) =>
-            m.VehicleId.replace(/\s+/g, "").toUpperCase() ===
-            normalisedAssetName
-        );
+        // const maintenance = maintenanceDetails.find(
+        //   (m) =>
+        //     m.VehicleId.replace(/\s+/g, "").toUpperCase() ===
+        //     normalisedAssetName
+        // );
+        const maintenance =
+          maintenanceByVehicleId.get(normalisedReg) ||
+          maintenanceByVehicleId.get(normalisedAssetName) ||
+          null;
 
         const nextMaint = computeNextMaintenanceDue(maintenance);
 
