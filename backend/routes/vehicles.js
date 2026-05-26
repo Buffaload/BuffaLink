@@ -220,7 +220,7 @@ const MAINTENANCE_DUE_FIELDS = [
   { key: "TachoDueDate", label: "Tacho" },
   { key: "TailDueDate", label: "Tail lift" },
   { key: "FridgeDueDate", label: "Fridge" }, 
-  { key: "RflDueDate", label: "RFL/FGAS" },
+  { key: "RflDueDate", label: "FGAS" },
   { key: "LolerDueDate", label: "LOLER" },
   { key: "AncillaryOneDueDate", label: "Ancillary 1" },
   { key: "AncillaryTwoDueDate", label: "Ancillary 2" },
@@ -233,16 +233,19 @@ function parseMs(dateString) {
 }
 
 // "Most urgent" = smallest (dueMs - todayMs). Overdue becomes negative → more urgent.
-function computeNextMaintenanceDue(maintenance) {
+function computeNextMaintenanceDue(maintenance, assetType) {
   if (!maintenance) return { type: null, dueDate: null };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayMs = today.getTime();
-
+  const isTrailer = String(assetType).toLowerCase() === "trailer";
   let best = null;
 
   for (const { key, label } of MAINTENANCE_DUE_FIELDS) {
+    if (!isTrailer && (key === "FridgeDueDate" || key === "RflDueDate")) {
+      continue;
+    }
     const raw = maintenance[key];
     const dueMs = parseMs(raw);
     if (dueMs == null) continue;
@@ -937,7 +940,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           maintenanceByVehicleId.get(normalisedAssetName) ||
           null;
 
-        const nextMaint = computeNextMaintenanceDue(maintenance);
+        const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
         // Check if the vehicle is "driving"
         if (
