@@ -261,6 +261,35 @@ const Sidebar: React.FC<{
   // Calculate counts for badges
   const counts = useMemo(() => {
     const now = Date.now();
+
+    // TEMP DEBUG
+    const explainCriticalArrival = (v: any) => {
+      const matches: Array<{ key: string; value: string }> = [];
+
+      for (const [key, value] of Object.entries(v ?? {})) {
+        if (!/duedate$/i.test(key)) continue;
+        if (typeof value !== "string" || !value.trim()) continue;
+
+        if ((window as any).__isDateDueThisISOWeekOrOverdue?.(value)) {
+          matches.push({ key, value });
+        }
+      }
+
+      return matches;
+    };
+
+    const sidebarArrivals = vehicles.filter(isCriticalArrival);
+    console.log("Sidebar arrivals count:", sidebarArrivals.length);
+
+    console.log(
+      "Sidebar arrivals due-reasons sample:",
+      sidebarArrivals.map(v => ({
+        reg: v.assetRegistration ?? v.assetName,
+        group: v.locationGroupName,
+        dueMatches: explainCriticalArrival(v),
+      }))
+    );
+
     return {
       hgvsCount: countFor(vehicles, "HGVs", [], now),
       maintenanceCount: countFor(vehicles, "Maintenance", [], now),

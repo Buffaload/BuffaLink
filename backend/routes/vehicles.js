@@ -261,6 +261,7 @@ function computeNextMaintenanceDue(maintenance, assetType) {
 
 // Reverse geocode tuning (avoid 429 + Vercel timeouts)
 const REVERSE_GEOCODE_ENABLED =
+  process.env.NODE_ENV !== "production" &&
   String(process.env.REVERSE_GEOCODE_ENABLED ?? "0") === "1"; // default OFF
 const REVERSE_GEOCODE_PRECISION = Number(process.env.REVERSE_GEOCODE_PRECISION ?? 3); // ~110m grid
 const REVERSE_GEOCODE_BUDGET = Number(process.env.REVERSE_GEOCODE_BUDGET ?? 10); // max calls/request
