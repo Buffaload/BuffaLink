@@ -1054,7 +1054,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       {/* Maintenance */}
                       <div className="health-block">
                         <div className="health-block__row">
-                          <span className="health-block__label">{maintenanceLabel} health</span>
+                          <span className="health-block__label">{maintenanceLabel}</span>
                           <span className="health-block__hint">{maintenanceProgress?.label ?? ""}</span>
                         </div>
 

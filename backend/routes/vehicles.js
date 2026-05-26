@@ -208,7 +208,6 @@ const matchDepotByText = (vehicle) => {
 
 const MAINTENANCE_DUE_FIELDS = [
   { key: "MotDueDate", label: "MOT" },
-  { key: "ServiceDueDate", label: "Service" },
   { key: "BrakeDueDate", label: "Brake test" },
   { key: "TlWeightDueDate", label: "Loaded brake test" },
   { key: "TachoDueDate", label: "Tacho" },
