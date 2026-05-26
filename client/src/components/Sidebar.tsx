@@ -264,7 +264,12 @@ const Sidebar: React.FC<{
     return {
       hgvsCount: countFor(vehicles, "HGVs", [], now),
       maintenanceCount: countFor(vehicles, "Maintenance", [], now),
-      criticalCount: vehicles.filter(isCriticalAlert).length,
+      criticalCount: vehicles.filter((v) => {
+        const inDepot = (v.locationGroupName ?? "") === "Buffaload";
+        const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
+        const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
+        return inDepot && (dueService || dueMot);
+      }).length,
       arrivalsCount: countFor(vehicles, "Critical-Arrivals", [], now),
       tippersCount: countFor(vehicles, "Tippers", [], now),
     };

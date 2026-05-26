@@ -175,7 +175,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       prefix: "Critical Alerts ",
       suffix: "- immediate attention vehicles",
     },
-    CriticalArrivals: {
+    "Critical-Arrivals": {
       prefix: "Critical Arrivals ",
       suffix: "- critical vehicles in depots",
     },
