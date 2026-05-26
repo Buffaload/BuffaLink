@@ -101,27 +101,58 @@ export const isServiceDueThisISOWeekOrOverdue = (v: VehicleLike) =>
 export const isMotDueThisISOWeekOrOverdue = (v: VehicleLike) =>
     isDateDueThisISOWeekOrOverdue(v.MotDueDate);
 
-const getAllDueDateStrings = (v: VehicleLike): string[] => {
-    const dueDates: string[] = [];
+type DueDateEntry = {
+    key: string;
+    raw: string;
+    dueMs: number;
+};
+
+// Pull all "DueDate" fields off the runtime object, keeping the key name
+const getAllDueDateEntries = (v: VehicleLike): DueDateEntry[] => {
+    const entries: DueDateEntry[] = [];
 
     for (const [key, value] of Object.entries(v as Record<string, unknown>)) {
         if (!/duedate$/i.test(key)) continue;
+        if (typeof value !== "string") continue;
 
-        if (typeof value === "string" && value.trim()) {
-            dueDates.push(value);
-        }
+        const raw = value.trim();
+        if (!raw) continue;
+
+        const dueMs = parseDueMs(raw);
+        if (Number.isNaN(dueMs)) continue;
+
+        entries.push({ key, raw, dueMs });
     }
 
-    return dueDates;
+    return entries;
 };
+
+const VEHICLE_IGNORED_DUE_KEYS = /(fridge|rfl|fgas)/i;
 
 // Critical Arrivals = vehicle is IN a depot AND has ANY due date that is due this ISO week or overdue
 export const isCriticalArrival = (v: VehicleLike): boolean => {
     if (v.locationGroupName !== "Buffaload") return false;
     if (v.assetGroupName === "TFP Tipper Operation") return false;
+    
+    const entries = getAllDueDateEntries(v);
 
-    const dueDates = getAllDueDateStrings(v);
-    return dueDates.some((d) => isDateDueThisISOWeekOrOverdue(d));
+    const dueNow = entries
+        .filter((e) => isDateDueThisISOWeekOrOverdue(e.raw))
+        .sort((a, b) => a.dueMs - b.dueMs);
+
+    if (dueNow.length === 0) return false;
+    if (v.assetType === "Trailer") return true;
+
+    // Non-trailers: walk forward from the closest due date, ignoring Fridge/RFL/FGAS keys
+    for (const item of dueNow) {
+        if (VEHICLE_IGNORED_DUE_KEYS.test(item.key)) {
+        continue;
+        }
+
+        return true;
+    }
+
+    return false;
 };
 
 export const matchesFilter = (
