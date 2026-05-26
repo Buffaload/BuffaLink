@@ -115,6 +115,15 @@ function getISOWeekDiffFromToday(dueDate: Date): number {
   return Math.round((dueWeekStart - thisWeekStart) / msPerWeek);
 }
 
+type VehiclesMemoResult = {
+  categoryVehicles: VehicleWithSince[];
+  displayVehicles: VehicleWithSince[];
+  highlightFigures: {
+    total: number;
+    vor: number;
+  };
+};
+
 type ServiceDueISOInfo = {
   dueWeek: number;
   dueWeekYear: number;
@@ -226,6 +235,29 @@ const formatRegistration = (value?: string) => {
   }
 
   return reg;
+};
+
+const isVorOrDefect = (v: { IsVor?: any; LiveDefects?: any }): boolean => {
+  const toBool = (value: any): boolean => {
+    if (value === true) return true;
+    if (value === false || value == null) return false;
+
+    if (typeof value === "number") {
+      return value === 1;
+    }
+
+    if (typeof value === "string") {
+      const s = value.trim().toLowerCase();
+      if (["true", "1", "y", "yes"].includes(s)) return true;
+      if (["false", "0", "n", "no", ""].includes(s)) return false;
+
+      return false;
+    }
+
+    return false;
+  };
+
+  return toBool(v.IsVor) || toBool(v.LiveDefects);
 };
 
 // Helper function for percentage calculation and color coding for service/MOT due dates
@@ -541,7 +573,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const statusSinceRef = useRef<Map<string, StatusSince>>(new Map());
 
   // Depot matching helpers (geofence + text/address fallback)
-  const { categoryVehicles, displayVehicles } = useMemo(() => {
+  const { categoryVehicles, displayVehicles, highlightFigures } = useMemo<VehiclesMemoResult>(() => {
     const now = Date.now();
     const currentKeys = new Set<string>();
     const vehiclesWithSince: VehicleWithSince[] = vehicles.map((v) => {
@@ -600,10 +632,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
           )
         : categoryVehicles;
 
-    let list = depotFilteredVehicles;
+    let list: VehicleWithSince[] = depotFilteredVehicles;
 
     if (isVorFilterActive) {
-      list = list.filter((v) => !!(v.IsVor || v.LiveDefects));
+      list = list.filter(isVorOrDefect);
     }
 
     const normalize = (value: string | null | undefined): string =>
@@ -624,6 +656,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
         return haystack.includes(q);
       });
     }
+
+    const highlightFigures = {
+      total: list.length,
+      vor: list.filter((v: VehicleWithSince) => isVorOrDefect(v)).length,
+    };
 
     const sorted = [...list].sort((a, b) => {
       if (sortOption === "stoppedTime") {
@@ -667,7 +704,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       return 0;
     });
 
-    return { categoryVehicles, displayVehicles: sorted };
+    return { categoryVehicles, displayVehicles: sorted, highlightFigures };
   }, [
     vehicles,
     filterOption,
@@ -676,16 +713,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     searchTerm,
     sortOption,
   ]);
-
-  const highlightFigures = useMemo(() => {
-    // Reflect ALL active client-side filters (VOR-only + Search)
-    const total = categoryVehicles.length;
-    const vor = displayVehicles.filter(
-      v => v.IsVor || v.LiveDefects
-    ).length;
-
-    return { total, vor };
-  }, [categoryVehicles, displayVehicles]);
 
   const getTipperAlertClass = (
     vehicle: {
