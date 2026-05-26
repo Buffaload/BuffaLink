@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import "../css/ProfileButton.css";
 interface ProfileButtonProps {
   username: string;
@@ -98,7 +99,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         <span>Logout</span>
       </button>
 
-      {open && isAdmin && (
+      {open && isAdmin && createPortal(
         <div className="admin-menu" role="dialog" aria-label="Admin portal">
           {/* Header */}
           <div className="admin-portal-header">
@@ -225,7 +226,8 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

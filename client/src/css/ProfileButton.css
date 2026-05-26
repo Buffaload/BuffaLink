@@ -94,9 +94,9 @@
 
 /* Admin portal */
 .admin-menu {
-  position: absolute;
-  right: 0;
-  bottom: 60px;
+  position: fixed;
+  right: 20px;
+  bottom: 80px;
   width: 227px;
   margin-right: 5px;
   border-radius: 12px;
@@ -111,7 +111,7 @@
     0 12px 28px rgba(0, 0, 0, 0.35),
     0 2px 0 rgba(255, 255, 255, 0.04) inset;
   color: #fff;
-  z-index: 2000;
+  z-index: 5000;
 }
 
 .admin-portal-header {
