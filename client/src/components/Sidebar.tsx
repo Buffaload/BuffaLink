@@ -1,6 +1,6 @@
 import API_BASE_URL from "../config";
 import React, { useEffect, useMemo, useState } from "react";
-import { countFor, isCriticalAlert } from "../utils/vehicleRules"
+import { countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
@@ -191,7 +191,7 @@ const Sidebar: React.FC<{
 
       const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
       const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
-      const isCritical = dueService || dueMot;
+      const isCritical = isCriticalArrival(v);
 
       // Always update snapshot so transitions work next poll
       currentState[assetKey] = { inDepot, depot };
@@ -265,12 +265,7 @@ const Sidebar: React.FC<{
       hgvsCount: countFor(vehicles, "HGVs", [], now),
       maintenanceCount: countFor(vehicles, "Maintenance", [], now),
       criticalCount: vehicles.filter(isCriticalAlert).length,
-      arrivalsCount: vehicles.filter((v) => {
-        const inDepot = (v.locationGroupName ?? "") === "Buffaload";
-        const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
-        const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
-        return inDepot && (dueService || dueMot);
-      }).length,
+      arrivalsCount: countFor(vehicles, "Critical-Arrivals", [], now),
       tippersCount: countFor(vehicles, "Tippers", [], now),
     };
   }, [vehicles]);

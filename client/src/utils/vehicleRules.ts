@@ -101,6 +101,28 @@ export const isServiceDueThisISOWeekOrOverdue = (v: VehicleLike) =>
 export const isMotDueThisISOWeekOrOverdue = (v: VehicleLike) =>
     isDateDueThisISOWeekOrOverdue(v.MotDueDate);
 
+const getAllDueDateStrings = (v: VehicleLike): string[] => {
+    const dueDates: string[] = [];
+
+    for (const [key, value] of Object.entries(v as Record<string, unknown>)) {
+        if (!/duedate$/i.test(key)) continue;
+
+        if (typeof value === "string" && value.trim()) {
+            dueDates.push(value);
+        }
+    }
+
+    return dueDates;
+};
+
+// Critical Arrivals = vehicle is IN a depot AND has ANY due date that is due this ISO week or overdue
+export const isCriticalArrival = (v: VehicleLike): boolean => {
+    if (v.locationGroupName !== "Buffaload") return false;
+
+    const dueDates = getAllDueDateStrings(v);
+    return dueDates.some((d) => isDateDueThisISOWeekOrOverdue(d));
+};
+
 export const matchesFilter = (
     v: VehicleLike,
     filterOption: string,
@@ -181,12 +203,8 @@ export const matchesFilter = (
         case "Critical":
             return isCriticalAlert(v);
 
-        case "Critical-Arrivals": {
-            const inDepot = v.locationGroupName === "Buffaload";
-            const serviceDue = isServiceDueThisISOWeekOrOverdue(v);
-            const motDue = isMotDueThisISOWeekOrOverdue(v);
-            return inDepot && (serviceDue || motDue);
-        }
+        case "Critical-Arrivals":
+            return isCriticalArrival(v);
             
         case "Tippers":
             return v.assetGroupName === "TFP Tipper Operation";
