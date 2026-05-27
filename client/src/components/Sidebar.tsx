@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import InlineLoader from "./InlineLoader";
 import "../css/Sidebar.css";
 import ProfileButton from "./ProfileButton";
@@ -146,6 +147,22 @@ const Sidebar: React.FC<{
   const [arrivalTooltipItems, setArrivalTooltipItems] = useState<CriticalArrivalItem[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Loader icons
   const showDepotSubTabs = filterOption === "Depots";
+  const criticalArrivalsBtnRef = React.useRef<HTMLButtonElement | null>(null);
+  const [arrivalTooltipPos, setArrivalTooltipPos] = useState<{ top: number; left: number } | null>(null);
+
+  const computeArrivalTooltipPosition = () => {
+    const el = criticalArrivalsBtnRef.current;
+    if (!el) return;
+
+    const r = el.getBoundingClientRect();
+    const gap = 12;
+
+    // Place tooltip to the right of the sidebar item, vertically centered
+    setArrivalTooltipPos({
+      top: r.top + r.height / 2,
+      left: r.right + gap,
+    });
+  };
 
   const DEPOTS = [
     "Ellington",
@@ -255,6 +272,7 @@ const Sidebar: React.FC<{
 
     if (newArrivals.length === 0) return;
 
+    // Critical Arrivals notification tooltip
     setArrivalTooltipItems((prev) => {
       const seen = new Set(prev.map((p) => p.signature));
       const merged = [...prev];
@@ -278,6 +296,21 @@ const Sidebar: React.FC<{
     }
     localStorage.setItem(ARRIVALS_ACK_KEY, JSON.stringify(ack));
   };
+
+  useEffect(() => {
+    if (!arrivalTooltipOpen) return;
+
+    computeArrivalTooltipPosition();
+
+    const onReflow = () => computeArrivalTooltipPosition();
+    window.addEventListener("resize", onReflow);
+    window.addEventListener("scroll", onReflow, true); // true catches scroll in nested containers too
+
+    return () => {
+      window.removeEventListener("resize", onReflow);
+      window.removeEventListener("scroll", onReflow, true);
+    };
+}, [arrivalTooltipOpen]);
 
   const closeArrivalTooltip = () => {
     acknowledgeTooltipItems(arrivalTooltipItems);
@@ -582,6 +615,7 @@ const Sidebar: React.FC<{
           </li>   
           <li className="sidebar-item sidebar-item--has-popout">
             <button
+              ref={criticalArrivalsBtnRef}
               className={`sidebar-link ${
                 filterOption === "Critical-Arrivals" ? "active" : ""
               }`}
@@ -598,45 +632,43 @@ const Sidebar: React.FC<{
             </button>
 
             {/* Tooltip anchored ONLY to Critical Arrivals */}
-            {arrivalTooltipOpen && arrivalTooltipItems.length > 0 && (       
-              <div
-                className="sidebar-dark-tooltip"
-                role="dialog"
-                aria-label="Critical Arrivals"
-              >
-                <div className="sidebar-dark-tooltip__header">
-                  <div className="sidebar-dark-tooltip__title">Critical Arrivals</div>
+            {arrivalTooltipOpen && arrivalTooltipItems.length > 0 && arrivalTooltipPos && 
+              createPortal(
+                (() => {
+                  const item = arrivalTooltipItems[0]; // keep it compact: show latest only
 
-                  <button
-                    type="button"
-                    className="sidebar-dark-tooltip__close"
-                    onClick={closeArrivalTooltip}
-                    aria-label="Close"
-                  >
-                    x
-                  </button>
-                </div>
-
-                <div className="sidebar-dark-tooltip__body">
-                  {arrivalTooltipItems.map((item) => (
-                    <div key={item.signature} className="sidebar-dark-tooltip__item">
-                      <span className="sidebar-dark-tooltip__alert" aria-hidden="true">
-                        !
-                      </span>
+                  return (
+                    <div
+                      className="sidebar-dark-tooltip sidebar-dark-tooltip--compact"
+                      style={{
+                        top: `${arrivalTooltipPos.top}px`,
+                        left: `${arrivalTooltipPos.left}px`,
+                        transform: "translateY(-50%)",
+                      }}
+                      role="dialog"
+                      aria-label="Critical arrival"
+                    >
+                      <span className="sidebar-dark-tooltip__alert" aria-hidden="true">!</span>
 
                       <div className="sidebar-dark-tooltip__text">
-                        <div className="sidebar-dark-tooltip__reg">
-                          {item.reg}
-                        </div>
-                        <div className="sidebar-dark-tooltip__location">
-                          {item.depot}
-                        </div>
+                        <div className="sidebar-dark-tooltip__reg">{item.reg}</div>
+                        <div className="sidebar-dark-tooltip__location">{item.depot}</div>
                       </div>
+
+                      <button
+                        type="button"
+                        className="sidebar-dark-tooltip__close"
+                        onClick={closeArrivalTooltip}
+                        aria-label="Close"
+                      >
+                        x
+                      </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  );
+                })(),
+                document.body
+              )
+            }
           </li>
           {userRole === "admin" && (
             <>
