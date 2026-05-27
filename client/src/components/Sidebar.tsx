@@ -305,14 +305,19 @@ const Sidebar: React.FC<{
     const raf2 = requestAnimationFrame(() => {
       requestAnimationFrame(() => computeArrivalTooltipPosition());
     });
+    // Final safety net: after CSS transitions complete
+    const timeout = window.setTimeout(() => {
+      computeArrivalTooltipPosition();
+    }, 350);
 
     (document as any).fonts?.ready?.then?.(() => computeArrivalTooltipPosition());
 
     return () => {
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
+      clearTimeout(timeout);
     };
-  }, [arrivalTooltipOpen]);
+  }, [arrivalTooltipOpen, isSidebarOpen]);
 
   // Reposition tooltip when sidebar layout changes (submenu open/close)
   useEffect(() => {
