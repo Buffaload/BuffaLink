@@ -54,7 +54,8 @@ type CriticalArrivalItem = {
   depot: string;
 };
 
-const FORCE_ARRIVALS_TOOLTIP_FOR_STYLING = true;
+// For notification tooltip testing - set true
+const FORCE_ARRIVALS_TOOLTIP_FOR_STYLING = false;
 
 const DUMMY_ARRIVAL_ITEMS: CriticalArrivalItem[] = [
   {
