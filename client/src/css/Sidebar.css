@@ -427,6 +427,25 @@
 }
 
 /* Critical arrivals and tooltip */
+.sidebar-dark-tooltip {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 2000;
+}
+
+.sidebar-dark-tooltip::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #0b1c2d;
+}
+
 .sidebar-dark-tooltip--compact {
   width: 260px;
   height: 56px;
@@ -434,7 +453,7 @@
   border-radius: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   background: #0b1c2d;
   border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.50);
@@ -461,8 +480,8 @@
 }
 
 .sidebar-dark-tooltip__alert {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -496,7 +515,7 @@
 .sidebar-dark-tooltip__text {
   min-width: 0;
   flex: 1;
-  text-align: right;
+  text-align: left;
 }
 
 .sidebar-dark-tooltip__reg {
