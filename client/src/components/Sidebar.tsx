@@ -33,14 +33,48 @@ interface Vehicle {
   date?: string;
   ServiceDueDate?: string;
   MotDueDate?: string;
+  BrakeDueDate?: string;
+  TlWeightDueDate?: string;
+  TachoDueDate?: string;
+  TailDueDate?: string;
+  FridgeDueDate?: string;
+  RflDueDate?: string;
+  LolerDueDate?: string;
+  AncillaryOneDueDate?: string;
+  AncillaryTwoDueDate?: string;
+  NextMaintenanceType?: string;
+  NextMaintenanceDueDate?: string;
 }
 
 type CriticalArrivalItem = {
   signature: string;
   reg: string;
-  dueType: "Service" | "MOT" | "Service + MOT";
+  dueType: "Service" | "Maintenance" | "MOT" | "Brake test" | "Loaded brake test" | "Tacho" | "Tail lift" | "Fridge" | "FGAS" | "LOLER" | "Ancillary 1" | "Ancillary 2";
   depot: string;
 };
+
+const FORCE_ARRIVALS_TOOLTIP_FOR_STYLING = true;
+
+const DUMMY_ARRIVAL_ITEMS: CriticalArrivalItem[] = [
+  {
+    signature: "debug:arrival:1",
+    reg: "AB12 CDE",
+    dueType: "Service",
+    depot: "Ellington",
+  },
+  {
+    signature: "debug:arrival:2",
+    reg: "XY34 ZZZ",
+    dueType: "Brake test",
+    depot: "Skelmersdale",
+  },
+  {
+    signature: "debug:arrival:3",
+    reg: "MN56 PQR",
+    dueType: "LOLER",
+    depot: "Coventry",
+  },
+];
 
 const ARRIVALS_LAST_STATE_KEY = "buffalink:criticalArrivals:lastState";
 const ARRIVALS_ACK_KEY = "buffalink:criticalArrivals:ack";
@@ -190,7 +224,7 @@ const Sidebar: React.FC<{
       const depot = (v.locationName ?? v.formattedAddress ?? "Depot").trim();
 
       const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
-      const dueMot = isDueThisISOWeekOrOverdue(v.MotDueDate);
+      const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
       const isCritical = isCriticalArrival(v);
 
       // Always update snapshot so transitions work next poll
@@ -204,7 +238,7 @@ const Sidebar: React.FC<{
       if (!enteredThisDepot) continue;
 
       const dueType: CriticalArrivalItem["dueType"] =
-        dueService && dueMot ? "Service + MOT" : dueService ? "Service" : "MOT";
+        dueService ? "Service" : "Maintenance";
 
       const signature = `${assetKey}|${depot}|${dueType}`;
       if (ack[signature]) continue;
@@ -238,7 +272,10 @@ const Sidebar: React.FC<{
       localStorage.getItem(ARRIVALS_ACK_KEY),
       {}
     );
-    for (const i of items) ack[i.signature] = true;
+    for (const i of items) {  
+      if (i.signature.startsWith("debug:")) continue;
+      ack[i.signature] = true;
+    }
     localStorage.setItem(ARRIVALS_ACK_KEY, JSON.stringify(ack));
   };
 
@@ -247,6 +284,15 @@ const Sidebar: React.FC<{
     setArrivalTooltipOpen(false);
     setArrivalTooltipItems([]);
   };
+
+  // TESTING: Force open with dummy content for styling purposes***
+  useEffect(() => {
+    if (!FORCE_ARRIVALS_TOOLTIP_FOR_STYLING) return;
+
+    // Only inject dummy content once (so close stays closed while styling)
+    setArrivalTooltipItems((prev) => (prev.length ? prev : DUMMY_ARRIVAL_ITEMS));
+    setArrivalTooltipOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && vehicles.length >= 0) {
@@ -552,9 +598,43 @@ const Sidebar: React.FC<{
             </button>
 
             {/* Tooltip anchored ONLY to Critical Arrivals */}
-            {arrivalTooltipOpen && arrivalTooltipItems.length > 0 && (
-              <div className="sidebar-dark-tooltip" role="status" aria-live="polite">
-                ...
+            {arrivalTooltipOpen && arrivalTooltipItems.length > 0 && (       
+              <div
+                className="sidebar-dark-tooltip"
+                role="dialog"
+                aria-label="Critical Arrivals"
+              >
+                <div className="sidebar-dark-tooltip__header">
+                  <div className="sidebar-dark-tooltip__title">Critical Arrivals</div>
+
+                  <button
+                    type="button"
+                    className="sidebar-dark-tooltip__close"
+                    onClick={closeArrivalTooltip}
+                    aria-label="Close"
+                  >
+                    x
+                  </button>
+                </div>
+
+                <div className="sidebar-dark-tooltip__body">
+                  {arrivalTooltipItems.map((item) => (
+                    <div key={item.signature} className="sidebar-dark-tooltip__item">
+                      <span className="sidebar-dark-tooltip__alert" aria-hidden="true">
+                        !
+                      </span>
+
+                      <div className="sidebar-dark-tooltip__text">
+                        <div className="sidebar-dark-tooltip__reg">
+                          {item.reg}
+                        </div>
+                        <div className="sidebar-dark-tooltip__location">
+                          {item.depot}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </li>
