@@ -340,7 +340,7 @@ async function fetchVolvoPaged({
         requestId: makeRequestId(),
       },
       headers: { Accept: accept },
-      timeout: 15000,
+      timeout: 10000,
     });
 
     const items = extractItems(resp.data) || [];
@@ -690,8 +690,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
       const volvoAxios = axios.create({
         baseURL: VOLVO_BASE_URL,
         auth: { username: volvoUsername, password: volvoPassword },
-        timeout: 15000,
-        upstreamHttpsAgent,
+        timeout: 10000,
+        httpsAgent: upstreamHttpsAgent,
       });
 
       const safeGet = (url, config) => {
@@ -699,8 +699,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
           return Promise.reject(new Error("Missing required URL env var"));
         }
         return axios.get(url, {
-          upstreamHttpsAgent,
-          timeout: 25000,
+          httpsAgent: upstreamHttpsAgent,
+          timeout: 15000,
           ...config,
         });
       };
