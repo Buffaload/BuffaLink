@@ -314,26 +314,21 @@ const Sidebar: React.FC<{
     };
   }, [arrivalTooltipOpen]);
 
+  // Reposition tooltip when sidebar layout changes (submenu open/close)
   useEffect(() => {
     if (!arrivalTooltipOpen) return;
 
-    const anchor = tooltipAnchorRef.current;
-    const sidebar = document.querySelector(".sidebar");
-    const nav = document.querySelector(".sidebar-nav");
-
-    if (!anchor || !sidebar) return;
-
-    const ro = new ResizeObserver(() => {
+    // Run after React commits layout
+    requestAnimationFrame(() => {
       computeArrivalTooltipPosition();
     });
-
-    // Observe elements most likely to change with submenu toggles
-    ro.observe(sidebar);
-    if (nav) ro.observe(nav);
-    ro.observe(anchor);
-
-    return () => ro.disconnect();
-  }, [arrivalTooltipOpen]);
+  }, [
+    arrivalTooltipOpen,
+    filterOption,
+    activeButton,
+    showDepotSubTabs,
+    selectedDepots.length,
+  ]);
 
   const closeArrivalTooltip = () => {
     acknowledgeTooltipItems(arrivalTooltipItems);

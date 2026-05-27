@@ -430,6 +430,7 @@
 .sidebar-dark-tooltip {
   position: fixed;
   pointer-events: auto;
+  transition: top 120ms ease-out;
   z-index: 2000;
 }
 
