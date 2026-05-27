@@ -224,7 +224,7 @@ const Sidebar: React.FC<{
       const depot = (v.locationName ?? v.formattedAddress ?? "Depot").trim();
 
       const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
-      const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
+      // const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
       const isCritical = isCriticalArrival(v);
 
       // Always update snapshot so transitions work next poll
