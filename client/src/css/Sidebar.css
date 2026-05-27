@@ -448,7 +448,7 @@
 
 .sidebar-dark-tooltip--compact {
   width: 260px;
-  height: 56px;
+  height: 50px;
   padding: 8px 10px;
   border-radius: 10px;
   display: flex;
@@ -521,11 +521,20 @@
 .sidebar-dark-tooltip__reg {
   font-weight: 800;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sidebar-dark-tooltip__due {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.1;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
 }
 
 .sidebar-dark-tooltip__location {
