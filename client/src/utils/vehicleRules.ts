@@ -3,6 +3,7 @@ export interface VehicleLike {
     assetRegistration?: string;
     assetType?: string;
     assetGroupName?: string;
+    driverGroupName?: string;
     locationGroupName?: string | null;
     locationName?: string | null;
     formattedAddress?: string | null;
@@ -17,6 +18,10 @@ export interface VehicleLike {
     LiveDefects?: boolean;
     isNightOut?: boolean;
 }
+
+const isTipper = (v: VehicleLike): boolean =>
+    v.assetGroupName === "TFP Tipper Operation" ||
+    v.driverGroupName === "TFP Tipper Operation";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -132,7 +137,7 @@ const VEHICLE_IGNORED_DUE_KEYS = /(fridge|rfl|fgas)/i;
 // Critical Arrivals = vehicle is IN a depot AND has ANY due date that is due this ISO week or overdue
 export const isCriticalArrival = (v: VehicleLike): boolean => {
     if (v.locationGroupName !== "Buffaload") return false;
-    if (v.assetGroupName === "TFP Tipper Operation") return false;
+    if (isTipper(v)) return false;
     
     const entries = getAllDueDateEntries(v);
 
@@ -177,7 +182,7 @@ export const matchesFilter = (
                 timeStoppedMs > 1.5 * 60 * 60 * 1000 &&
                 v.locationGroupName !== "Buffaload" &&
                 v.locationGroupName !== "Maintenance" &&
-                v.assetGroupName !== "TFP Tipper Operation" &&
+                !isTipper(v) &&
                 v.locationGroupName !== "Services and Truckstops"
             );
 
@@ -189,13 +194,13 @@ export const matchesFilter = (
                 eventType !== "driving" &&
                 v.locationGroupName !== "Buffaload" &&
                 v.locationGroupName !== "Maintenance" &&
-                v.assetGroupName !== "TFP Tipper Operation" &&
+                !isTipper(v) &&
                 !v.isNightOut
             );
 
             case "Depots": {
                 // Exclude tippers from depot view
-                if (v.assetGroupName === "TFP Tipper Operation") return false;
+                if (isTipper(v)) return false;
 
                 const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""} ${v.locationGroupName ?? ""}`
                     .toUpperCase()
@@ -239,7 +244,7 @@ export const matchesFilter = (
             return isCriticalArrival(v);
             
         case "Tippers":
-            return v.assetGroupName === "TFP Tipper Operation";
+            return isTipper(v);
 
         default:
             return true;
