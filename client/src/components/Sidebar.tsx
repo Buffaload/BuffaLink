@@ -319,7 +319,7 @@ const Sidebar: React.FC<{
       if (isFirstSnapshot) continue;
 
       const prev = lastState[assetKey];
-      const enteredThisDepot = !!prev && (!prev.inDepot || prev.depot !== depot);
+      const enteredThisDepot = !!prev && !prev.inDepot && inDepot;
 
       if (!enteredThisDepot) continue;
 

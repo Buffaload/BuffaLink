@@ -90,7 +90,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         aria-label="Admin menu"
       >
         <span className="profile-initial">
-          {isAdmin ? <ShieldUser size={16} /> : userInitial}
+          {isAdmin ? <ShieldUser size={18} /> : userInitial}
         </span>
       </button>
 
