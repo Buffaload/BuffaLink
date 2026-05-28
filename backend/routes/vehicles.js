@@ -1289,7 +1289,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         volvoVehiclesCount: volvoVehicles?.length ?? 0,
         volvoPositionsCount: volvoPositions?.length ?? 0,
         volvoMappedCount: volvoMapped?.length ?? 0,
-        volvoAuthPresent: !!(volvoUsername && volvoPassword),
+        volvoAuthPresent: !!(process.env.VOLVO_USERNAME && process.env.VOLVO_PASSWORD),
       };
 
       vehicles = [
