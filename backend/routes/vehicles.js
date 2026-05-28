@@ -29,6 +29,21 @@ const VOLVO_ACCEPT = {
   positions: "application/x.volvogroup.com.vehiclepositions.v1.0+json",
 };
 
+// Create a single reusable Volvo axios client (avoid per-request listener accumulation)
+const createVolvoAxios = () => {
+  const volvoUsername = process.env.VOLVO_USERNAME;
+  const volvoPassword = process.env.VOLVO_PASSWORD;
+
+  return axios.create({
+    baseURL: VOLVO_BASE_URL,
+    auth: { username: volvoUsername, password: volvoPassword },
+    timeout: 10000,
+    httpsAgent: upstreamHttpsAgent,
+  });
+};
+
+const volvoAxios = createVolvoAxios();
+
 const makeRequestId = () => {
   try {
     return crypto.randomUUID();
@@ -1062,14 +1077,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       const apiPassword = process.env.API_PASSWORD;
       const blueCrystalApiUrl = process.env.BLUECRYSTAL_API_URL;
       const blueCrystalApiKey = process.env.BLUECRYSTAL_API_KEY;
-      const volvoUsername = process.env.VOLVO_USERNAME;
-      const volvoPassword = process.env.VOLVO_PASSWORD;
-      const volvoAxios = axios.create({
-        baseURL: VOLVO_BASE_URL,
-        auth: { username: volvoUsername, password: volvoPassword },
-        timeout: 10000,
-        httpsAgent: upstreamHttpsAgent,
-      });
 
       const safeGet = (url, config) => {
         if (!url) {
