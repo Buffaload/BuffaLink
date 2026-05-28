@@ -608,13 +608,13 @@ const matchDepotByText = (vehicle) => {
 const MAINTENANCE_DUE_FIELDS = [
   { key: "MotDueDate", label: "MOT" },
   { key: "BrakeDueDate", label: "Brake test" },
-  { key: "TlWeightDueDate", label: "Loaded brake test" },
+  { key: "AncillaryOneDueDate", label: "Loaded brake test" },
+  { key: "TlWeightDueDate", label: "Weight test" },
   { key: "TachoDueDate", label: "Tacho" },
   { key: "TailDueDate", label: "Tail lift" },
   { key: "FridgeDueDate", label: "Fridge" }, 
   { key: "RflDueDate", label: "FGAS" },
   { key: "LolerDueDate", label: "LOLER" },
-  { key: "AncillaryOneDueDate", label: "Ancillary 1" },
   { key: "AncillaryTwoDueDate", label: "Ancillary 2" },
 ];
 
@@ -635,7 +635,7 @@ function computeNextMaintenanceDue(maintenance, assetType) {
   let best = null;
 
   for (const { key, label } of MAINTENANCE_DUE_FIELDS) {
-    if (!isTrailer && (key === "FridgeDueDate" || key === "RflDueDate")) {
+    if (!isTrailer && (key === "TlWeightDueDate" || key === "FridgeDueDate" || key === "RflDueDate" || key === "LolerDueDate")) {
       continue;
     }
     const raw = maintenance[key];
