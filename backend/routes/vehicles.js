@@ -546,6 +546,7 @@ const normalizeId = (val) =>
 
 const MAINTENANCE_TEXT_OVERRIDES = [
   /BUFFALOAD\s+PYMOOR/i,
+  /VOLVO.*WELLINGBOROUGH/i,
 ];
 
 const matchesMaintenanceByText = (vehicle) => {

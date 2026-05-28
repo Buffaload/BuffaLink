@@ -987,7 +987,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           {filterOption === "Critical-Arrivals" && (
             <div className="critical-info-banner">
               <TriangleAlert size="16" />
-              Showing vehicles that are due (or overdue) Maintenance and have just arrived at a depot
+              Showing vehicles that are due (or overdue) Maintenance and have arrived at a depot
             </div>
           )}
 
