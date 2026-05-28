@@ -464,6 +464,65 @@ const matchesSelectedDepot = (
   return def.patterns.some((p) => locName.includes(normalizeDepotText(p)));
 };
 
+type DepotLabel =
+  | "Ellington"
+  | "Crewe"
+  | "Skelmersdale"
+  | "Coventry"
+  | "Bellshill"
+  | "Avonmouth";
+
+const CRITICAL_DEPOT_MATCHERS: Array<{
+  label: DepotLabel;
+  // tokens that must all be present in the same string (prevents city-only matches)
+  allOf: string[];
+}> = [
+  { label: "Ellington", allOf: ["GROVE LANE", "PE28 0DA"] },
+  { label: "Ellington", allOf: ["BUFFALOAD", "ELLINGTON"] },
+
+  { label: "Crewe", allOf: ["14 GATEWAY", "CW1 6YY"] },
+  { label: "Crewe", allOf: ["BUFFALOAD", "CREWE"] },
+
+  { label: "Skelmersdale", allOf: ["GILLIBRAND", "WN8 9TA"] },
+  { label: "Skelmersdale", allOf: ["EAST GILLIBRAND", "INDUSTRIAL"] },
+  { label: "Skelmersdale", allOf: ["BUFFALOAD", "SKELMERSDALE"] },
+
+  { label: "Coventry", allOf: ["CENTRAL BLVD", "CV6 4BX"] },
+  { label: "Coventry", allOf: ["CO-OP", "COVENTRY"] },
+  { label: "Coventry", allOf: ["COOP", "COVENTRY"] },
+
+  { label: "Bellshill", allOf: ["SHOLTO", "ML4 3LX"] },
+  { label: "Bellshill", allOf: ["RIGHEAD", "INDUSTRIAL"] },
+  { label: "Bellshill", allOf: ["BUFFALOAD", "BELLSHILL"] },
+
+  { label: "Avonmouth", allOf: ["POPLAR WAY", "BS11 0YW"] },
+  { label: "Avonmouth", allOf: ["CO-OP", "AVONMOUTH"] },
+  { label: "Avonmouth", allOf: ["COOP", "AVONMOUTH"] },
+];
+
+const getCriticalDepotLabel = (v: {
+  locationGroupName?: string | null;
+  formattedAddress?: string | null;
+  locationName?: string | null;
+}): DepotLabel | null => {
+  // Must be in "Buffaload" group first (keeps behaviour aligned with existing app)
+  if ((v.locationGroupName ?? "") !== "Buffaload") return null;
+
+  // Prefer formattedAddress (BlueCrystal accuracy), then fallback to locationName
+  const addr = normalizeDepotText(v.formattedAddress);
+  const loc = normalizeDepotText(v.locationName);
+
+  const tryMatch = (hay: string) => {
+    if (!hay) return null;
+    for (const m of CRITICAL_DEPOT_MATCHERS) {
+      if (m.allOf.every((t) => hay.includes(normalizeDepotText(t)))) return m.label;
+    }
+    return null;
+  };
+
+  return tryMatch(addr) ?? tryMatch(loc);
+};
+
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
@@ -611,7 +670,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
       categoryVehicles = vehiclesWithSince.filter((v) => {
         const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
         const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
-        const inDepot = (v.locationGroupName ?? "") === "Buffaload";
+        const depotLabel = getCriticalDepotLabel(v);
+        const inDepot = !!depotLabel;
+
         return (dueService || dueNextMaintenance) && inDepot;
       });
     } else {
@@ -919,7 +980,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           {filterOption === "Critical" && (
             <div className="critical-info-banner">
               <TriangleAlert size="16"/>
-              Showing all vehicles that are due a service/MOT within less than 5 days and are currently out of a depot
+              Showing all vehicles that are due a service/Maintenance within less than 5 days and are currently out of a depot
             </div>
           )}
 

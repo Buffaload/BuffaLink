@@ -2,7 +2,7 @@ import { APP_VERSION } from "../config/appMeta";
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Settings, 
+  ShieldUser, 
   LogOut,
   Plus,
   Minus,
@@ -90,7 +90,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         aria-label="Admin menu"
       >
         <span className="profile-initial">
-          {isAdmin ? <Settings size={16} /> : userInitial}
+          {isAdmin ? <ShieldUser size={16} /> : userInitial}
         </span>
       </button>
 
@@ -108,7 +108,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
                   <SlidersHorizontal size={16} />
                 </span>
                 <div className="admin-portal-title-block">
-                  <span>Admin Portal</span>
+                  <span>Settings</span>
                   <div className="admin-portal-version">{APP_VERSION}</div>
                 </div>
               </div>

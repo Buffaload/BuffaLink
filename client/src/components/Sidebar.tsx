@@ -134,6 +134,71 @@ function safeJsonParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
+const normalizeDepotText = (value: string | null | undefined) =>
+  (value ?? "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+type DepotLabel =
+  | "Ellington"
+  | "Crewe"
+  | "Skelmersdale"
+  | "Coventry"
+  | "Bellshill"
+  | "Avonmouth";
+
+const CRITICAL_DEPOT_MATCHERS: Array<{
+  label: DepotLabel;
+  // tokens that must all be present in the same string (prevents city-only matches)
+  allOf: string[];
+}> = [
+  { label: "Ellington", allOf: ["GROVE LANE", "PE28 0DA"] },
+  { label: "Ellington", allOf: ["BUFFALOAD", "ELLINGTON"] },
+
+  { label: "Crewe", allOf: ["14 GATEWAY", "CW1 6YY"] },
+  { label: "Crewe", allOf: ["BUFFALOAD", "CREWE"] },
+
+  { label: "Skelmersdale", allOf: ["GILLIBRAND", "WN8 9TA"] },
+  { label: "Skelmersdale", allOf: ["EAST GILLIBRAND", "INDUSTRIAL"] },
+  { label: "Skelmersdale", allOf: ["BUFFALOAD", "SKELMERSDALE"] },
+
+  { label: "Coventry", allOf: ["CENTRAL BLVD", "CV6 4BX"] },
+  { label: "Coventry", allOf: ["CO-OP", "COVENTRY"] },
+  { label: "Coventry", allOf: ["COOP", "COVENTRY"] },
+
+  { label: "Bellshill", allOf: ["SHOLTO", "ML4 3LX"] },
+  { label: "Bellshill", allOf: ["RIGHEAD", "INDUSTRIAL"] },
+  { label: "Bellshill", allOf: ["BUFFALOAD", "BELLSHILL"] },
+
+  { label: "Avonmouth", allOf: ["POPLAR WAY", "BS11 0YW"] },
+  { label: "Avonmouth", allOf: ["CO-OP", "AVONMOUTH"] },
+  { label: "Avonmouth", allOf: ["COOP", "AVONMOUTH"] },
+];
+
+const getCriticalDepotLabel = (v: {
+  locationGroupName?: string | null;
+  formattedAddress?: string | null;
+  locationName?: string | null;
+}): DepotLabel | null => {
+  // Must be in "Buffaload" group first (keeps behaviour aligned with existing app)
+  if ((v.locationGroupName ?? "") !== "Buffaload") return null;
+
+  // Prefer formattedAddress (BlueCrystal accuracy), then fallback to locationName
+  const addr = normalizeDepotText(v.formattedAddress);
+  const loc = normalizeDepotText(v.locationName);
+
+  const tryMatch = (hay: string) => {
+    if (!hay) return null;
+    for (const m of CRITICAL_DEPOT_MATCHERS) {
+      if (m.allOf.every((t) => hay.includes(normalizeDepotText(t)))) return m.label;
+    }
+    return null;
+  };
+
+  return tryMatch(addr) ?? tryMatch(loc);
+};
+
 const Sidebar: React.FC<{
   onFilterChange: (filter: string) => void;
   onDepotChange: (depots: string[]) => void;
@@ -219,13 +284,16 @@ const Sidebar: React.FC<{
   useEffect(() => {
     if (!vehicles || vehicles.length === 0) return;
 
-    const lastState = safeJsonParse<Record<string, { inDepot: boolean; depot: string }>>(
-      localStorage.getItem(ARRIVALS_LAST_STATE_KEY),
+    const ack = safeJsonParse<Record<string, true>>(
+      localStorage.getItem(ARRIVALS_ACK_KEY),
       {}
     );
 
-    const ack = safeJsonParse<Record<string, true>>(
-      localStorage.getItem(ARRIVALS_ACK_KEY),
+    const lastStateRaw = localStorage.getItem(ARRIVALS_LAST_STATE_KEY);
+    const isFirstSnapshot = !lastStateRaw;
+
+    const lastState = safeJsonParse<Record<string, { inDepot: boolean; depot: string }>>(
+      lastStateRaw,
       {}
     );
 
@@ -235,9 +303,10 @@ const Sidebar: React.FC<{
     for (const v of vehicles) {
       const assetKey = (v.assetName ?? v.assetRegistration ?? "").trim();
       if (!assetKey) continue;
-
-      const inDepot = (v.locationGroupName ?? "") === "Buffaload";
-      const depot = (v.locationName ?? v.formattedAddress ?? "Depot").trim();
+      
+      const depotLabel = getCriticalDepotLabel(v);
+      const inDepot = !!depotLabel;
+      const depot = (depotLabel ?? "").trim();
 
       const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
       // const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
@@ -245,11 +314,12 @@ const Sidebar: React.FC<{
 
       // Always update snapshot so transitions work next poll
       currentState[assetKey] = { inDepot, depot };
-
       if (!inDepot || !isCritical) continue;
+      // If first snapshot, never notify (baseline only)
+      if (isFirstSnapshot) continue;
 
       const prev = lastState[assetKey];
-      const enteredThisDepot = !prev || !prev.inDepot || prev.depot !== depot;
+      const enteredThisDepot = !!prev && (!prev.inDepot || prev.depot !== depot);
 
       if (!enteredThisDepot) continue;
 
@@ -369,7 +439,7 @@ const Sidebar: React.FC<{
       hgvsCount: countFor(vehicles, "HGVs", [], now),
       maintenanceCount: countFor(vehicles, "Maintenance", [], now),
       criticalCount: vehicles.filter(isCriticalAlert).length,
-      arrivalsCount: countFor(vehicles, "Critical-Arrivals", [], now),
+      arrivalsCount: vehicles.filter((v) => !!getCriticalDepotLabel(v) && isCriticalArrival(v)).length,
       tippersCount: countFor(vehicles, "Tippers", [], now),
     };
   }, [vehicles]);
