@@ -475,7 +475,7 @@
 .vehicle-card.vehicle-card--skeleton {
   background: #f3f4f6;
   border-color: #e5e7eb;
-  min-height: 320px;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
