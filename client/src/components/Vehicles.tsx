@@ -9,7 +9,6 @@ import {
   TriangleAlert,
   ChevronUp,
 } from "lucide-react";
-import InlineLoader from "./InlineLoader";
 import "../css/Vehicles.css";
 import API_BASE_URL from "../config";
 
