@@ -471,6 +471,174 @@
   justify-content: flex-end;
 }
 
+/* Skeleton loading state */
+.vehicle-card.vehicle-card--skeleton {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.vehicle-card.vehicle-card--skeleton::before {
+  display: none;
+}
+
+.vehicle-card.vehicle-card--skeleton .vehicle-card__divider {
+  display: none;
+}
+
+.vehicle-card--skeleton .skeleton {
+  background-color: #e5e7eb;
+}
+
+.vehicle-card--skeleton .skeleton--bar {
+  background-color: #d1d5db;
+}
+
+.vehicle-card--skeleton,
+.vehicle-card--skeleton * {
+  animation: none !important;
+}
+
+.vehicle-card--skeleton .vehicle-card__health {
+  flex: 1;
+}
+
+.vehicle-card--skeleton .health-block {
+  margin-bottom: 14px;
+}
+
+.vehicle-card--skeleton .skeleton--bar {
+  height: 12px;
+  margin: 6px 0 10px;
+}
+
+.vehicle-card--skeleton .vehicle-card__footer {
+  margin-top: auto;
+}
+
+.vehicle-card--skeleton {
+  pointer-events: none;
+  user-select: none;
+  min-height: 260px;
+}
+
+.vehicle-card--skeleton:hover {
+  transform: none;
+  box-shadow: var(--card-shadow);
+  border-color: var(--card-border);
+}
+
+.vehicle-card--skeleton::before {
+  opacity: 0.18;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(229, 231, 235, 0) 0%,
+    rgba(209, 213, 219, 0.85) 45%,
+    rgba(229, 231, 235, 0) 100%
+  );
+  animation: vehicleSkeletonShimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes vehicleSkeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none !important;
+  }
+}
+
+/* Individual skeleton shapes */
+.skeleton--reg {
+  height: 22px;
+  width: 150px;
+  border-radius: 8px;
+}
+
+.skeleton--chip {
+  display: inline-block;
+  height: 18px;
+  width: 52px;
+  border-radius: 999px;
+}
+
+.skeleton--toggle {
+  height: 22px;
+  width: 38px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.skeleton--status {
+  height: 20px;
+  width: 96px;
+  border-radius: 999px;
+}
+
+.skeleton--time {
+  height: 16px;
+  width: 130px;
+  border-radius: 999px;
+}
+
+.skeleton--label {
+  height: 14px;
+  width: 120px;
+  border-radius: 8px;
+}
+
+.skeleton--hint {
+  height: 14px;
+  width: 92px;
+  border-radius: 8px;
+}
+
+.skeleton--bar {
+  height: 12px;
+  width: 100%;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.skeleton--sub {
+  height: 12px;
+  width: 60%;
+  border-radius: 8px;
+}
+
+.skeleton--footer-label {
+  height: 10px;
+  width: 70px;
+  border-radius: 8px;
+}
+
+.skeleton--location {
+  height: 16px;
+  width: 85%;
+  border-radius: 8px;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
