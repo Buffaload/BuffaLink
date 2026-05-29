@@ -329,9 +329,14 @@ const Sidebar: React.FC<{
       const signature = `${assetKey}|${depot}|${dueType}`;
       if (ack[signature]) continue;
 
+      const isTrailer = (v.assetType ?? "").toLowerCase() === "trailer";
+      const displayId = isTrailer
+        ? (v.assetName ?? v.assetRegistration ?? "")
+        : (v.assetRegistration ?? v.assetName ?? "");
+
       newArrivals.push({
         signature,
-        reg: formatRegistration(v.assetRegistration ?? v.assetName),
+        reg: formatRegistration(displayId),
         dueType,
         depot,
       });

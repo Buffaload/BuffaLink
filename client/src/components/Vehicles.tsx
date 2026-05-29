@@ -877,10 +877,75 @@ const Vehicles: React.FC<VehiclesProps> = ({
   };
 
   // Loading state
-  if (isLoading) return (
-    <div className="vehicle-placeholder-text">
-      <InlineLoader size={24} />
-    </div>
+  const SKELETON_COUNT = 8;
+  const renderVehicleSkeletons = () => (
+    <ul
+      className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${
+        filterOption === "Critical" || filterOption === "Critical-Arrivals"
+          ? "vehicle-list--critical"
+          : ""
+      }`}
+      aria-label="Loading vehicles"
+      aria-busy="true"
+    >
+      {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+        <li key={`vehicle-skeleton-${i}`} className="vehicle-card vehicle-card--skeleton" aria-hidden="true">
+          {/* Header */}
+          <header className="vehicle-card__header">
+            <div className="vehicle-card__title">
+              <div className="skeleton skeleton--reg" />
+            </div>
+
+            <div className="vehicle-card__top-right">
+              <div className="vehicle-card__chips">
+                <span className="skeleton skeleton--chip" />
+                <span className="skeleton skeleton--chip" />
+              </div>
+
+              {/* Mimic toggle presence (only visually) */}
+              <div className="skeleton skeleton--toggle" />
+            </div>
+          </header>
+
+          {/* Meta row */}
+          <div className="vehicle-card__meta">
+            <span className="skeleton skeleton--status" />
+            <span className="skeleton skeleton--time" />
+          </div>
+
+          <div className="vehicle-card__divider" />
+
+          {/* Health */}
+          <section className="vehicle-card__health" aria-label="Vehicle compliance health loading">
+            {/* Service */}
+            <div className="health-block">
+              <div className="health-block__row">
+                <span className="skeleton skeleton--label" />
+                <span className="skeleton skeleton--hint" />
+              </div>
+              <div className="skeleton skeleton--bar" />
+              <div className="skeleton skeleton--sub" />
+            </div>
+
+            {/* Maintenance */}
+            <div className="health-block">
+              <div className="health-block__row">
+                <span className="skeleton skeleton--label" />
+                <span className="skeleton skeleton--hint" />
+              </div>
+              <div className="skeleton skeleton--bar" />
+              <div className="skeleton skeleton--sub" />
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="vehicle-card__footer">
+            <span className="skeleton skeleton--footer-label" />
+            <span className="skeleton skeleton--location" />
+          </footer>
+        </li>
+      ))}
+    </ul>
   );
 
   // Error state
@@ -1020,7 +1085,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
           ) : null}
 
           {/* Check if there are filtered vehicles */}
-          {displayVehicles.length === 0 ? (       
+          {isLoading ? (
+            renderVehicleSkeletons()
+          ) : displayVehicles.length === 0 ? (       
             <div className="vehicle-empty-state">
               <TriangleAlert className="vehicle-empty-icon" aria-hidden />
               <p className="vehicle-empty-text">
