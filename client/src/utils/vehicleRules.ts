@@ -175,7 +175,6 @@ export const matchesFilter = (
             ? nowMs - adjustedMs(v.date)
             : 0;
 
-
     switch (filterOption) {
         case "Night-Out":
             return !!v.isNightOut;

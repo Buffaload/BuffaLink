@@ -23,6 +23,7 @@ interface Vehicle {
   eventType: string;
   date: string;
   locationGroupName?: string;
+  depotMatch?: string | null;
   assetGroupName?: string;
   assetType?: string;
   // New fields from BlueCrystal API
@@ -429,6 +430,7 @@ type DepotMatchableVehicle = {
   locationName?: string | null;
   formattedAddress?: string | null;
   locationGroupName?: string | null;
+  depotMatch?: string | null;
 };
 
 const normalizeDepotText = (value: string | null | undefined) =>
@@ -451,17 +453,20 @@ const DEPOT_DEFINITIONS: Record<
 };
 
 const matchesSelectedDepot = (
-  v: DepotMatchableVehicle & { locationName?: string },
+  v: DepotMatchableVehicle,
   depotLabel: string
 ) => {
   const key = normalizeDepotText(depotLabel);
   // Geofence is mandatory
   if (v.locationGroupName !== "Buffaload") return false;
-  const locName = normalizeDepotText(v.locationName);
+  // Backend depotMatch is most reliable
+  const dm = normalizeDepotText(v.depotMatch);
+  if (dm && dm === key) return true;
+  // Fallback
+  const hay = normalizeDepotText(`${v.locationName ?? ""} ${v.formattedAddress ?? ""}`);
   const def = DEPOT_DEFINITIONS[key] ?? { mode: "alias" as const, patterns: [key] };
 
-  // strict vs alias uses the same includes test, but strict has *only* safe patterns
-  return def.patterns.some((p) => locName.includes(normalizeDepotText(p)));
+  return def.patterns.some((p) => hay.includes(normalizeDepotText(p)));
 };
 
 type DepotLabel =
@@ -1024,6 +1029,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
 
+                // Trailer display logic
+                const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
+                const displayId = isTrailer
+                  ? (vehicle.assetName ?? vehicle.assetRegistration ?? "")
+                  : (vehicle.assetRegistration ?? vehicle.assetName ?? "");
+
                 // Apply conditional formatting site-wide except Night-Out/Map
                 const shouldApplySeverityColour =
                   filterOption !== "Night-Out" && filterOption !== "DelaysMap";
@@ -1058,7 +1069,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <header className="vehicle-card__header">
                       <div className="vehicle-card__title">
                         <h2 className="vehicle-reg">
-                          {formatRegistration(vehicle.assetRegistration ?? vehicle.assetName)}
+                          {isTrailer ? displayId : formatRegistration(displayId)}
                         </h2>
                       </div>
 
