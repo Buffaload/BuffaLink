@@ -1,4 +1,5 @@
 export interface VehicleLike {
+    statusSinceMs?: number;
     assetName?: string;
     assetRegistration?: string;
     assetType?: string;
@@ -167,7 +168,13 @@ export const matchesFilter = (
     nowMs: number = Date.now()
 ): boolean => {
     const eventType = (v.eventType ?? "").toLowerCase();
-    const timeStoppedMs = v.date ? nowMs - adjustedMs(v.date) : 0;
+    const timeStoppedMs = 
+        typeof v.statusSinceMs === "number"
+            ? nowMs - v.statusSinceMs
+            : v.date
+            ? nowMs - adjustedMs(v.date)
+            : 0;
+
 
     switch (filterOption) {
         case "Night-Out":
