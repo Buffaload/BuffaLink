@@ -268,6 +268,12 @@ const getProgressColorClass = (percentage: number) => {
   return "progress-green";
 };
 
+// Remove trailing <_2> from UI written locations
+const cleanLocationLabel = (value?: string | null): string => {
+  if (!value) return "UNKNOWN LOCATION";
+  return value.replace(/_\d+$/, "");
+};
+
 interface DueProgress {
   percentage: number;
   colorClass: string;
@@ -1029,6 +1035,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
 
+                const rawLocation =
+                    vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
+
                 // Trailer display logic
                 const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
                 const displayId = isTrailer
@@ -1183,9 +1192,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       <span className="vehicle-card__footer-label">Location</span>
                       <span 
                         className="vehicle-location"
-                        title={vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION"}
+                        title={cleanLocationLabel(rawLocation)}
                       >
-                        {vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION"}
+                        {cleanLocationLabel(rawLocation)}
                       </span>
                     </footer>
                   </li>
