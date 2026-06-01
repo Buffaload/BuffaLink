@@ -12,7 +12,7 @@
   box-sizing: border-box;
 }
 
-/* Profile button (circular with initial) */
+/* Profile button */
 .profile-button {
   width: 40px;
   height: 40px;
@@ -46,6 +46,11 @@
 
 .profile-button--admin:active {
   transform: translateY(1px);
+}
+
+.profile-menu-trigger {
+  gap: 10px;
+  justify-content: flex-start;
 }
 
 /* Profile initial circle styling */
@@ -178,6 +183,34 @@
 .admin-menu-icon-btn:hover {
   background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.16);
+}
+
+.admin-portal-back {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.08s ease;
+}
+
+.admin-portal-back:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.admin-portal-back:active {
+  transform: translateY(1px);
+}
+
+.admin-portal-back:focus-visible {
+  outline: 2px solid rgba(55, 214, 122, 0.85);
+  outline-offset: 2px;
 }
 
 .admin-menu-icon-btn:active {

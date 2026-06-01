@@ -8,6 +8,8 @@ import {
   Minus,
   SlidersHorizontal,
   X,
+  ChevronLeft,
+  MapPin,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import "../css/ProfileButton.css";
@@ -48,6 +50,18 @@ const isUserAdmin = (): boolean => {
   return role === "admin";
 };
 
+type PortalView = "menu" | "settings" | "location";
+
+const normalizeDisplayName = (username: string): string => {
+  if (!username) return "User";
+
+  const base = username.includes(".")
+    ? username.split(".")[0]
+    : username;
+
+  return base.charAt(0).toUpperCase() + base.slice(1);
+};
+
 const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
 const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
 
@@ -55,13 +69,16 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   username,
   handleLogout,
 }) => {
-  // Get the first letter of the username
-  const userInitial = username ? username.charAt(0).toUpperCase() : "U";
   const isAdmin = isUserAdmin();
+  const portalTitle = isAdmin ? "Admin portal" : "Portal";
+
+  // Get the first letter of the username
+  const displayName = normalizeDisplayName(username);
 
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<PortalView>("menu");
 
   const [serviceDays, setServiceDays] = useState(() =>
     getNumber(SERVICE_TIMELINE_DAYS_KEY, 42)
@@ -82,33 +99,195 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     queryClient.invalidateQueries({ queryKey: ["vehicles"] });
   };
 
+  const renderMenu = () => (
+    <div className="admin-menu-body">
+      {isAdmin && (
+        <>
+          <button
+            type="button"
+            className="admin-setting-tile"
+            onClick={() => setView("settings")}
+          >
+            <span className="admin-setting-label">Settings</span>
+          </button>
+
+          
+          <button
+            type="button"
+            className="admin-setting-tile"
+            onClick={() => setView("location")}
+          >
+            <span className="admin-setting-label">Location</span>
+          </button>
+        </>
+      )}
+
+      <button
+        type="button"
+        className="admin-setting-tile"
+        onClick={handleLogout}
+      >
+        <span className="admin-setting-label">Logout</span>
+      </button>
+    </div>
+  );
+
+  const renderSettings = () => (
+    <>
+      <div className="admin-menu-divider" />
+      {/* Settings tiles */}
+      <div className="admin-menu-body">
+        {/* Service timeline */}
+        <div className="admin-setting-tile">
+          <div className="admin-setting-text">
+            <div className="admin-setting-label">Service</div>
+            <div className="admin-setting-hint">Days</div>
+          </div>
+
+          <div className="admin-stepper" role="group" aria-label="Service timeline days">
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() =>
+                updateValue(
+                  setServiceDays,
+                  SERVICE_TIMELINE_DAYS_KEY,
+                  serviceDays - 1
+                )
+              }
+              aria-label="Decrease service timeline"
+            >
+              <Minus size={16} />
+            </button>
+
+            <input
+              className="step-input"
+              type="number"
+              value={serviceDays}
+              onChange={(e) =>
+                updateValue(
+                  setServiceDays,
+                  SERVICE_TIMELINE_DAYS_KEY,
+                  parseInt(e.target.value, 10)
+                )
+              }
+              aria-label="Service timeline value"
+            />
+
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() =>
+                updateValue(
+                  setServiceDays,
+                  SERVICE_TIMELINE_DAYS_KEY,
+                  serviceDays + 1
+                )
+              }
+              aria-label="Increase service timeline"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* MOT timeline */}
+        <div className="admin-setting-tile">
+          <div className="admin-setting-text">
+            <div className="admin-setting-label">MOT</div>
+            <div className="admin-setting-hint">Days</div>
+          </div>
+
+          <div className="admin-stepper" role="group" aria-label="MOT timeline days">
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() =>
+                updateValue(setMotDays, MOT_TIMELINE_DAYS_KEY, motDays - 1)
+              }
+              aria-label="Decrease MOT timeline"
+            >
+              <Minus size={16} />
+            </button>
+
+            <input
+              className="step-input"
+              type="number"
+              value={motDays}
+              onChange={(e) =>
+                updateValue(
+                  setMotDays,
+                  MOT_TIMELINE_DAYS_KEY,
+                  parseInt(e.target.value, 10)
+                )
+              }
+              aria-label="MOT timeline value"
+            />
+
+            <button
+              type="button"
+              className="step-btn"
+              onClick={() =>
+                updateValue(setMotDays, MOT_TIMELINE_DAYS_KEY, motDays + 1)
+              }
+              aria-label="Increase MOT timeline"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderLocation = () => (
+    <>
+      <div className="admin-menu-divider" />
+      <div className="admin-menu-body">
+        <div className="admin-setting-tile">
+          <span className="admin-setting-label">All</span>
+        </div>
+        {["Ellington","Crewe","Coventry","Skelmersdale","Bellshill","Avonmouth"].map(d => (
+          <div key={d} className="admin-setting-tile">
+            <span className="admin-setting-label">{d}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <div className="profile-button-container">
       <button
-        className={isAdmin ? "profile-button profile-button--admin" : "profile-button"}
+        type="button"
+        className="logout-button profile-menu-trigger"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Admin menu"
       >
-        <span className="profile-initial">
-          {isAdmin ? <ShieldUser size={18} /> : userInitial}
-        </span>
+        <ShieldUser size={16} className="logout-icon" />
+        <span>{displayName}</span>
       </button>
 
-      <button className="logout-button" onClick={handleLogout}>
-        <LogOut size={16} className="logout-icon" />
-        <span>Logout</span>
-      </button>
-
-      {open && isAdmin && createPortal(
-        <div className="admin-menu" role="dialog" aria-label="Admin portal">
+      {open && createPortal(
+        <div className="admin-menu" role="dialog" aria-label={portalTitle}>
           {/* Header */}
           <div className="admin-portal-header">
               <div className="admin-portal-title">
+                {view !== "menu" ? (
+                  <button
+                    type="button"
+                    className="admin-portal-back"
+                    onClick={() => setView("menu")}
+                    aria-label="Back"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                ) : (
                 <span className="admin-menu-title-icon" aria-hidden="true">
                   <SlidersHorizontal size={16} />
                 </span>
+                )}
                 <div className="admin-portal-title-block">
-                  <span>Settings</span>
+                  <span>{view === "menu" ? portalTitle : view === "settings" ? "Settings" : "Location"}</span>
                   <div className="admin-portal-version">{APP_VERSION}</div>
                 </div>
               </div>
@@ -122,110 +301,10 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
             </button>
           </div>
 
-          <div className="admin-menu-divider" />
-
-          {/* Settings tiles */}
-          <div className="admin-menu-body">
-            {/* Service timeline */}
-            <div className="admin-setting-tile">
-              <div className="admin-setting-text">
-                <div className="admin-setting-label">Service</div>
-                <div className="admin-setting-hint">Days</div>
-              </div>
-
-              <div className="admin-stepper" role="group" aria-label="Service timeline days">
-                <button
-                  type="button"
-                  className="step-btn"
-                  onClick={() =>
-                    updateValue(
-                      setServiceDays,
-                      SERVICE_TIMELINE_DAYS_KEY,
-                      serviceDays - 1
-                    )
-                  }
-                  aria-label="Decrease service timeline"
-                >
-                  <Minus size={16} />
-                </button>
-
-                <input
-                  className="step-input"
-                  type="number"
-                  value={serviceDays}
-                  onChange={(e) =>
-                    updateValue(
-                      setServiceDays,
-                      SERVICE_TIMELINE_DAYS_KEY,
-                      parseInt(e.target.value, 10)
-                    )
-                  }
-                  aria-label="Service timeline value"
-                />
-
-                <button
-                  type="button"
-                  className="step-btn"
-                  onClick={() =>
-                    updateValue(
-                      setServiceDays,
-                      SERVICE_TIMELINE_DAYS_KEY,
-                      serviceDays + 1
-                    )
-                  }
-                  aria-label="Increase service timeline"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            </div>
-
-            {/* MOT timeline */}
-            <div className="admin-setting-tile">
-              <div className="admin-setting-text">
-                <div className="admin-setting-label">MOT</div>
-                <div className="admin-setting-hint">Days</div>
-              </div>
-
-              <div className="admin-stepper" role="group" aria-label="MOT timeline days">
-                <button
-                  type="button"
-                  className="step-btn"
-                  onClick={() =>
-                    updateValue(setMotDays, MOT_TIMELINE_DAYS_KEY, motDays - 1)
-                  }
-                  aria-label="Decrease MOT timeline"
-                >
-                  <Minus size={16} />
-                </button>
-
-                <input
-                  className="step-input"
-                  type="number"
-                  value={motDays}
-                  onChange={(e) =>
-                    updateValue(
-                      setMotDays,
-                      MOT_TIMELINE_DAYS_KEY,
-                      parseInt(e.target.value, 10)
-                    )
-                  }
-                  aria-label="MOT timeline value"
-                />
-
-                <button
-                  type="button"
-                  className="step-btn"
-                  onClick={() =>
-                    updateValue(setMotDays, MOT_TIMELINE_DAYS_KEY, motDays + 1)
-                  }
-                  aria-label="Increase MOT timeline"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Body */}
+          {view === "menu" && renderMenu()}
+          {view === "settings" && renderSettings()}
+          {view === "location" && renderLocation()}
         </div>,
         document.body
       )}
