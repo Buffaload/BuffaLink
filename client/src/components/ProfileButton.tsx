@@ -108,6 +108,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
             className="admin-setting-tile"
             onClick={() => setView("settings")}
           >
+            <SlidersHorizontal size={16} />
             <span className="admin-setting-label">Settings</span>
           </button>
 
@@ -117,6 +118,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
             className="admin-setting-tile"
             onClick={() => setView("location")}
           >
+            <MapPin size={16} />
             <span className="admin-setting-label">Location</span>
           </button>
         </>
@@ -127,6 +129,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         className="admin-setting-tile"
         onClick={handleLogout}
       >
+        <LogOut size={16} />
         <span className="admin-setting-label">Logout</span>
       </button>
     </div>
