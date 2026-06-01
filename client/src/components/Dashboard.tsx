@@ -10,11 +10,6 @@ interface DashboardProps {
   handleLogout: () => void;
 }
 
-interface SidebarProps {
-  onToggleCollapse: () => void;
-  isCollapsed: boolean;
-}
-
 // ISO week number (Monday–Sunday)
 function getISOWeek(date = new Date()): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
