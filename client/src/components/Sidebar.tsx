@@ -250,11 +250,6 @@ const Sidebar: React.FC<{
     setIsHoverExpanded(false);
   };
 
-  const toggleCollapsed = () => {
-    if (!isDesktop) return;
-    setIsCollapsed(prev => !prev);
-  };
-
   const computeArrivalTooltipPosition = () => {
     const el = tooltipAnchorRef.current;
     if (!el) return;
