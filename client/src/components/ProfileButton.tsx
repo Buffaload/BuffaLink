@@ -1,5 +1,5 @@
 import { APP_VERSION } from "../config/appMeta";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ShieldUser, 
@@ -77,6 +77,9 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   const displayName = normalizeDisplayName(username);
 
   const queryClient = useQueryClient();
+
+  const portalRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<PortalView>("menu");
@@ -342,9 +345,36 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     </>
   );
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      // If click is inside the portal or the trigger button, ignore
+      if (
+        portalRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      // Otherwise close the portal and reset view
+      setOpen(false);
+      setView("menu");
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open, setView]);
+
   return (
     <div className="profile-button-container">
       <button
+        ref={triggerRef}
         type="button"
         className="logout-button profile-menu-trigger"
         onClick={() => setOpen((v) => !v)}
@@ -354,7 +384,12 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
       </button>
 
       {open && createPortal(
-        <div className="admin-menu" role="dialog" aria-label={portalTitle}>
+        <div 
+          ref={portalRef}
+          className="admin-menu"
+          role="dialog"
+          aria-label={portalTitle}
+        >
           {/* Header */}
           <div className="admin-portal-header">
               <div className="admin-portal-title">
