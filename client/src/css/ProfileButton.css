@@ -322,9 +322,11 @@
 .location-tile-left {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
 }
 
 .location-name {
+  max-width: 6ch;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -333,6 +335,7 @@
 .location-radio {
   width: 16px;
   height: 16px;
+  flex: 0 0 auto;
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.28);
   background: rgba(0, 0, 0, 0.15);
