@@ -100,39 +100,48 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   };
 
   const renderMenu = () => (
-    <div className="admin-menu-body">
-      {isAdmin && (
-        <>
-          <button
-            type="button"
-            className="admin-setting-tile"
-            onClick={() => setView("settings")}
-          >
-            <SlidersHorizontal size={16} />
-            <span className="admin-setting-label">Settings</span>
-          </button>
+    <>
+      <div className="admin-menu-divider admin-menu-divider--menu" />
 
-          
-          <button
-            type="button"
-            className="admin-setting-tile"
-            onClick={() => setView("location")}
-          >
-            <MapPin size={16} />
-            <span className="admin-setting-label">Location</span>
-          </button>
-        </>
-      )}
+      <div className="admin-menu-body admin-menu-body--menu">
+        {isAdmin && (
+          <>
+            <button
+              type="button"
+              className="admin-setting-tile admin-setting-tile--menu"
+              onClick={() => setView("settings")}
+            >
+              <span className="admin-setting-left">
+                <SlidersHorizontal size={16} />
+                <span className="admin-setting-label">Settings</span>
+              </span>
+            </button>
 
-      <button
-        type="button"
-        className="admin-setting-tile"
-        onClick={handleLogout}
-      >
-        <LogOut size={16} />
-        <span className="admin-setting-label">Logout</span>
-      </button>
-    </div>
+            <button
+              type="button"
+              className="admin-setting-tile admin-setting-tile--menu"
+              onClick={() => setView("location")}
+            >
+              <span className="admin-setting-left">
+                <MapPin size={16} />
+                <span className="admin-setting-label">Location</span>
+              </span>
+            </button>
+          </>
+        )}
+
+        <button
+          type="button"
+          className="admin-setting-tile admin-setting-tile--menu"
+          onClick={handleLogout}
+        >
+          <span className="admin-setting-left">
+            <LogOut size={16} />
+            <span className="admin-setting-label">Logout</span>
+          </span>
+        </button>
+      </div>
+    </>
   );
 
   const renderSettings = () => (
@@ -246,14 +255,39 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   const renderLocation = () => (
     <>
       <div className="admin-menu-divider" />
-      <div className="admin-menu-body">
-        <div className="admin-setting-tile">
-          <span className="admin-setting-label">All</span>
-        </div>
-        {["Ellington","Crewe","Coventry","Skelmersdale","Bellshill","Avonmouth"].map(d => (
-          <div key={d} className="admin-setting-tile">
-            <span className="admin-setting-label">{d}</span>
-          </div>
+
+      <div className="location-grid" role="group" aria-label="Location selection">
+        {/* ALL — spans full width */}
+        <button
+          type="button"
+          className="location-tile location-tile--all"
+          aria-pressed="true"
+        >
+          <span className="location-tile-left">
+            <span className="location-name">All</span>
+          </span>
+          <span className="location-radio checked" aria-hidden="true" />
+        </button>
+
+        {[
+          "Ellington",
+          "Crewe",
+          "Coventry",
+          "Skelmersdale",
+          "Bellshill",
+          "Avonmouth",
+        ].map((location) => (
+          <button
+            key={location}
+            type="button"
+            className="location-tile"
+            aria-pressed="false"
+          >
+            <span className="location-tile-left">
+              <span className="location-name">{location}</span>
+            </span>
+            <span className="location-radio" aria-hidden="true" />
+          </button>
         ))}
       </div>
     </>

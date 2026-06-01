@@ -230,6 +230,28 @@
   margin-bottom: 10px;
 }
 
+.admin-setting-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+}
+
+.admin-menu-body--menu {
+  padding-top: 6px;
+}
+
+.admin-setting-tile--menu {
+  cursor: pointer;
+}
+
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 6px;
+}
+
 /* Tiles */
 .admin-setting-tile {
   display: flex;
@@ -268,6 +290,66 @@
   font-size: 11px;
   opacity: 0.70;
   letter-spacing: 0.02em;
+}
+
+.location-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.location-tile:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.location-tile:active {
+  transform: translateY(1px);
+}
+
+.location-tile--all {
+  grid-column: 1 / -1;
+}
+
+.location-tile-left {
+  display: inline-flex;
+  align-items: center;
+}
+
+.location-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.location-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.location-radio.checked {
+  border-color: #37d67a;
+  background: radial-gradient(
+    circle at 40% 35%,
+    #6dffad 0%,
+    #37d67a 45%,
+    #1f8f4d 100%
+  );
+  box-shadow:
+    0 0 0 3px rgba(55, 214, 122, 0.18),
+    0 0 10px rgba(55, 214, 122, 0.55);
 }
 
 /* Stepper */
