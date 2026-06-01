@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   X,
   ChevronLeft,
+  Settings,
   MapPin,
 } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -87,6 +88,49 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     getNumber(MOT_TIMELINE_DAYS_KEY, 364)
   );
 
+  const DEPOTS = [
+    "Ellington",
+    "Crewe",
+    "Coventry",
+    "Skelmersdale",
+    "Bellshill",
+    "Avonmouth",
+  ] as const;
+
+  type Depot = (typeof DEPOTS)[number];
+
+  // UI-only selection state (default = ALL selected)
+  const [selectedDepots, setSelectedDepots] = useState<Set<Depot>>(
+    () => new Set(DEPOTS)
+  );
+
+  const allSelected = selectedDepots.size === DEPOTS.length;
+
+  const setAll = () => {
+    // "All" cannot be deselected; clicking it when already selected does nothing.
+    if (allSelected) return;
+    setSelectedDepots(new Set(DEPOTS));
+  };
+
+  const toggleDepot = (depot: Depot) => {
+    setSelectedDepots((prev) => {
+      const next = new Set(prev);
+      const isChecked = next.has(depot);
+
+      if (isChecked) {
+        // Prevent removing the final remaining option
+        if (next.size === 1) return prev;
+        // If ALL is currently selected, clicking a depot removes just that one
+        next.delete(depot);
+        return next;
+      }
+
+      // Reselect depot
+      next.add(depot);
+      return next;
+    });
+  };
+
   const updateValue = (
     setter: React.Dispatch<React.SetStateAction<number>>,
     key: string,
@@ -112,7 +156,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
               onClick={() => setView("settings")}
             >
               <span className="admin-setting-left">
-                <SlidersHorizontal size={16} />
+                <Settings size={16} />
                 <span className="admin-setting-label">Settings</span>
               </span>
             </button>
@@ -261,34 +305,39 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         <button
           type="button"
           className="location-tile location-tile--all"
-          aria-pressed="true"
+          onClick={setAll}
+          aria-pressed={allSelected}
         >
           <span className="location-tile-left">
             <span className="location-name">All</span>
           </span>
-          <span className="location-radio checked" aria-hidden="true" />
+          <span
+            className={`location-radio ${allSelected ? "checked" : ""}`}
+            aria-hidden="true"
+          />
         </button>
 
-        {[
-          "Ellington",
-          "Crewe",
-          "Coventry",
-          "Skelmersdale",
-          "Bellshill",
-          "Avonmouth",
-        ].map((location) => (
-          <button
-            key={location}
-            type="button"
-            className="location-tile"
-            aria-pressed="false"
-          >
-            <span className="location-tile-left">
-              <span className="location-name">{location}</span>
-            </span>
-            <span className="location-radio" aria-hidden="true" />
-          </button>
-        ))}
+        {DEPOTS.map((depot) => {
+          const checked = selectedDepots.has(depot);
+
+          return (
+            <button
+              key={depot}
+              type="button"
+              className="location-tile"
+              onClick={() => toggleDepot(depot)}
+              aria-pressed={checked}
+            >
+              <span className="location-tile-left">
+                <span className="location-name">{depot}</span>
+              </span>
+              <span
+                className={`location-radio ${checked ? "checked" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+          );
+        })}
       </div>
     </>
   );
