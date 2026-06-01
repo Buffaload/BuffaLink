@@ -10,6 +10,11 @@ interface DashboardProps {
   handleLogout: () => void;
 }
 
+interface SidebarProps {
+  onToggleCollapse: () => void;
+  isCollapsed: boolean;
+}
+
 // ISO week number (Monday–Sunday)
 function getISOWeek(date = new Date()): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -114,6 +119,7 @@ const renderStatusIcon = (rawType?: string) => {
 
 const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
   const [isoWeek, setIsoWeek] = useState(() => getISOWeek());
   const [isoWeekYear, setIsoWeekYear] = useState(() => getISOWeekYear());
@@ -460,12 +466,24 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       </div>
 
       {!isKioskMode && (
-        <Sidebar
-          onFilterChange={setFilterOption}
-          onDepotChange={setSelectedDepots}
-          filterOption={filterOption}
-          handleLogout={handleLogout}
-        />
+        <>
+          <Sidebar
+            onFilterChange={setFilterOption}
+            onDepotChange={setSelectedDepots}
+            filterOption={filterOption}
+            handleLogout={handleLogout}  
+            isCollapsed={isCollapsed}
+          />
+
+          <button
+            type="button"
+            className={`sidebar-collapse-toggle ${isCollapsed ? "is-collapsed" : ""}`}
+            onClick={() => setIsCollapsed(v => !v)}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <span className="sidebar-collapse-icon" aria-hidden="true" />
+          </button>
+        </>
       )}
 
       <div className={`dashboard-content ${isKioskMode ? "dashboard-content--kiosk" : ""}`}>

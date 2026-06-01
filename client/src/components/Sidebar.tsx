@@ -204,7 +204,8 @@ const Sidebar: React.FC<{
   onDepotChange: (depots: string[]) => void;
   filterOption: string;
   handleLogout: () => void;
-}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout }) => {
+  isCollapsed: boolean;
+}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed }) => {
   const [userRole, setUserRole] = useState<string>("");
   const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
@@ -218,11 +219,6 @@ const Sidebar: React.FC<{
   const SIDEBAR_COLLAPSED_KEY = "buffalink:sidebarCollapsed";
   const SIDEBAR_WIDTH_EXPANDED = 260;
   const SIDEBAR_WIDTH_COLLAPSED = 130;
-
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
-    const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    return raw === "true";
-  });
   const [isHoverExpanded, setIsHoverExpanded] = useState(false);
 
   // Collapsed unless user is hovering (hover temporarily expands)
@@ -854,17 +850,6 @@ const Sidebar: React.FC<{
             </>
           )}
         </ul>
-        {/* Collapse/expand sidebar toggle */}
-        <button
-          type="button"
-          className={`sidebar-collapse-toggle ${effectiveCollapsedDesktop ? "is-collapsed" : ""}`}
-          onClick={toggleCollapsed}
-          aria-label={effectiveCollapsedDesktop ? "Expand sidebar" : "Collapse sidebar"}
-          title={effectiveCollapsedDesktop ? "Expand" : "Collapse"}
-        >
-          <span className="sidebar-collapse-triangle" aria-hidden="true" />
-        </button>
-
         {/* Profile Button at bottom of sidebar */}
         <div className="sidebar-profile">
           <ProfileButton

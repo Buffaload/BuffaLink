@@ -56,6 +56,10 @@
   margin-top: -125px;
 }
 
+.dashboard-title {
+  margin-left: 30px;
+}
+
 .dashboard-header,
 .dashboard-header-right {
   overflow: visible;
