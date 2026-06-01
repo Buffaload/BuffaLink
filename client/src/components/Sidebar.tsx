@@ -215,6 +215,49 @@ const Sidebar: React.FC<{
   const showDepotSubTabs = filterOption === "Depots";
   const tooltipAnchorRef = React.useRef<HTMLButtonElement | null>(null);
   const [arrivalTooltipPos, setArrivalTooltipPos] = useState<{ top: number; left: number } | null>(null);
+  const SIDEBAR_COLLAPSED_KEY = "buffalink:sidebarCollapsed";
+  const SIDEBAR_WIDTH_EXPANDED = 260;
+  const SIDEBAR_WIDTH_COLLAPSED = 130;
+
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return raw === "true";
+  });
+  const [isHoverExpanded, setIsHoverExpanded] = useState(false);
+
+  // Collapsed unless user is hovering (hover temporarily expands)
+  const effectiveCollapsed = isCollapsed && !isHoverExpanded;
+
+  // Optional: disable collapsed mode on mobile (recommended)
+  const isDesktop = typeof window !== "undefined"
+    ? window.matchMedia("(min-width: 769px)").matches
+    : true;
+
+  const effectiveCollapsedDesktop = isDesktop ? effectiveCollapsed : false;
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
+  }, [isCollapsed]);
+
+  useEffect(() => {
+    const widthPx = effectiveCollapsedDesktop ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+    document.documentElement.style.setProperty("--sidebar-current-width", `${widthPx}px`);
+  }, [effectiveCollapsedDesktop]);
+
+  const handleSidebarMouseEnter = () => {
+    if (!isDesktop) return;
+    setIsHoverExpanded(true);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (!isDesktop) return;
+    setIsHoverExpanded(false);
+  };
+
+  const toggleCollapsed = () => {
+    if (!isDesktop) return;
+    setIsCollapsed(prev => !prev);
+  };
 
   const computeArrivalTooltipPosition = () => {
     const el = tooltipAnchorRef.current;
@@ -393,7 +436,7 @@ const Sidebar: React.FC<{
       cancelAnimationFrame(raf2);
       clearTimeout(timeout);
     };
-  }, [arrivalTooltipOpen, isSidebarOpen]);
+  }, [arrivalTooltipOpen, isSidebarOpen, effectiveCollapsedDesktop, isHoverExpanded]);
 
   // Reposition tooltip when sidebar layout changes (submenu open/close)
   useEffect(() => {
@@ -526,13 +569,17 @@ const Sidebar: React.FC<{
         <span />
       </button>
 
-      <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
+      <div 
+        className={`sidebar ${isSidebarOpen ? "open" : ""} ${effectiveCollapsedDesktop ? "is-collapsed" : ""}`}
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
+      >
         <div className="sidebar-header">
           <img
-              src="/fleetpulse-logo.png"
-              alt="FleetPulse"
-              className="sidebar-logo"
-            />
+            src={effectiveCollapsedDesktop ? "/fleetpulse-dial.png" : "/fleetpulse-logo.png"}
+            alt="FleetPulse"
+            className={`sidebar-logo ${effectiveCollapsedDesktop ? "sidebar-logo--dial" : ""}`}
+          />
         </div>
         <ul className="sidebar-nav">
           <li className="sidebar-section-heading">FLEET</li>
@@ -546,7 +593,10 @@ const Sidebar: React.FC<{
                 handleButtonClick("HGVs");
               }}
             >
-              <span className="sidebar-link-text"><Truck className="sidebar-icon" />HGVs</span>
+              <span className="sidebar-link-text">
+                <Truck className="sidebar-icon" />
+                <span className="sidebar-label">HGVs</span>
+              </span>
               <span className="sidebar-link-meta sidebar-value--grey">
                 {renderSidebarValue(counts.hgvsCount)}
               </span>
@@ -566,7 +616,7 @@ const Sidebar: React.FC<{
             >            
               <span className="sidebar-link-text">
                 <Fuel className="sidebar-icon" />
-                Services
+                <span className="sidebar-label">Services</span>
               </span>       
               <span className="sidebar-link-meta sidebar-chevron">
                 {filterOption === "Services" ? (
@@ -578,7 +628,7 @@ const Sidebar: React.FC<{
             </button>
           </li>
           {/* Sub-tab for "Services" */}
-          {(filterOption === "Services" || filterOption === "Night-Out" || filterOption === "Delays") && (
+          {!effectiveCollapsedDesktop && (filterOption === "Services" || filterOption === "Night-Out" || filterOption === "Delays") && (
             <div className="depot-grid depot-grid--single">
               <button
                 type="button"
@@ -634,7 +684,7 @@ const Sidebar: React.FC<{
             >      
               <span className="sidebar-link-text">
                 <Building2 className="sidebar-icon" />
-                Depots
+                <span className="sidebar-label">Depots</span>
               </span>
 
               <span className="sidebar-link-meta sidebar-chevron">
@@ -647,7 +697,7 @@ const Sidebar: React.FC<{
             </button>
           </li>
           {/* Sub-tab for "Depots" */}
-          {showDepotSubTabs && (
+          {!effectiveCollapsedDesktop && showDepotSubTabs && (
             <div className="depot-grid" role="group" aria-label="Depot filter">
               {DEPOTS.map((depot) => {
                 // If empty => ALL is selected in the UI
@@ -690,7 +740,10 @@ const Sidebar: React.FC<{
                 handleButtonClick("Maintenance");
               }}
             >
-              <span className="sidebar-link-text"><Wrench className="sidebar-icon" />Maintenance</span>
+              <span className="sidebar-link-text">
+                <Wrench className="sidebar-icon" />
+                <span className="sidebar-label">Maintenance</span>
+              </span>
               <span className="sidebar-link-meta sidebar-value--grey">
                 {renderSidebarValue(counts.maintenanceCount)}
               </span>
@@ -706,7 +759,10 @@ const Sidebar: React.FC<{
                 handleButtonClick("Critical");
               }}
             >
-              <span className="sidebar-link-text"><TriangleAlert className="sidebar-icon" />Critical Alerts</span>
+              <span className="sidebar-link-text">
+                <TriangleAlert className="sidebar-icon" />
+                <span className="sidebar-label">Critical Alerts</span>
+              </span>
               <span className={`sidebar-link-meta ${counts.criticalCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>
                 {renderSidebarValue(counts.criticalCount)}
               </span>
@@ -724,7 +780,10 @@ const Sidebar: React.FC<{
                 closeArrivalTooltip(); // closes tooltip when you click it
               }}
             >
-              <span className="sidebar-link-text"><Ambulance className="sidebar-icon" />Critical Arrivals</span>
+              <span className="sidebar-link-text">
+                <Ambulance className="sidebar-icon" />
+                <span className="sidebar-label">Critical Arrivals</span>
+              </span>
               <span className={`sidebar-link-meta ${counts.arrivalsCount > 0 ? "sidebar-badge alert-pop--sidebar" : "sidebar-value--grey"}`}>
                 {renderSidebarValue(counts.arrivalsCount)}
               </span>
@@ -783,7 +842,10 @@ const Sidebar: React.FC<{
                     handleButtonClick("Tippers");
                   }}
                 >
-                  <span className="sidebar-link-text"><FileText className="sidebar-icon" />Tippers</span>
+                  <span className="sidebar-link-text">
+                    <FileText className="sidebar-icon" />
+                    <span className="sidebar-label">Tippers</span>
+                  </span>
                   <span className="sidebar-link-meta sidebar-value--grey">
                     {renderSidebarValue(counts.tippersCount)}
                   </span>
@@ -792,6 +854,16 @@ const Sidebar: React.FC<{
             </>
           )}
         </ul>
+        {/* Collapse/expand sidebar toggle */}
+        <button
+          type="button"
+          className={`sidebar-collapse-toggle ${effectiveCollapsedDesktop ? "is-collapsed" : ""}`}
+          onClick={toggleCollapsed}
+          aria-label={effectiveCollapsedDesktop ? "Expand sidebar" : "Collapse sidebar"}
+          title={effectiveCollapsedDesktop ? "Expand" : "Collapse"}
+        >
+          <span className="sidebar-collapse-triangle" aria-hidden="true" />
+        </button>
 
         {/* Profile Button at bottom of sidebar */}
         <div className="sidebar-profile">

@@ -7,11 +7,12 @@
   top: var(--app-header-height, 120px);
   right: 0;
   bottom: 0;
-  left: 260px;
+  left: var(--sidebar-current-width);
   padding: 20px;
   box-sizing: border-box;
   overflow: hidden;
   background: transparent;
+  transition: left var(--sidebar-motion-duration) var(--sidebar-motion-ease);
 }
 
 .dashboard-container.kiosk-mode .map-viewport {
@@ -47,11 +48,14 @@
 .highlight-figures-header {
   position: fixed;
   top: 65px;
-  left: 275px;
+  left: calc(var(--sidebar-current-width) + 15px);
   padding: 15px 0;
-  width: calc(100% - 340px);
+  width: calc(100% - (var(--sidebar-current-width) + 80px));
   z-index: 1100;
   margin: 0;
+  transition:
+    left var(--sidebar-motion-duration) var(--sidebar-motion-ease),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-ease);
 }
 
 .app-header .highlight-figures-header {
@@ -68,12 +72,15 @@
 .highlight-figures-map {
   position: fixed;
   top: 45px;
-  left: 275px;
-  width: calc(100% - 340px);
+  left: calc(var(--sidebar-current-width) + 15px);
+  width: calc(100% - (var(--sidebar-current-width) + 80px));
   display: flex;
   justify-content: flex-end;
   margin: 10px 0 16px;
   padding: 10px 12px;
+  transition:
+    left var(--sidebar-motion-duration) var(--sidebar-motion-ease),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-ease);
   z-index: 100;
 }
 

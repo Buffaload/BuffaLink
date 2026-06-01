@@ -49,8 +49,8 @@
 .vehicles-wizard {
   position: fixed;
   top: 45px;
-  left: 275px;
-  width: calc(100% - 340px);
+  left: calc(var(--sidebar-current-width) + 15px);
+  width: calc(100% - (var(--sidebar-current-width) + 80px));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -58,6 +58,9 @@
   margin: 10px 0 16px;
   padding: 10px 12px;
   border-radius: 12px;
+  transition:
+    left var(--sidebar-motion-duration) var(--sidebar-motion-ease),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-ease);
   z-index: 100;
 }
 
@@ -293,20 +296,23 @@
   gap: 8px;
   justify-content: center;
   align-items: center;
-  left: calc(260px + (100vw - 260px) / 2);
+  left: calc(var(--sidebar-current-width) + (100vw - var(--sidebar-current-width)) / 2);
   transform: translateX(-50%);
-  width: calc(100vw - 300px);
+  width: calc(100vw - (var(--sidebar-current-width) + 40px));
   max-width: 1000px;
   margin: 8px auto;
   padding: 8px;
-  background-color: #fff4cc;          /* soft yellow */
-  border: 2px solid #f0c040;           /* darker yellow border */
+  background-color: #fff4cc;
+  border: 2px solid #f0c040;
   border-radius: 24px;
   color: #5f4b00;
   font-size: 14px;
   font-weight: 500;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition:
+    left var(--sidebar-motion-duration) var(--sidebar-motion-ease),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-ease);
   z-index: 9999;
 }
 

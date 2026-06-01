@@ -1,5 +1,7 @@
 :root {
   --sidebar-width: 260px;
+  --sidebar-width-collapsed: 130px;
+  --sidebar-current-width: var(--sidebar-width);
   --sidebar-motion-duration: 320ms;
   --sidebar-motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -32,8 +34,10 @@
   overflow: hidden;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15); /* Drop shadow */
   z-index: 1000;
-  transition: transform var(--sidebar-motion-duration) var(--sidebar-motion-ease);
-  will-change: transform;
+  transition: 
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-ease);
+  will-change: transform, width;
 }
 
 .sidebar::after {
@@ -62,12 +66,81 @@
   z-index: -1;
 }
 
+/* Collapsed logo sizing */
+.sidebar.is-collapsed .sidebar-logo {
+  max-width: 70px;
+}
+
+.sidebar-logo--dial {
+  max-width: 70px;
+}
+
+.sidebar.is-collapsed .sidebar-label {
+  display: none;
+}
+
+.sidebar.is-collapsed .sidebar-icon {
+  margin-right: 0;
+}
+
+.sidebar.is-collapsed .sidebar-nav .sidebar-link {
+  padding: 14px 10px;
+}
+
+.sidebar.is-collapsed .sidebar-link-meta {
+  margin-left: 0;
+}
+
+.sidebar.is-collapsed .sidebar-section-heading {
+  padding-left: 12px;
+}
+
+.sidebar.is-collapsed .sidebar-header {
+  padding: 20px 10px;
+}
+
+.sidebar-collapse-toggle {
+  position: absolute;
+  right: -14px;
+  bottom: 22px;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(11, 28, 45, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1200;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.sidebar-collapse-toggle:hover {
+  background: rgba(11, 28, 45, 0.98);
+  transform: translateX(1px);
+}
+
+.sidebar-collapse-triangle {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 7px solid rgba(255, 255, 255, 0.85);
+  transition: transform 160ms ease;
+}
+
+/* When collapsed, triangle points RIGHT */
+.sidebar-collapse-toggle.is-collapsed .sidebar-collapse-triangle {
+  transform: rotate(180deg);
+}
+
 .sidebar.open {
-  transform: translateX(0); /*Slide in the sidebar */
+  transform: translateX(0);
 }
 
 .sidebar.closed {
-  transform: translateX(-100%); /*Slide out the sidebar */
+  transform: translateX(-100%);
 }
 
 /* Sidebar Header */
@@ -207,7 +280,7 @@
 
 /* Background color transition for selected buttons */
 .sidebar-nav .sidebar-link.active {
-  background-color: #28a745; /* Dark green background */
+  background-color: #28a745;
   color: white;
 }
 
@@ -240,7 +313,7 @@
   width: 200px;
   margin: 10px 10px;
   padding: 15px 20px;
-  background-color: #28a745; /* Dark green background */
+  background-color: #28a745;
   color: white;
   text-align: center;
   font-size: 16px;
@@ -253,8 +326,8 @@
 
 /* Hover effect for the contact button */
 .contact-button:hover {
-  background-color: #218838; /* Slightly darker green on hover */
-  text-decoration: none; /* No underline */
+  background-color: #218838;
+  text-decoration: none;
 }
 
 /* Depots grid */
@@ -587,8 +660,9 @@
   height: 2px;
   background-color: rgba(11, 28, 45, 0.78);
   border-radius: 2px;
-  transition: transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
-              opacity 200ms ease;
+  transition: 
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
+    opacity 200ms ease;
 }
 
 /* Top bar */
@@ -604,7 +678,7 @@
   transform: translateY(7px);
 }
 
-/* OPEN STATE → morph to X */
+/* Open state → morph to X */
 .hamburger-menu.open span:nth-child(1) {
   transform: rotate(45deg);
 }
@@ -643,6 +717,11 @@
 @media screen and (min-width: 769px) {
   .hamburger-menu {
     display: none;
+  }
+
+  .dashboard-content {
+    margin-left: calc(var(--sidebar-current-width) + 20px);
+    transition: margin-left var(--sidebar-motion-duration) var(--sidebar-motion-ease);
   }
 }
 
