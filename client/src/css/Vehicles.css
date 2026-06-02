@@ -569,9 +569,14 @@
 
 .vehicle-modal-body::-webkit-scrollbar-button,
 .vehicle-modal-panel ::-webkit-scrollbar-button  {
-  width: 0;
-  height: 0;
-  display: none;
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.vehicle-modal-overlay * {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(73, 73, 73, 0.692) transparent;
 }
 
 .vehicle-card--clickable {
@@ -632,6 +637,43 @@
   background: linear-gradient(180deg, rgba(249, 250, 251, 0.92), #ffffff);
 }
 
+.vehicle-modal-header {
+  position: relative;
+  --modal-header-hue: rgba(34, 197, 94, 0.14); /* default green */
+}
+
+/* Severity overrides */
+.vehicle-modal-header.pastel-yellow {
+  --modal-header-hue: rgba(217, 119, 6, 0.14);
+}
+
+.vehicle-modal-header.pastel-orange {
+  --modal-header-hue: rgba(234, 88, 12, 0.14);
+}
+
+.vehicle-modal-header.pastel-red {
+  --modal-header-hue: rgba(220, 38, 38, 0.14);
+}
+
+/* Apply the tint */
+.vehicle-modal-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--modal-header-hue),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.vehicle-modal-header > * {
+  position: relative;
+  z-index: 1;
+}
+
 .vehicle-modal-title-row {
   display: flex;
   align-items: flex-start;
@@ -656,6 +698,16 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+
+.vehicle-modal-subtitle-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 
 .vehicle-modal-actions {
   display: inline-flex;
@@ -1145,6 +1197,10 @@
 
 .health-block__sub.is-overdue {
   color: #b91c1c;
+}
+
+.vehicle-modal-health-sub {
+  text-align: center;
 }
 
 .muted {

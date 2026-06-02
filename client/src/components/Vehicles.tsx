@@ -319,6 +319,17 @@ const titleCaseWords = (input: string) =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
 
+const formatVehicleType = (assetType?: string) => {
+  const raw = (assetType ?? "").trim();
+  if (!raw) return "Not available";
+
+  // HGV should stay uppercase
+  if (raw.toUpperCase() === "HGV") return "HGV";
+
+  // Everything else (e.g. TRAILER) → Trailer
+  return humanizeEnum(raw);
+};
+
 const humanizeEnum = (input?: string) => {
   const raw = (input ?? "").trim();
   if (!raw) return "Not available";
@@ -1439,7 +1450,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
         </div>
       </div>
 
-      {(isVehicleModalOpen || isVehicleModalClosing) && selectedVehicle && (
+      {(isVehicleModalOpen || isVehicleModalClosing) && selectedVehicle && (() => {
+        const modalHeaderSeverityClass =
+          getServiceDueCardClass(selectedVehicle.ServiceDueDate);
         <div
           className={`vehicle-modal-overlay ${
             isVehicleModalOpen && !isVehicleModalClosing ? "is-open" : "is-closed"
@@ -1460,7 +1473,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
             onMouseDown={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="vehicle-modal-header">
+            <div className={`vehicle-modal-header ${modalHeaderSeverityClass}`}>
               <div className="vehicle-modal-title">
                 <div className="vehicle-modal-title-row">
                   <h2 className="vehicle-modal-reg">
@@ -1474,32 +1487,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   </h2>
 
                   <div className="vehicle-modal-actions">
-                    <div className="vehicle-modal-actions-left">
-                      <div className="vehicle-card__chips">
-                        {!!selectedVehicle.IsVor && <span className="chip chip--vor">VOR</span>}
-                        {!!selectedVehicle.LiveDefects && <span className="chip chip--defects">LIVE DEFECTS</span>}
-                      </div>
-
-                      {(filterOption === "Services" || filterOption === "Night-Out") && (
-                        <label
-                          className="toggle-container"
-                          aria-label="Toggle night out"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!!selectedVehicle.isNightOut}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
-                            }}
-                          />
-                          <span className="toggle-slider" />
-                        </label>
-                      )}
-                    </div>
-
                     {/* close button with event type directly beneath */}
                     <div className="vehicle-modal-actions-right">
                       <button
@@ -1516,11 +1503,48 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   </div>
                 </div>
 
-                <div className="vehicle-modal-subtitle">
-                  <span className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}>
-                    <span className="status-pill__icon">{renderStatusIcon(selectedVehicle.eventType)}</span>
-                    <span className="status-pill__text">{(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}</span>
+                <div className="vehicle-modal-subtitle-row">
+                  {/* Status pill */}
+                  <span
+                    className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}
+                  >
+                    <span className="status-pill__icon">
+                      {renderStatusIcon(selectedVehicle.eventType)}
+                    </span>
+                    <span className="status-pill__text">
+                      {(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}
+                    </span>
                   </span>
+
+                  {/* VOR / Defects chips */}
+                  <div className="vehicle-modal-header-chips">
+                    {!!selectedVehicle.IsVor && (
+                      <span className="chip chip--vor">VOR</span>
+                    )}
+                    {!!selectedVehicle.LiveDefects && (
+                      <span className="chip chip--defects">LIVE DEFECTS</span>
+                    )}
+                  </div>
+
+                  {/* Night-Out toggle (conditional) */}
+                  {(filterOption === "Services" || filterOption === "Night-Out") && (
+                    <label
+                      className="toggle-container"
+                      aria-label="Toggle night out"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!selectedVehicle.isNightOut}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
+                        }}
+                      />
+                      <span className="toggle-slider" />
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
@@ -1543,7 +1567,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">Type</span>
                       <span className="vehicle-modal-detail-value">
-                        {displayText(selectedVehicle.assetType, "Not available")}
+                        {formatVehicleType(selectedVehicle.assetType)}
                       </span>
                     </div>
 
@@ -1581,6 +1605,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         {displayText(selectedVehicle.assetGroupName, "Not available")}
                       </span>
                     </div>
+
+                    {String(selectedVehicle.assetType ?? "").toLowerCase() !== "trailer" && (
+                      <div className="vehicle-modal-detail-row">
+                        <span className="vehicle-modal-detail-label">Vehicle driver</span>
+                        <span className="vehicle-modal-detail-value">
+                          {displayText(selectedVehicle.driverName, "Driver not assigned")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1608,11 +1641,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
                               })()
                             : formatDateSafe(raw, displayText(raw, "Not available"));
 
-                        const isOverdue = isDatePast(raw ?? "");
-                        const barLabel = progress
-                          ? `Due: ${dueText}`
-                          : "Data not available";
-
                         return (
                           <div key={String(f.key)} className="health-block">
                             <div className="health-block__row">
@@ -1622,14 +1650,26 @@ const Vehicles: React.FC<VehiclesProps> = ({
                               </span>
                             </div>
 
-                            <div className={`due-progress-bar vehicle-modal-progress ${progress ? "" : "empty-progress-bar"}`}>
+                            <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
                               <div
                                 className={`due-progress-bar-inner ${progress?.colorClass ?? ""}`}
                                 style={{ width: `${progress?.percentage ?? 0}%` }}
                               />
-                              <span className={`vehicle-modal-progress-label ${isOverdue ? "is-overdue" : ""}`}>
-                                {barLabel}
-                              </span>
+                            </div>
+
+                            <div
+                              className={`health-block__sub vehicle-modal-health-sub ${
+                                isDatePast(raw ?? "") ? "is-overdue" : ""
+                              }`}
+                            >
+                              {progress ? (
+                                <>
+                                  <span className="vehicle-due-span">Due:</span>{" "}
+                                  <b className="vehicle-due-dates">{dueText}</b>
+                                </>
+                              ) : (
+                                <span className="muted">Data not available</span>
+                              )}
                             </div>
                           </div>
                         );
@@ -1681,7 +1721,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <div className="vehicle-modal-streetview">
                     <div className="vehicle-modal-placeholder-title">Street view placeholder</div>
                     <div className="vehicle-modal-placeholder-sub">
-                      We’ll drop a street-view style image here next.
+                      We'll drop a street-view style image here next.
                     </div>
                   </div>
                 </div>
@@ -1689,7 +1729,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
             </div>
           </div>
         </div>
-      )}
+      })}
 
       {!isKioskMode && (
         <button
