@@ -1810,6 +1810,12 @@
   z-index: 1;
 }
 
+@media (min-width: 980px) and (max-width: 1300px) {
+  .highlight-figures {
+    display: none;
+  }
+}
+
 @media (max-width: 980px) {
   .vehicle-card--clickable {
     cursor: default;
@@ -1819,6 +1825,10 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .vehicles-wizard {
+    width: 100%;
+  }
+
   .highlight-figures {
     display: flex;
   }
