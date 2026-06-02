@@ -312,6 +312,42 @@ const formatDateSafe = (dateString?: string, fallback = "Not available") => {
   return `${day}/${month}/${year}`;
 };
 
+const titleCaseWords = (input: string) =>
+  input
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+
+const humanizeEnum = (input?: string) => {
+  const raw = (input ?? "").trim();
+  if (!raw) return "Not available";
+  // BI_FUEL -> Bi Fuel, ICE -> Ice
+  return titleCaseWords(raw.replace(/_/g, " ").toLowerCase());
+};
+
+const humanizeStatus = (input?: string) => {
+  const raw = (input ?? "").trim();
+  if (!raw) return "Not available";
+
+  // endOfJourney -> end Of Journey
+  const spaced = raw
+    .replace(/_/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+
+  // Title-case with common small-words lowercased (except first word)
+  const small = new Set(["of", "and", "the", "to", "in", "on", "at", "for", "from"]);
+  const words = spaced.split(" ").filter(Boolean);
+
+  return words
+    .map((w, idx) => {
+      const lower = w.toLowerCase();
+      if (idx !== 0 && small.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+};
+
 interface DueProgress {
   percentage: number;
   colorClass: string;
@@ -585,6 +621,13 @@ const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "ser
   { key: "LolerDueDate", label: "LOLER", kind: "standard" },
   { key: "AncillaryTwoDueDate", label: "Ancillary 2", kind: "standard" },
 ];
+
+const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
+  "FridgeDueDate",
+  "RflDueDate",
+  "LolerDueDate",
+  "TlWeightDueDate",
+]);
 
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
@@ -1062,6 +1105,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
   }
 
+  const isTrailer = String(selectedVehicle?.assetType ?? "").toLowerCase() === "trailer";
+
   return (
     <>
       <div 
@@ -1421,43 +1466,52 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   </h2>
 
                   <div className="vehicle-modal-actions">
-                    {/* VOR / Defects chips + Night Out toggle (same rule as cards) */}
-                    <div className="vehicle-card__chips">
-                      {!!selectedVehicle.IsVor && <span className="chip chip--vor">VOR</span>}
-                      {!!selectedVehicle.LiveDefects && (
-                        <span className="chip chip--defects">LIVE DEFECTS</span>
+                    <div className="vehicle-modal-actions-left">
+                      <div className="vehicle-card__chips">
+                        {!!selectedVehicle.IsVor && <span className="chip chip--vor">VOR</span>}
+                        {!!selectedVehicle.LiveDefects && <span className="chip chip--defects">LIVE DEFECTS</span>}
+                      </div>
+
+                      {(filterOption === "Services" || filterOption === "Night-Out") && (
+                        <label
+                          className="toggle-container"
+                          aria-label="Toggle night out"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!selectedVehicle.isNightOut}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
+                            }}
+                          />
+                          <span className="toggle-slider" />
+                        </label>
                       )}
                     </div>
 
-                    {(filterOption === "Services" || filterOption === "Night-Out") && (
-                      <label
-                        className="toggle-container"
-                        aria-label="Toggle night out"
-                        onClick={(e) => e.stopPropagation()}
+                    {/* close button with event type directly beneath */}
+                    <div className="vehicle-modal-actions-right">
+                      <button
+                        ref={modalCloseBtnRef}
+                        type="button"
+                        className="vehicle-modal-close"
+                        onClick={requestCloseVehicleModal}
+                        aria-label="Close vehicle details"
+                        title="Close"
                       >
-                        <input
-                          type="checkbox"
-                          checked={!!selectedVehicle.isNightOut}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
-                          }}
-                        />
-                        <span className="toggle-slider" />
-                      </label>
-                    )}
+                        ✕
+                      </button>
 
-                    <button
-                      ref={modalCloseBtnRef}
-                      type="button"
-                      className="vehicle-modal-close"
-                      onClick={requestCloseVehicleModal}
-                      aria-label="Close vehicle details"
-                      title="Close"
-                    >
-                      ✕
-                    </button>
+                      <div className="vehicle-modal-event">
+                        <span className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}>
+                          <span className="status-pill__icon">{renderStatusIcon(selectedVehicle.eventType)}</span>
+                          <span className="status-pill__text">{(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1492,7 +1546,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">Energy</span>
                       <span className="vehicle-modal-detail-value">
-                        {displayText((selectedVehicle as any).energyType, "Not available")}
+                        {humanizeEnum(selectedVehicle.energyType)}
                       </span>
                     </div>
 
@@ -1508,21 +1562,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">Status</span>
                       <span className="vehicle-modal-detail-value">
-                        {displayText((selectedVehicle as any).status, "Not available")}
-                      </span>
-                    </div>
-
-                    <div className="vehicle-modal-detail-row">
-                      <span className="vehicle-modal-detail-label">Event</span>
-                      <span className="vehicle-modal-detail-value">
-                        <span
-                          className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}
-                        >
-                          <span className="status-pill__icon">{renderStatusIcon(selectedVehicle.eventType)}</span>
-                          <span className="status-pill__text">
-                            {(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}
-                          </span>
-                        </span>
+                        {humanizeStatus(selectedVehicle.status)}
                       </span>
                     </div>
 
@@ -1532,72 +1572,63 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         {displayNumber((selectedVehicle as any).speed, " mph", "—")}
                       </span>
                     </div>
-
-                    <div className="vehicle-modal-detail-row">
-                      <span className="vehicle-modal-detail-label">Driver name</span>
-                      <span className="vehicle-modal-detail-value">
-                        {displayNumber(
-                          (selectedVehicle as any).driverName ?? (selectedVehicle as any).driverName,
-                          " h",
-                          "—"
-                        )}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
                 <div className="vehicle-modal-section">
-                  <div className="vehicle-modal-section-title">Compliance health</div>
+                  <div className="vehicle-modal-section-title">Vehicle health</div>
 
                   <div className="vehicle-modal-health">
-                    {MODAL_HEALTH_FIELDS.map((f) => {
-                      const raw = (selectedVehicle as any)[f.key] as string | undefined;
+                    {MODAL_HEALTH_FIELDS                 
+                      .filter((f) =>
+                        isTrailer ? true : !TRAILER_ONLY_HEALTH_KEYS.has(f.key)
+                      )
+                      .map((f) => {
+                        const raw = (selectedVehicle as any)[f.key] as string | undefined;
 
-                      const progress =
-                        f.kind === "service"
-                          ? getServiceDueProgress(raw ?? "")
-                          : getDueProgress(raw ?? "");
+                        const progress =
+                          f.kind === "service"
+                            ? getServiceDueProgress(raw ?? "")
+                            : getDueProgress(raw ?? "");
 
-                      const hint =
-                        f.kind === "service"
-                          ? (progress?.label ?? "")
-                          : (progress?.label ?? "");
+                        const dueText =
+                          f.kind === "service"
+                            ? (() => {
+                                const info = getServiceDueISOInfo(raw);
+                                return info ? formatDueISOWeekWithYear(info) : displayText(raw, "Not available");
+                              })()
+                            : formatDateSafe(raw, displayText(raw, "Not available"));
 
-                      const dueText =
-                        f.kind === "service"
-                          ? (() => {
-                              const info = getServiceDueISOInfo(raw);
-                              return info ? formatDueISOWeekWithYear(info) : displayText(raw, "Not available");
-                            })()
-                          : formatDateSafe(raw, displayText(raw, "Not available"));
+                        return (
+                          <div key={String(f.key)} className="health-block">
+                            <div className="health-block__row">
+                              <span className="health-block__label">{f.label}</span>
+                              <span className="health-block__hint">
+                                {progress?.label ?? ""}
+                              </span>
+                            </div>
 
-                      return (
-                        <div key={String(f.key)} className="health-block">
-                          <div className="health-block__row">
-                            <span className="health-block__label">{f.label}</span>
-                            <span className="health-block__hint">{hint}</span>
+                            <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
+                              <div
+                                className={`due-progress-bar-inner ${progress?.colorClass ?? ""}`}
+                                style={{ width: `${progress?.percentage ?? 0}%` }}
+                              />
+                            </div>
+
+                            <div className={`health-block__sub ${isDatePast(raw ?? "") ? "is-overdue" : ""}`}>
+                              {progress ? (
+                                <>
+                                  <span className="vehicle-due-span">Due:</span>{" "}
+                                  <b className="vehicle-due-dates">{dueText}</b>
+                                </>
+                              ) : (
+                                <span className="muted">Data not available</span>
+                              )}
+                            </div>
                           </div>
-
-                          <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
-                            <div
-                              className={`due-progress-bar-inner ${progress?.colorClass ?? ""}`}
-                              style={{ width: `${progress?.percentage ?? 0}%` }}
-                            />
-                          </div>
-
-                          <div className={`health-block__sub ${isDatePast(raw ?? "") ? "is-overdue" : ""}`}>
-                            {progress ? (
-                              <>
-                                <span className="vehicle-due-span">Due:</span>{" "}
-                                <b className="vehicle-due-dates">{dueText}</b>
-                              </>
-                            ) : (
-                              <span className="muted">Data not available</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
                   </div>
                 </div>
               </div>
@@ -1605,7 +1636,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
               {/* Right pane */}
               <div className="vehicle-modal-right">
                 <div className="vehicle-modal-section">
-                  <div className="vehicle-modal-section-title">Vehicle location</div>
+                  <div className="vehicle-modal-section-title">Location</div>
 
                   {Number.isFinite(selectedVehicle.latitude) && Number.isFinite(selectedVehicle.longitude) ? (
                     <div className="vehicle-modal-map">

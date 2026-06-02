@@ -544,6 +544,31 @@
 }
 
 /* Vehicle card modals */
+.vehicle-modal-body::-webkit-scrollbar {
+  width: 15px;
+}
+
+.vehicle-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vehicle-modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(73, 73, 73, 0.692);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+.vehicle-modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.vehicle-modal-body::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .vehicle-card--clickable {
   cursor: pointer;
 }
@@ -657,6 +682,30 @@
   outline-offset: 2px;
 }
 
+.vehicle-modal-actions {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.vehicle-modal-actions-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vehicle-modal-actions-right {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.vehicle-modal-event .status-pill {
+  transform: scale(0.95);
+  transform-origin: top right;
+}
+
 .vehicle-modal-body {
   display: grid;
   grid-template-columns: 1fr 1.15fr;
@@ -664,12 +713,18 @@
   padding: 16px 18px 18px;
   overflow: auto;
   max-height: calc(min(86vh, 920px) - 70px);
+  padding-bottom: 28px;
+  scroll-padding-bottom: 28px;
+  box-sizing: border-box;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(73, 73, 73, 0.692) transparent;
 }
 
 .vehicle-modal-left,
 .vehicle-modal-right {
   display: grid;
   gap: 14px;
+  padding-bottom: 8px;
 }
 
 .vehicle-modal-section {
