@@ -480,24 +480,22 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             ) : (
               <>
                 <h2>
-                  <>
                   <span className="dashboard-title-prefix">{title.prefix}</span>
                   {title.suffix && (
                     <span className="dashboard-title-suffix">
                       {title.suffix}
                     </span>
                   )}
-                  </>
-                </h2>
                 
-                {(
-                  filterOption === "Services" ||
-                  filterOption === "Night-Out"
-                ) && (
-                  <div className="dashboard-depots-indicator">
-                    ({depotHeaderLabel})
-                  </div>
-                )}
+                  {(
+                    filterOption === "Services" ||
+                    filterOption === "Night-Out"
+                  ) && (
+                    <div className="dashboard-depots-indicator">
+                      {" "}({depotHeaderLabel})
+                    </div>
+                  )}
+                </h2>
               </>
             )}
         </div>     

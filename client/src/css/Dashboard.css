@@ -75,13 +75,13 @@
 }
 
 .dashboard-depots-indicator {
-  margin-left: auto;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(17, 24, 39, 0.45);
-  white-space: nowrap;
+  display: inline;
+  vertical-align: baseline;
 }
 
 .dashboard-content {
