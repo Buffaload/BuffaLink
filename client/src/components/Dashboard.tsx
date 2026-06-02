@@ -115,6 +115,7 @@ const renderStatusIcon = (rawType?: string) => {
 const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
   const [isoWeek, setIsoWeek] = useState(() => getISOWeek());
   const [isoWeekYear, setIsoWeekYear] = useState(() => getISOWeekYear());
@@ -197,6 +198,18 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     setIsKioskMode((prevMode) => !prevMode);
   };
 
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  const handleSidebarToggle = () => {
+    if (isMobile) {
+      // Mobile: fully show/hide sidebar (no collapsed rail)
+      setIsMobileSidebarOpen(v => !v);
+      return;
+    }
+    // Desktop: collapse/expand rail
+    setIsCollapsed(v => !v);
+  };
+
   useEffect(() => {
     // If no token, redirect to login immediately
     if (!token) {
@@ -204,13 +217,12 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     }
   }, [token, handleLogout]);
 
-  const SIDEBAR_WIDTH = 260;
   const HEADER_HEIGHT = isKioskMode ? 80 : 120;
 
   const contentOverlayStyle: React.CSSProperties = {
     position: "fixed",
     top: HEADER_HEIGHT,
-    left: SIDEBAR_WIDTH,
+    left: "var(--sidebar-current-width)",
     right: 0,
     bottom: 0,
   };
@@ -468,13 +480,19 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             filterOption={filterOption}
             handleLogout={handleLogout}  
             isCollapsed={isCollapsed}
+            isMobileOpen={isMobileSidebarOpen}
+            onMobileRequestClose={() => setIsMobileSidebarOpen(false)}
           />
-
+  
           <button
             type="button"
-            className={`sidebar-collapse-toggle ${isCollapsed ? "is-collapsed" : ""}`}
-            onClick={() => setIsCollapsed(v => !v)}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`sidebar-collapse-toggle ${!isMobile && isCollapsed ? "is-collapsed" : ""}`}
+            onClick={handleSidebarToggle}
+            aria-label={
+              isMobile
+                ? (isMobileSidebarOpen ? "Close sidebar" : "Open sidebar")
+                : (isCollapsed ? "Expand sidebar" : "Collapse sidebar")
+            }
           >
             <span className="sidebar-collapse-icon" aria-hidden="true" />
           </button>

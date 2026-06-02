@@ -112,7 +112,7 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),
     0 6px 14px rgba(0, 0, 0, 0.35);
   cursor: pointer;
-  z-index: 5000;
+  z-index: 10000;
   transition:
     background 160ms ease,
     left var(--sidebar-motion-duration) var(--sidebar-motion-ease);
@@ -716,7 +716,12 @@
 
   /* Show toggle button on mobile */
   .hamburger-menu {
-    display: flex;
+    display: none !important;
+  }
+
+  /* Reposition toggle button on mobile */
+  .sidebar-collapse-toggle {
+    left: 0 !important;
   }
 
   /* Hide or display the sidebar toggle */

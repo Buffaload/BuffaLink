@@ -205,10 +205,11 @@ const Sidebar: React.FC<{
   filterOption: string;
   handleLogout: () => void;
   isCollapsed: boolean;
-}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed }) => {
+  isMobileOpen: boolean;
+  onMobileRequestClose: () => void;
+}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed, isMobileOpen, onMobileRequestClose }) => {
   const [userRole, setUserRole] = useState<string>("");
-  const [activeButton, setActiveButton] = useState<string>("HGVs"); // Default active button
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // State to toggle sidebar
+  const [activeButton, setActiveButton] = useState<string>("HGVs");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
   const [arrivalTooltipOpen, setArrivalTooltipOpen] = useState(false);
   const [arrivalTooltipItems, setArrivalTooltipItems] = useState<CriticalArrivalItem[]>([]);
@@ -427,7 +428,7 @@ const Sidebar: React.FC<{
       cancelAnimationFrame(raf2);
       clearTimeout(timeout);
     };
-  }, [arrivalTooltipOpen, isSidebarOpen, effectiveCollapsedDesktop, isHoverExpanded]);
+  }, [arrivalTooltipOpen, isMobileOpen, effectiveCollapsedDesktop, isHoverExpanded]);
 
   // Reposition tooltip when sidebar layout changes (submenu open/close)
   useEffect(() => {
@@ -521,18 +522,13 @@ const Sidebar: React.FC<{
     onDepotChange(updatedDepots);
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
-  };
-
   const location = useLocation();
 
   useEffect(() => {
     // Only close automatically on small viewports
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
-    if (isMobile && isSidebarOpen) {
-      setIsSidebarOpen(false);
+    if (isMobile && isMobileOpen) {
+      onMobileRequestClose();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
@@ -547,21 +543,11 @@ const Sidebar: React.FC<{
     });
   };
 
+
   return (
     <>
-      <button
-        className={`hamburger-menu ${isSidebarOpen ? "open" : ""}`}
-        onClick={toggleSidebar}
-        aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
-        aria-expanded={isSidebarOpen}
-      >
-        <span />
-        <span />
-        <span />
-      </button>
-
       <div 
-        className={`sidebar ${isSidebarOpen ? "open" : ""} ${effectiveCollapsedDesktop ? "is-collapsed" : ""}`}
+        className={`sidebar ${isMobileOpen ? "open" : ""} ${effectiveCollapsedDesktop ? "is-collapsed" : ""}`}
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
       >
