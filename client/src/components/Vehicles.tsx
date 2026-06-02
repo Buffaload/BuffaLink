@@ -172,6 +172,21 @@ function getServiceDueCardClass(dateString?: string): string {
   return "";
 }
 
+const getServiceSeverityProgressClass = (dateString?: string) => {
+  const severity = getServiceDueCardClass(dateString);
+
+  switch (severity) {
+    case "pastel-red":
+      return "progress-red";     // due this ISO week or overdue
+    case "pastel-orange":
+      return "progress-orange";  // due next ISO week
+    case "pastel-yellow":
+      return "progress-yellow";  // due in 2 ISO weeks
+    default:
+      return "progress-green";   // anything beyond
+  }
+};
+
 function formatWeeksUntilDueLabel(info: ServiceDueISOInfo): string {
   if (info.isOverdue) return "OVERDUE";
   if (info.weekDiff === 0) return "Due this week";
@@ -1401,7 +1416,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                         <div className={`due-progress-bar ${serviceProgress ? "" : "empty-progress-bar"}`}>
                           <div
-                            className={`due-progress-bar-inner ${serviceProgress?.colorClass ?? ""}`}
+                            className={`due-progress-bar-inner ${getServiceSeverityProgressClass(vehicle.ServiceDueDate)}`}
                             style={{ width: `${serviceProgress?.percentage ?? 0}%` }}
                           />
                         </div>
@@ -1675,7 +1690,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                             <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
                               <div
-                                className={`due-progress-bar-inner ${progress?.colorClass ?? ""}`}
+                                className={`due-progress-bar-inner ${getServiceSeverityProgressClass(raw)}`}
                                 style={{ width: `${progress?.percentage ?? 0}%` }}
                               />
                             </div>
