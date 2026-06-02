@@ -39,6 +39,20 @@ const formatRegistration = (value?: string) => {
   return reg;
 };
 
+const LOCATION_DEPOTS_KEY = "buffalink:locationSelectedDepots";
+const LOCATION_DEPOTS_EVENT = "buffalink:locationDepotsChanged";
+
+const DEPOT_CODE: Record<string, string> = {
+  Ellington: "ELL",
+  Crewe: "CRE",
+  Coventry: "COV",
+  Skelmersdale: "SKE",
+  Bellshill: "BEL",
+  Avonmouth: "AVO",
+};
+
+const DEPOT_ORDER = ["Ellington", "Crewe", "Coventry", "Skelmersdale", "Bellshill", "Avonmouth"];
+
 const renderStatusIcon = (rawType?: string) => {
   const type = (rawType ?? "unknown").toLowerCase();
 
@@ -124,11 +138,11 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const [tooltipArrowX, setTooltipArrowX] = useState(24);
+  const [locationTick, setLocationTick] = useState(0);
   const token = localStorage.getItem("token");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
   type SortOrder = "asc" | "desc";
   const SERVICES_SORT_KEY = "servicesDueSortOrder";
-
   const [servicesSortOrder, setServicesSortOrder] = useState<SortOrder>(() => {
     const saved = localStorage.getItem(SERVICES_SORT_KEY);
     return saved === "desc" ? "desc" : "asc";
@@ -336,6 +350,12 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [weekTooltipOpen]);
 
+  useEffect(() => {
+    const onChange = () => setLocationTick(t => t + 1);
+    window.addEventListener(LOCATION_DEPOTS_EVENT, onChange);
+    return () => window.removeEventListener(LOCATION_DEPOTS_EVENT, onChange);
+  }, []);
+
   type VehicleForWeekTooltip = {
     assetName: string;
     assetRegistration?: string;
@@ -414,25 +434,62 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
   const title = filterTitles[filterOption] ?? filterTitles.default;
   
+  const depotHeaderLabel = useMemo(() => {
+    // locationTick is used only to trigger recompute when selection changes
+    void locationTick;
+
+    let selected: string[] = [];
+    try {
+      const raw = localStorage.getItem(LOCATION_DEPOTS_KEY);
+      selected = raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      selected = [];
+    }
+
+    // If nothing stored yet, treat as ALL (portal defaults to all selected)
+    if (!selected || selected.length === 0) return "ALL";
+
+    // Normalize + order
+    const normalized = DEPOT_ORDER.filter(d => selected.includes(d));
+
+    // If all depots selected -> ALL
+    if (normalized.length === DEPOT_ORDER.length) return "ALL";
+
+    // Map to codes and join
+    const codes = normalized.map(d => DEPOT_CODE[d] ?? d.slice(0, 3).toUpperCase());
+    return codes.join(", ");
+  }, [locationTick]);
+
   return (
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>
       <div className={`app-header ${isKioskMode ? "app-header-on" : "app-header-off"}`} />
       <div className={`dashboard-header ${isKioskMode ? "header-on" : "header-off"}`}>
         <div className="dashboard-title">
-          {isKioskMode ? (
-            <img src="/fleetpulse-logo-black.png" alt="Logo" className="kiosk-logo" />
-          ) : (
-            <h2>
+            {isKioskMode ? (
+              <img src="/fleetpulse-logo-black.png" alt="Logo" className="kiosk-logo" />
+            ) : (
               <>
-              <span className="dashboard-title-prefix">{title.prefix}</span>
-              {title.suffix && (
-                <span className="dashboard-title-suffix">
-                  {title.suffix}
-                </span>
-              )}
+                <h2>
+                  <>
+                  <span className="dashboard-title-prefix">{title.prefix}</span>
+                  {title.suffix && (
+                    <span className="dashboard-title-suffix">
+                      {title.suffix}
+                    </span>
+                  )}
+                  </>
+                </h2>
+                
+                {(
+                  filterOption === "Services" ||
+                  filterOption === "Night-Out"
+                ) && (
+                  <div className="dashboard-depots-indicator">
+                    ({depotHeaderLabel})
+                  </div>
+                )}
               </>
-            </h2>
-          )}
+            )}
         </div>     
         <div className="dashboard-header-right">
           {!isKioskMode && (

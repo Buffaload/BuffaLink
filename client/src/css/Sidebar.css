@@ -33,7 +33,7 @@
   z-index: 1000;
   overflow: hidden;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15); /* Drop shadow */
-  z-index: 1000;
+  z-index: 10000;
   transition: 
     transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
     width var(--sidebar-motion-duration) var(--sidebar-motion-ease);

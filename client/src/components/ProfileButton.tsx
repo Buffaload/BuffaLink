@@ -65,6 +65,8 @@ const normalizeDisplayName = (username: string): string => {
 
 const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
 const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
+const LOCATION_DEPOTS_KEY = "buffalink:locationSelectedDepots";
+const LOCATION_DEPOTS_EVENT = "buffalink:locationDepotsChanged";
 
 const ProfileButton: React.FC<ProfileButtonProps> = ({
   username,
@@ -108,6 +110,14 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   );
 
   const allSelected = selectedDepots.size === DEPOTS.length;
+
+  useEffect(() => {
+    // Persist as an array of depot names (e.g. ["Ellington", "Crewe"])
+    const arr = Array.from(selectedDepots);
+    localStorage.setItem(LOCATION_DEPOTS_KEY, JSON.stringify(arr));
+    // Notify listeners (Dashboard header) to refresh immediately
+    window.dispatchEvent(new Event(LOCATION_DEPOTS_EVENT));
+  }, [selectedDepots]);
 
   const setAll = () => {
     // "All" cannot be deselected; clicking it when already selected does nothing.

@@ -116,7 +116,7 @@
     0 12px 28px rgba(0, 0, 0, 0.35),
     0 2px 0 rgba(255, 255, 255, 0.04) inset;
   color: #fff;
-  z-index: 5000;
+  z-index: 50000;
 }
 
 .admin-portal-header {

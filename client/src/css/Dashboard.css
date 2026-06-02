@@ -42,7 +42,7 @@
   position: fixed;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   left: var(--sidebar-current-width);
   width: calc(100% - var(--sidebar-current-width) - 55px);
   font-size: small;
@@ -56,6 +56,11 @@
   margin-top: -125px;
 }
 
+.dashboard-header h2 {
+  margin: 0;
+  white-space: nowrap;
+}
+
 .dashboard-title {
   margin-left: 30px;
 }
@@ -67,6 +72,16 @@
 
 .dashboard-title-suffix {
   color: #28a745;
+}
+
+.dashboard-depots-indicator {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(17, 24, 39, 0.45);
+  white-space: nowrap;
 }
 
 .dashboard-content {
