@@ -461,16 +461,18 @@
 
   .map-sidebar-link,
   .kiosk-toggle-wrapper,
+  .dashboard-header-right,
   .iso-week-banner,
-  .vehicles-wizard {
+  .wizard-pill,
+  .wizard-search {
     display: none !important;
   }
 }
 
 @media screen and (max-width: 769px) {
   .dashboard-header {
+    left: 0;
     width: 100%;
-    margin-left: 80px;
     padding-top: 20px;
     flex-direction: column;
     align-items: flex-start;
@@ -478,7 +480,7 @@
   }
 
   .dashboard-title {
-    margin-top: -5px;
+    margin-top: -15px;
   }
 
   .dashboard-title-suffix {

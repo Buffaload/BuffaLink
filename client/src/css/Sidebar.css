@@ -636,96 +636,46 @@
   text-overflow: ellipsis;
 }
 
-/* Sidebar toggle button for mobile */
-.hamburger-menu {
-  display: none;
-  position: fixed;
-  top: 22px;
-  left: 18px;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  cursor: pointer;
-  z-index: 1100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Sync with sidebar motion */
-  transition:
-    transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
-    background-color var(--sidebar-motion-duration) var(--sidebar-motion-ease),
-    border-color var(--sidebar-motion-duration) var(--sidebar-motion-ease);
-  will-change: transform;
-}
-
-/* Slide the button with the sidebar so it feels attached */
-.hamburger-menu.open {
-  /* Move to sit near the sidebar’s right edge */
-  transform: translateX(calc(var(--sidebar-width)));
-}
-
-/* Hamburger bars */
-.hamburger-menu span {
-  position: absolute;
-  width: 22px;
-  height: 2px;
-  background-color: rgba(11, 28, 45, 0.78);
-  border-radius: 2px;
-  transition: 
-    transform var(--sidebar-motion-duration) var(--sidebar-motion-ease),
-    opacity 200ms ease;
-}
-
-/* Top bar */
-.hamburger-menu span:nth-child(1) {
-  transform: translateY(-7px);
-}
-/* Middle bar */
-.hamburger-menu span:nth-child(2) {
-  opacity: 1;
-}
-/* Bottom bar */
-.hamburger-menu span:nth-child(3) {
-  transform: translateY(7px);
-}
-
-/* Open state → morph to X */
-.hamburger-menu.open span:nth-child(1) {
-  transform: rotate(45deg);
-}
-.hamburger-menu.open span:nth-child(2) {
-  opacity: 0;
-}
-.hamburger-menu.open span:nth-child(3) {
-  transform: rotate(-45deg);
-}
-
 /* Mobile specific adjustments */
 @media screen and (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%); /* Sidebar hidden by default */
+    transform: translateX(-100%);
   }
 
   .sidebar.open {
-    transform: translateX(0); /* Slide in the sidebar on mobile */
-  }
-
-  /* Show toggle button on mobile */
-  .hamburger-menu {
-    display: none !important;
+    transform: translateX(0);
   }
 
   /* Reposition toggle button on mobile */
-  .sidebar-collapse-toggle {
-    left: 0 !important;
+  .sidebar-collapse-toggle.is-mobile-closed {
+    left: 0;
+  }
+
+  .sidebar-collapse-toggle.is-mobile-open {
+    left: var(--sidebar-current-width);
+  }
+
+  .sidebar-collapse-toggle.is-mobile-closed .sidebar-collapse-icon {
+    transform: rotate(180deg) translateX(1px);
+  }
+
+  .sidebar-collapse-toggle.is-mobile-open .sidebar-collapse-icon {
+    transform: translateX(1px);
   }
 
   /* Hide or display the sidebar toggle */
   .sidebar-toggle {
+    display: none;
+  }
+
+  /* Wizard */
+  .vehicles-wizard {
+    width: 80%;
+    left: 0;
+  }
+
+  /* Notifications tooltip */
+  .sidebar-dark-tooltip--compact {
     display: none;
   }
 
@@ -735,10 +685,6 @@
 }
 
 @media screen and (min-width: 769px) {
-  .hamburger-menu {
-    display: none;
-  }
-
   .dashboard-content {
     margin-left: calc(var(--sidebar-current-width) + 20px);
     transition: margin-left var(--sidebar-motion-duration) var(--sidebar-motion-ease);

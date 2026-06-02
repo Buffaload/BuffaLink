@@ -1411,6 +1411,10 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .highlight-figures {
+    display: flex;
+  }
+  
   .depots-info-banner,
   .critical-info-banner {
     left: 50vw;

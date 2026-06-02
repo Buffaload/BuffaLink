@@ -486,7 +486,12 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   
           <button
             type="button"
-            className={`sidebar-collapse-toggle ${!isMobile && isCollapsed ? "is-collapsed" : ""}`}
+            className={[
+              "sidebar-collapse-toggle",
+              isMobile
+                ? (isMobileSidebarOpen ? "is-mobile-open" : "is-mobile-closed")
+                : (isCollapsed ? "is-collapsed" : ""),
+            ].join(" ").trim()}
             onClick={handleSidebarToggle}
             aria-label={
               isMobile
