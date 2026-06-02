@@ -212,7 +212,17 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     setIsKioskMode((prevMode) => !prevMode);
   };
 
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  const [isMobile, setIsMobile] = useState(
+    window.matchMedia("(max-width: 768px)").matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handler = () => setIsMobile(mq.matches);
+
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const handleSidebarToggle = () => {
     if (isMobile) {
@@ -356,6 +366,32 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     return () => window.removeEventListener(LOCATION_DEPOTS_EVENT, onChange);
   }, []);
 
+  const depotHeaderLabel = useMemo(() => {
+    // locationTick is used only to trigger recompute when selection changes
+    void locationTick;
+
+    let selected: string[] = [];
+    try {
+      const raw = localStorage.getItem(LOCATION_DEPOTS_KEY);
+      selected = raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      selected = [];
+    }
+
+    // If nothing stored yet, treat as ALL (portal defaults to all selected)
+    if (!selected || selected.length === 0) return "ALL";
+
+    // Normalize + order
+    const normalized = DEPOT_ORDER.filter(d => selected.includes(d));
+
+    // If all depots selected -> ALL
+    if (normalized.length === DEPOT_ORDER.length) return "ALL";
+
+    // Map to codes and join
+    const codes = normalized.map(d => DEPOT_CODE[d] ?? d.slice(0, 3).toUpperCase());
+    return codes.join(", ");
+  }, [locationTick]);
+
   type VehicleForWeekTooltip = {
     assetName: string;
     assetRegistration?: string;
@@ -433,32 +469,6 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   }
 
   const title = filterTitles[filterOption] ?? filterTitles.default;
-  
-  const depotHeaderLabel = useMemo(() => {
-    // locationTick is used only to trigger recompute when selection changes
-    void locationTick;
-
-    let selected: string[] = [];
-    try {
-      const raw = localStorage.getItem(LOCATION_DEPOTS_KEY);
-      selected = raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      selected = [];
-    }
-
-    // If nothing stored yet, treat as ALL (portal defaults to all selected)
-    if (!selected || selected.length === 0) return "ALL";
-
-    // Normalize + order
-    const normalized = DEPOT_ORDER.filter(d => selected.includes(d));
-
-    // If all depots selected -> ALL
-    if (normalized.length === DEPOT_ORDER.length) return "ALL";
-
-    // Map to codes and join
-    const codes = normalized.map(d => DEPOT_CODE[d] ?? d.slice(0, 3).toUpperCase());
-    return codes.join(", ");
-  }, [locationTick]);
 
   return (
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>
