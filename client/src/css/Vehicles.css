@@ -1826,7 +1826,7 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .vehicles-wizard {
-    width: 100%;
+    width: 90%;
   }
 
   .highlight-figures {
