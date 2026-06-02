@@ -185,7 +185,7 @@ export const matchesFilter = (
                 // "Known location" rule stays consistent with current dashboard:
                 // Volvo fix makes locationName non-null; Michelin already sets it when known.
                 !!v.locationName &&
-                timeStoppedMs > 1.5 * 60 * 60 * 1000 &&
+                timeStoppedMs > 1 * 60 * 60 * 1000 &&
                 v.locationGroupName !== "Buffaload" &&
                 v.locationGroupName !== "Maintenance" &&
                 !isTipper(v) &&
@@ -196,7 +196,7 @@ export const matchesFilter = (
             return (
                 v.assetType === "HGV" &&
                 (v.locationGroupName === "Services and Truckstops" || !v.locationGroupName) &&
-                timeStoppedMs > 5 * 60 * 1000 &&
+                timeStoppedMs > 15 * 60 * 1000 &&
                 eventType !== "driving" &&
                 v.locationGroupName !== "Buffaload" &&
                 v.locationGroupName !== "Maintenance" &&

@@ -165,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const filterTitles: Record<string, DashboardTitle> = {
     HGVs: {
       prefix: "HGVs ",
-      suffix: "- stopped >1.5 hrs",
+      suffix: "- stopped >1 hr",
     },
     Services: {
       prefix: "Services ",
