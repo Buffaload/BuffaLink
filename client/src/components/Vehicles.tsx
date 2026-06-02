@@ -326,6 +326,15 @@ const humanizeEnum = (input?: string) => {
   return titleCaseWords(raw.replace(/_/g, " ").toLowerCase());
 };
 
+const humanizeFuel = (fuel?: string[] | string) => {
+  if (!fuel) return "Not available";
+  if (Array.isArray(fuel)) {
+    if (fuel.length === 0) return "Not available";
+    return fuel.map((f) => humanizeEnum(f)).join(", ");
+  }
+  return humanizeEnum(fuel);
+};
+
 const humanizeStatus = (input?: string) => {
   const raw = (input ?? "").trim();
   if (!raw) return "Not available";
@@ -619,7 +628,6 @@ const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "ser
   { key: "FridgeDueDate", label: "Fridge", kind: "standard" },
   { key: "RflDueDate", label: "FGAS", kind: "standard" },
   { key: "LolerDueDate", label: "LOLER", kind: "standard" },
-  { key: "AncillaryTwoDueDate", label: "Ancillary 2", kind: "standard" },
 ];
 
 const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
@@ -1504,19 +1512,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       >
                         ✕
                       </button>
-
-                      <div className="vehicle-modal-event">
-                        <span className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}>
-                          <span className="status-pill__icon">{renderStatusIcon(selectedVehicle.eventType)}</span>
-                          <span className="status-pill__text">{(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}</span>
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="vehicle-modal-subtitle">
-                  {displayText(selectedVehicle.assetGroupName, "Vehicle type not available")}
+                  <span className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}>
+                    <span className="status-pill__icon">{renderStatusIcon(selectedVehicle.eventType)}</span>
+                    <span className="status-pill__text">{(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -1553,9 +1557,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">Fuel</span>
                       <span className="vehicle-modal-detail-value">
-                        {Array.isArray(selectedVehicle.fuelType) && selectedVehicle.fuelType.length > 0
-                          ? selectedVehicle.fuelType.join(", ")
-                          : "Not available"}
+                        {humanizeFuel(selectedVehicle.fuelType)}
                       </span>
                     </div>
 
@@ -1570,6 +1572,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       <span className="vehicle-modal-detail-label">Speed</span>
                       <span className="vehicle-modal-detail-value">
                         {displayNumber((selectedVehicle as any).speed, " mph", "—")}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Vehicle type</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayText(selectedVehicle.assetGroupName, "Not available")}
                       </span>
                     </div>
                   </div>
@@ -1599,6 +1608,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
                               })()
                             : formatDateSafe(raw, displayText(raw, "Not available"));
 
+                        const isOverdue = isDatePast(raw ?? "");
+                        const barLabel = progress
+                          ? `Due: ${dueText}`
+                          : "Data not available";
+
                         return (
                           <div key={String(f.key)} className="health-block">
                             <div className="health-block__row">
@@ -1608,22 +1622,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
                               </span>
                             </div>
 
-                            <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
+                            <div className={`due-progress-bar vehicle-modal-progress ${progress ? "" : "empty-progress-bar"}`}>
                               <div
                                 className={`due-progress-bar-inner ${progress?.colorClass ?? ""}`}
                                 style={{ width: `${progress?.percentage ?? 0}%` }}
                               />
-                            </div>
-
-                            <div className={`health-block__sub ${isDatePast(raw ?? "") ? "is-overdue" : ""}`}>
-                              {progress ? (
-                                <>
-                                  <span className="vehicle-due-span">Due:</span>{" "}
-                                  <b className="vehicle-due-dates">{dueText}</b>
-                                </>
-                              ) : (
-                                <span className="muted">Data not available</span>
-                              )}
+                              <span className={`vehicle-modal-progress-label ${isOverdue ? "is-overdue" : ""}`}>
+                                {barLabel}
+                              </span>
                             </div>
                           </div>
                         );
