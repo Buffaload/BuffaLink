@@ -1125,6 +1125,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }
 
   const isTrailer = String(selectedVehicle?.assetType ?? "").toLowerCase() === "trailer";
+  const modalHeaderSeverityClass =
+    selectedVehicle
+      ? getServiceDueCardClass(selectedVehicle.ServiceDueDate)
+      : "";
 
   return (
     <>
@@ -1450,9 +1454,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         </div>
       </div>
 
-      {(isVehicleModalOpen || isVehicleModalClosing) && selectedVehicle && (() => {
-        const modalHeaderSeverityClass =
-          getServiceDueCardClass(selectedVehicle.ServiceDueDate);
+      {(isVehicleModalOpen || isVehicleModalClosing) && selectedVehicle && (
         <div
           className={`vehicle-modal-overlay ${
             isVehicleModalOpen && !isVehicleModalClosing ? "is-open" : "is-closed"
@@ -1729,7 +1731,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
             </div>
           </div>
         </div>
-      })()}
+      )}
 
       {!isKioskMode && (
         <button
