@@ -341,3 +341,14 @@
 .leaflet-popup-tip {
   background-color: white !important;
 }
+
+@media screen and (max-width: 769px) {
+  .kiosk-figures--row {
+    margin-top: -20px;
+    margin-right: -30px;
+  }
+
+  .figure-pill--kiosk {
+    display: none;
+  }
+}

@@ -273,6 +273,8 @@
 @media (max-width: 768px) {
   .vehicles-wizard {
     gap: 8px;
+    width: 80%;
+    left: 0;
   }
 
   .wizard-search {

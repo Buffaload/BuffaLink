@@ -668,12 +668,6 @@
     display: none;
   }
 
-  /* Wizard */
-  .vehicles-wizard {
-    width: 80%;
-    left: 0;
-  }
-
   /* Notifications tooltip */
   .sidebar-dark-tooltip--compact {
     display: none;
