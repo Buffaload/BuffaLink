@@ -285,7 +285,7 @@
 
 @media (max-width: 1400px) {
   .highlight-figures {
-    display: none;
+    justify-content: flex-end;
   }
 }
 
@@ -708,12 +708,17 @@
 }
 
 .modal-subtitle-row-right {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.modal-subtitle-row-right .chip--vor {
+  margin-right: 6px;
 }
 
 .vehicle-modal-actions {
