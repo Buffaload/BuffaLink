@@ -59,6 +59,7 @@
 .dashboard-header h2 {
   margin: 0;
   white-space: nowrap;
+  padding-top: 20px;
 }
 
 .dashboard-title {
