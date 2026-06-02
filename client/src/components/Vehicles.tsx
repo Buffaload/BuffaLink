@@ -45,6 +45,17 @@ interface Vehicle {
   latitude?: number;
   longitude?: number;
   temperature?: number;
+  assetVin?: string;
+  energyType?: string;
+  fuelType?: string[];
+  status?: string;
+  speed?: number;
+  engineTotalHours?: number;
+  engineHours?: number;
+  odometer?: number;
+  totalVehicleDistance?: number;
+  driverName?: string;
+  driverGroupName?: string;
 }
 
 interface VehiclesProps {
@@ -271,6 +282,34 @@ const getProgressColorClass = (percentage: number) => {
 const cleanLocationLabel = (value?: string | null): string => {
   if (!value) return "UNKNOWN LOCATION";
   return value.replace(/_\d+$/, "");
+};
+
+const isNilLike = (v: any) =>
+  v == null ||
+  v === "" ||
+  (Array.isArray(v) && v.length === 0) ||
+  v === "N/A" ||
+  (typeof v === "string" && v.trim().toUpperCase() === "N/A");
+
+const displayText = (v: any, fallback = "Not available") => {
+  if (isNilLike(v)) return fallback;
+  if (typeof v === "string") return v.trim();
+  return String(v);
+};
+
+const displayNumber = (v: any, suffix = "", fallback = "—") => {
+  if (isNilLike(v) || !Number.isFinite(Number(v))) return fallback;
+  const n = Number(v);
+  return `${n}${suffix}`;
+};
+
+const formatDateSafe = (dateString?: string, fallback = "Not available") => {
+  const d = parseDateSafe(dateString);
+  if (!d) return fallback;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 
 interface DueProgress {
@@ -533,6 +572,20 @@ const getCriticalDepotLabel = (v: {
   return tryMatch(addr) ?? tryMatch(loc);
 };
 
+const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "service" | "standard" }> = [
+  { key: "ServiceDueDate", label: "Service", kind: "service" },
+  { key: "MotDueDate", label: "MOT", kind: "standard" },
+  { key: "BrakeDueDate", label: "Brake test", kind: "standard" },
+  { key: "AncillaryOneDueDate", label: "Loaded brake test", kind: "standard" },
+  { key: "TlWeightDueDate", label: "Weight test", kind: "standard" },
+  { key: "TachoDueDate", label: "Tacho", kind: "standard" },
+  { key: "TailDueDate", label: "Tail lift", kind: "standard" },
+  { key: "FridgeDueDate", label: "Fridge", kind: "standard" },
+  { key: "RflDueDate", label: "FGAS", kind: "standard" },
+  { key: "LolerDueDate", label: "LOLER", kind: "standard" },
+  { key: "AncillaryTwoDueDate", label: "Ancillary 2", kind: "standard" },
+];
+
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
@@ -545,6 +598,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
   void timelineTick;
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleWithSince | null>(null);
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [isVehicleModalClosing, setIsVehicleModalClosing] = useState(false);
+  const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToTop = () => {
@@ -583,6 +641,46 @@ const Vehicles: React.FC<VehiclesProps> = ({
     window.addEventListener("buffalink:timelineChanged", onTimelineChanged);
     return () => window.removeEventListener("buffalink:timelineChanged", onTimelineChanged);
   }, []);
+
+  const openVehicleModal = (vehicle: VehicleWithSince) => {
+    lastActiveElementRef.current = document.activeElement as HTMLElement | null;
+    setSelectedVehicle(vehicle);
+    setIsVehicleModalOpen(true);
+    setIsVehicleModalClosing(false);
+  };
+
+  const requestCloseVehicleModal = () => {
+    // allow CSS transition to animate out
+    setIsVehicleModalClosing(true);
+    window.setTimeout(() => {
+      setIsVehicleModalOpen(false);
+      setIsVehicleModalClosing(false);
+      setSelectedVehicle(null);
+      lastActiveElementRef.current?.focus?.();
+    }, 180);
+  };
+
+  useEffect(() => {
+    if (!isVehicleModalOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") requestCloseVehicleModal();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+
+    // lock background scroll
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    // focus close button for accessibility
+    window.setTimeout(() => modalCloseBtnRef.current?.focus(), 0);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isVehicleModalOpen]);
 
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
@@ -1135,9 +1233,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     key={vehicle.assetName}
                     data-vor={isVor ? "true" : "false"}
                     data-nightout={vehicle.isNightOut ? "true" : "false"}
-                    className={`vehicle-card ${vorSkin} ${
+                    className={`vehicle-card vehicle-card--clickable ${vorSkin} ${
                       vehicle.isNightOut ? "night-out" : ""
-                    } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className
+                    } ${BackgroundColourClass}  ${animationClass}`} //Adding background colour to the className         
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open details for ${displayId}`}
+                    onClick={() => openVehicleModal(vehicle)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openVehicleModal(vehicle);
+                      }
+                    }}
                   >
 
                     {/* Top / Header */}                 
@@ -1157,11 +1265,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         </div>
 
                         {(filterOption === "Services" || filterOption === "Night-Out") && (
-                          <label className="toggle-container" aria-label="Toggle night out">
+                          <label 
+                            className="toggle-container" 
+                            aria-label="Toggle night out"
+                            onClick={(e) => e.stopPropagation()}  
+                          >
                             <input
                               type="checkbox"
                               checked={!!vehicle.isNightOut}
-                              onChange={() => {
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                e.stopPropagation();
                                 if (hasAssetName(vehicle)) toggleNightOut(vehicle);
                               }}
                             />
@@ -1271,6 +1385,274 @@ const Vehicles: React.FC<VehiclesProps> = ({
           <p className="vehicle-disclaimer">Vehicle data is fetched every 30 seconds.</p>
         </div>
       </div>
+
+      {(isVehicleModalOpen || isVehicleModalClosing) && selectedVehicle && (
+        <div
+          className={`vehicle-modal-overlay ${
+            isVehicleModalOpen && !isVehicleModalClosing ? "is-open" : "is-closed"
+          }`}
+          onMouseDown={(e) => {
+            // close if click on the overlay (not the panel)
+            if (e.target === e.currentTarget) requestCloseVehicleModal();
+          }}
+          aria-hidden={!isVehicleModalOpen}
+        >
+          <div
+            className={`vehicle-modal-panel ${
+              isVehicleModalOpen && !isVehicleModalClosing ? "is-open" : "is-closed"
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Vehicle details"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="vehicle-modal-header">
+              <div className="vehicle-modal-title">
+                <div className="vehicle-modal-title-row">
+                  <h2 className="vehicle-modal-reg">
+                    {(() => {
+                      const isTrailer = (selectedVehicle.assetType ?? "").toLowerCase() === "trailer";
+                      const displayId = isTrailer
+                        ? (selectedVehicle.assetName ?? selectedVehicle.assetRegistration ?? "")
+                        : (selectedVehicle.assetRegistration ?? selectedVehicle.assetName ?? "");
+                      return isTrailer ? displayId : formatRegistration(displayId);
+                    })()}
+                  </h2>
+
+                  <div className="vehicle-modal-actions">
+                    {/* VOR / Defects chips + Night Out toggle (same rule as cards) */}
+                    <div className="vehicle-card__chips">
+                      {!!selectedVehicle.IsVor && <span className="chip chip--vor">VOR</span>}
+                      {!!selectedVehicle.LiveDefects && (
+                        <span className="chip chip--defects">LIVE DEFECTS</span>
+                      )}
+                    </div>
+
+                    {(filterOption === "Services" || filterOption === "Night-Out") && (
+                      <label
+                        className="toggle-container"
+                        aria-label="Toggle night out"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!selectedVehicle.isNightOut}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
+                          }}
+                        />
+                        <span className="toggle-slider" />
+                      </label>
+                    )}
+
+                    <button
+                      ref={modalCloseBtnRef}
+                      type="button"
+                      className="vehicle-modal-close"
+                      onClick={requestCloseVehicleModal}
+                      aria-label="Close vehicle details"
+                      title="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <div className="vehicle-modal-subtitle">
+                  {displayText(selectedVehicle.assetGroupName, "Vehicle type not available")}
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="vehicle-modal-body">
+              {/* Left pane */}
+              <div className="vehicle-modal-left">
+                <div className="vehicle-modal-section">
+                  <div className="vehicle-modal-section-title">Vehicle details</div>
+
+                  <div className="vehicle-modal-details">
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">VIN</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayText((selectedVehicle as any).assetVin, "Not available")}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Type</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayText(selectedVehicle.assetType, "Not available")}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Energy</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayText((selectedVehicle as any).energyType, "Not available")}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Fuel</span>
+                      <span className="vehicle-modal-detail-value">
+                        {Array.isArray(selectedVehicle.fuelType) && selectedVehicle.fuelType.length > 0
+                          ? selectedVehicle.fuelType.join(", ")
+                          : "Not available"}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Status</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayText((selectedVehicle as any).status, "Not available")}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Event</span>
+                      <span className="vehicle-modal-detail-value">
+                        <span
+                          className={`status-pill status-pill--${(selectedVehicle.eventType ?? "unknown").toLowerCase()}`}
+                        >
+                          <span className="status-pill__icon">{renderStatusIcon(selectedVehicle.eventType)}</span>
+                          <span className="status-pill__text">
+                            {(selectedVehicle.eventType ?? "UNKNOWN").toUpperCase()}
+                          </span>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Speed</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayNumber((selectedVehicle as any).speed, " mph", "—")}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Driver name</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayNumber(
+                          (selectedVehicle as any).driverName ?? (selectedVehicle as any).driverName,
+                          " h",
+                          "—"
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="vehicle-modal-section">
+                  <div className="vehicle-modal-section-title">Compliance health</div>
+
+                  <div className="vehicle-modal-health">
+                    {MODAL_HEALTH_FIELDS.map((f) => {
+                      const raw = (selectedVehicle as any)[f.key] as string | undefined;
+
+                      const progress =
+                        f.kind === "service"
+                          ? getServiceDueProgress(raw ?? "")
+                          : getDueProgress(raw ?? "");
+
+                      const hint =
+                        f.kind === "service"
+                          ? (progress?.label ?? "")
+                          : (progress?.label ?? "");
+
+                      const dueText =
+                        f.kind === "service"
+                          ? (() => {
+                              const info = getServiceDueISOInfo(raw);
+                              return info ? formatDueISOWeekWithYear(info) : displayText(raw, "Not available");
+                            })()
+                          : formatDateSafe(raw, displayText(raw, "Not available"));
+
+                      return (
+                        <div key={String(f.key)} className="health-block">
+                          <div className="health-block__row">
+                            <span className="health-block__label">{f.label}</span>
+                            <span className="health-block__hint">{hint}</span>
+                          </div>
+
+                          <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
+                            <div
+                              className={`due-progress-bar-inner ${progress?.colorClass ?? ""}`}
+                              style={{ width: `${progress?.percentage ?? 0}%` }}
+                            />
+                          </div>
+
+                          <div className={`health-block__sub ${isDatePast(raw ?? "") ? "is-overdue" : ""}`}>
+                            {progress ? (
+                              <>
+                                <span className="vehicle-due-span">Due:</span>{" "}
+                                <b className="vehicle-due-dates">{dueText}</b>
+                              </>
+                            ) : (
+                              <span className="muted">Data not available</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right pane */}
+              <div className="vehicle-modal-right">
+                <div className="vehicle-modal-section">
+                  <div className="vehicle-modal-section-title">Vehicle location</div>
+
+                  {Number.isFinite(selectedVehicle.latitude) && Number.isFinite(selectedVehicle.longitude) ? (
+                    <div className="vehicle-modal-map">
+                      <iframe
+                        title="Vehicle map"
+                        className="vehicle-modal-map-iframe"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        src={(() => {
+                          const lat = selectedVehicle.latitude as number;
+                          const lon = selectedVehicle.longitude as number;
+                          const d = 0.01;
+                          const left = lon - d;
+                          const right = lon + d;
+                          const top = lat + d;
+                          const bottom = lat - d;
+                          return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${lat}%2C${lon}`;
+                        })()}
+                      />
+                      <div className="vehicle-modal-map-caption">
+                        {displayText(selectedVehicle.formattedAddress ?? selectedVehicle.locationName, "Unknown location")}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="vehicle-modal-map vehicle-modal-map--empty">
+                      <div className="vehicle-modal-placeholder-title">No GPS location available</div>
+                      <div className="vehicle-modal-placeholder-sub">
+                        This vehicle has no latitude/longitude in the current feed.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="vehicle-modal-section">
+                  <div className="vehicle-modal-section-title">Street view</div>
+                  <div className="vehicle-modal-streetview">
+                    <div className="vehicle-modal-placeholder-title">Street view placeholder</div>
+                    <div className="vehicle-modal-placeholder-sub">
+                      We’ll drop a street-view style image here next.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!isKioskMode && (
         <button
