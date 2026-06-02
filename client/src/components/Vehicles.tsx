@@ -1744,7 +1744,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <div className="vehicle-modal-streetview">
                     <div className="vehicle-modal-placeholder-title">Street view placeholder</div>
                     <div className="vehicle-modal-placeholder-sub">
-                      We'll drop a street-view style image here next.
+                      Street view will be available here.
                     </div>
                   </div>
                 </div>

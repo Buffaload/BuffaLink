@@ -466,6 +466,15 @@
 }
 
 @media screen and (max-width: 980px) {
+  .dashboard-header {
+    padding-top: 15px;
+  }
+
+  .highlight-figures {
+    display: flex;
+    justify-content: flex-end;
+  }
+  
   .dashboard-content {
     margin-left: 0;
   }

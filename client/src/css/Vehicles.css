@@ -699,18 +699,21 @@
   letter-spacing: 0.06em;
 }
 
-
 .vehicle-modal-subtitle-row {
   margin-top: 8px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.modal-subtitle-row-right .chip--vor {
-  margin-right: 6px;
+.modal-subtitle-row-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .vehicle-modal-actions {
@@ -1800,6 +1803,13 @@
   );
   opacity: 0.95;
   z-index: 1;
+}
+
+@media (max-width: 980px) {
+  .vehicle-card--clickable {
+    cursor: default;
+    pointer-events: none;
+  }
 }
 
 /* Mobile responsiveness */
