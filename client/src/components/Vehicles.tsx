@@ -1729,7 +1729,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
             </div>
           </div>
         </div>
-      })}
+      })()}
 
       {!isKioskMode && (
         <button
