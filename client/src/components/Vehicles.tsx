@@ -368,6 +368,25 @@ const humanizeStatus = (input?: string) => {
     .join(" ");
 };
 
+const humanizeDriverName = (name?: string) => {
+  const raw = (name ?? "").trim();
+  if (!raw) return "Driver not assigned";
+
+  return raw
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((part) =>
+      part
+        .split("'")
+        .map(
+          (seg) => seg.charAt(0).toUpperCase() + seg.slice(1)
+        )
+        .join("'")
+    )
+    .join(" ");
+};
+
 interface DueProgress {
   percentage: number;
   colorClass: string;
@@ -1518,35 +1537,37 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     </span>
                   </span>
 
-                  {/* VOR / Defects chips */}
-                  <div className="vehicle-modal-header-chips">
-                    {!!selectedVehicle.IsVor && (
-                      <span className="chip chip--vor">VOR</span>
-                    )}
-                    {!!selectedVehicle.LiveDefects && (
-                      <span className="chip chip--defects">LIVE DEFECTS</span>
+                  <div className="modal-subtitle-row-right">
+                    {/* VOR / Defects chips */}
+                    <div className="vehicle-modal-header-chips">
+                      {!!selectedVehicle.IsVor && (
+                        <span className="chip chip--vor">VOR</span>
+                      )}
+                      {!!selectedVehicle.LiveDefects && (
+                        <span className="chip chip--defects">LIVE DEFECTS</span>
+                      )}
+                    </div>
+
+                    {/* Night-Out toggle (conditional) */}
+                    {(filterOption === "Services" || filterOption === "Night-Out") && (
+                      <label
+                        className="toggle-container"
+                        aria-label="Toggle night out"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!selectedVehicle.isNightOut}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
+                          }}
+                        />
+                        <span className="toggle-slider" />
+                      </label>
                     )}
                   </div>
-
-                  {/* Night-Out toggle (conditional) */}
-                  {(filterOption === "Services" || filterOption === "Night-Out") && (
-                    <label
-                      className="toggle-container"
-                      aria-label="Toggle night out"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={!!selectedVehicle.isNightOut}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          if (hasAssetName(selectedVehicle)) toggleNightOut(selectedVehicle);
-                        }}
-                      />
-                      <span className="toggle-slider" />
-                    </label>
-                  )}
                 </div>
               </div>
             </div>
@@ -1612,7 +1633,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       <div className="vehicle-modal-detail-row">
                         <span className="vehicle-modal-detail-label">Vehicle driver</span>
                         <span className="vehicle-modal-detail-value">
-                          {displayText(selectedVehicle.driverName, "Driver not assigned")}
+                          {humanizeDriverName(selectedVehicle.driverName)}
                         </span>
                       </div>
                     )}

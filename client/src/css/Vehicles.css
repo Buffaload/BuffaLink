@@ -703,11 +703,15 @@
 .vehicle-modal-subtitle-row {
   margin-top: 8px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
+.modal-subtitle-row-right .chip--vor {
+  margin-right: 6px;
+}
 
 .vehicle-modal-actions {
   display: inline-flex;
