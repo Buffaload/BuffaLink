@@ -716,6 +716,57 @@ const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
   "TlWeightDueDate",
 ]);
 
+type LatLng = { lat: number; lon: number };
+
+const STREET_VIEW_DEPOT_COORDS: Record<string, LatLng> = {
+  "Buffaload Ellington": {
+    lat: 52.335977,
+    lon: -0.294573,
+  },
+  "Buffaload Crewe": {
+    lat: 53.086336,
+    lon: -2.416586,
+  },
+  "Buffaload Bellshill": {
+    lat: 55.826593,
+    lon: -4.045517,
+  },
+  "Buffaload Skelmersdale": {
+    lat: 53.541459,
+    lon: -2.784835,
+  },
+  "Co-op Avonmouth": {
+    lat: 51.522306,
+    lon: -2.678811,
+  },
+};
+
+function getStreetViewCoords(vehicle: {
+  latitude?: number;
+  longitude?: number;
+  locationName?: string;
+}): LatLng | null {
+  const locationName = vehicle.locationName?.trim();
+
+  // Prefer known depot overrides
+  if (locationName && STREET_VIEW_DEPOT_COORDS[locationName]) {
+    return STREET_VIEW_DEPOT_COORDS[locationName];
+  }
+
+  // Fallback to live GPS coords
+  if (
+    Number.isFinite(vehicle.latitude) &&
+    Number.isFinite(vehicle.longitude)
+  ) {
+    return {
+      lat: vehicle.latitude!,
+      lon: vehicle.longitude!,
+    };
+  }
+
+  return null;
+}
+
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
@@ -1905,39 +1956,39 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                 <div className="vehicle-modal-section">
                   <div className="vehicle-modal-section-title">Street view</div>
-                  {(
-                    Number.isFinite(selectedVehicle.latitude) &&
-                    Number.isFinite(selectedVehicle.longitude)
-                  ) ? (
-                    <div className="vehicle-modal-streetview-wrapper">
-                      <a
-                        className="streetview-open-btn"
-                        href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedVehicle.latitude},${selectedVehicle.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Open location in Google Maps"
-                      >
-                        Open in Google Maps
-                      </a>
-                      <iframe
-                        className="vehicle-modal-streetview-iframe"
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        src={`https://www.google.com/maps?q=&layer=c&cbll=${selectedVehicle.latitude},${selectedVehicle.longitude}&cbp=11,0,0,0,0&output=svembed`}
-                        title="Street View"
-                      />
-                    </div>
-                  ) : (
-                    <div className="vehicle-modal-streetview vehicle-modal-streetview--empty">
-                      <Image
-                        className="vehicle-modal-streetview-icon"
-                        aria-hidden="true"
-                      />
-                      <div className="vehicle-modal-streetview-text">
-                        Street View not available
+                  {(() => {
+                    const coords = getStreetViewCoords(selectedVehicle);
+                    return coords ? (
+                      <div className="vehicle-modal-streetview-wrapper">
+                        <a
+                          className="streetview-open-btn"
+                          href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedVehicle.latitude},${selectedVehicle.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Open location in Google Maps"
+                        >
+                          Open in Google Maps
+                        </a>
+                        <iframe
+                          className="vehicle-modal-streetview-iframe"
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          src={`https://www.google.com/maps?q=&layer=c&cbll=${selectedVehicle.latitude},${selectedVehicle.longitude}&cbp=11,0,0,0,0&output=svembed`}
+                          title="Street View"
+                        />
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="vehicle-modal-streetview vehicle-modal-streetview--empty">
+                        <Image
+                          className="vehicle-modal-streetview-icon"
+                          aria-hidden="true"
+                        />
+                        <div className="vehicle-modal-streetview-text">
+                          Street View not available
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
