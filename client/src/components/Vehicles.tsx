@@ -1864,8 +1864,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
                             </div>
                           </div>
                         );
-                      }
-                    )}
+                      })
+                    }
                   </div>
                 </div>
               </div>
@@ -1905,38 +1905,39 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                 <div className="vehicle-modal-section">
                   <div className="vehicle-modal-section-title">Street view</div>
-                    {Number.isFinite(selectedVehicle.latitude) &&
-                    Number.isFinite(selectedVehicle.longitude) ? (
-                      <div className="vehicle-modal-streetview-wrapper">
-                        <a
-                          className="streetview-open-btn"
-                          href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedVehicle.latitude},${selectedVehicle.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="Open location in Google Maps"
-                        >
-                          Open in Google Maps
-                        </a>
-                        <iframe
-                          className="vehicle-modal-streetview-iframe"
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          src={`https://www.google.com/maps?q=&layer=c&cbll=${selectedVehicle.latitude},${selectedVehicle.longitude}&cbp=11,0,0,0,0&output=svembed`}
-                          title="Street View"
-                        />
+                  {(
+                    Number.isFinite(selectedVehicle.latitude) &&
+                    Number.isFinite(selectedVehicle.longitude)
+                  ) ? (
+                    <div className="vehicle-modal-streetview-wrapper">
+                      <a
+                        className="streetview-open-btn"
+                        href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedVehicle.latitude},${selectedVehicle.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Open location in Google Maps"
+                      >
+                        Open in Google Maps
+                      </a>
+                      <iframe
+                        className="vehicle-modal-streetview-iframe"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps?q=&layer=c&cbll=${selectedVehicle.latitude},${selectedVehicle.longitude}&cbp=11,0,0,0,0&output=svembed`}
+                        title="Street View"
+                      />
+                    </div>
+                  ) : (
+                    <div className="vehicle-modal-streetview vehicle-modal-streetview--empty">
+                      <Image
+                        className="vehicle-modal-streetview-icon"
+                        aria-hidden="true"
+                      />
+                      <div className="vehicle-modal-streetview-text">
+                        Street View not available
                       </div>
-                    ) : (
-                      <div className="vehicle-modal-streetview vehicle-modal-streetview--empty">
-                        <Image
-                          className="vehicle-modal-streetview-icon"
-                          aria-hidden
-                        />
-                        <div className="vehicle-modal-streetview-text">
-                          Street View not available
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
