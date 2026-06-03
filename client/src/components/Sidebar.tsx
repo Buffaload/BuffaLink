@@ -323,6 +323,7 @@ const Sidebar: React.FC<{
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!vehicles || vehicles.length === 0) return;
 
@@ -461,7 +462,7 @@ const Sidebar: React.FC<{
     setArrivalTooltipItems([]);
   };
 
-  // TESTING: Force open with dummy content for styling purposes***
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!FORCE_ARRIVALS_TOOLTIP_FOR_STYLING) return;
 

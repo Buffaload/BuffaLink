@@ -1236,6 +1236,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
     searchTerm,
     sortOption,
+    isKioskMode,
   ]);
 
   useEffect(() => {
