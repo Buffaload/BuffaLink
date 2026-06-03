@@ -716,44 +716,65 @@ const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
   "TlWeightDueDate",
 ]);
 
-type LatLng = { lat: number; lon: number };
+type DepotStreetViewRule = {
+  tokens: string[]; // must ALL be present
+  lat: number;
+  lon: number;
+};
 
-const STREET_VIEW_DEPOT_COORDS: Record<string, LatLng> = {
-  "Buffaload Ellington": {
+const STREET_VIEW_DEPOTS: DepotStreetViewRule[] = [
+  {
+    tokens: ["BUFFALOAD", "ELLINGTON"],
     lat: 52.335977,
     lon: -0.294573,
   },
-  "Buffaload Crewe": {
+  {
+    tokens: ["BUFFALOAD", "CREWE"],
     lat: 53.086336,
     lon: -2.416586,
   },
-  "Buffaload Bellshill": {
+  {
+    tokens: ["BUFFALOAD", "BELLSHILL"],
     lat: 55.826593,
     lon: -4.045517,
   },
-  "Buffaload Skelmersdale": {
+  {
+    tokens: ["BUFFALOAD", "SKELMERSDALE"],
     lat: 53.541459,
     lon: -2.784835,
   },
-  "Co-op Avonmouth": {
+  {
+    tokens: ["CO-OP", "AVONMOUTH"],
     lat: 51.522306,
     lon: -2.678811,
   },
-};
+];
 
-function getStreetViewCoords(vehicle: {
+function normalizeLocationText(value?: string): string {
+  return (value ?? "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getStreetViewLatLon(vehicle: {
   latitude?: number;
   longitude?: number;
   locationName?: string;
-}): LatLng | null {
-  const locationName = vehicle.locationName?.trim();
+  formattedAddress?: string;
+}) {
+  const haystack = normalizeLocationText(
+    vehicle.locationName ?? vehicle.formattedAddress
+  );
 
-  // Prefer known depot overrides
-  if (locationName && STREET_VIEW_DEPOT_COORDS[locationName]) {
-    return STREET_VIEW_DEPOT_COORDS[locationName];
+  // Depot override (token-based)
+  for (const depot of STREET_VIEW_DEPOTS) {
+    if (depot.tokens.every(t => haystack.includes(t))) {
+      return { lat: depot.lat, lon: depot.lon };
+    }
   }
 
-  // Fallback to live GPS coords
+  // Fallback to live GPS
   if (
     Number.isFinite(vehicle.latitude) &&
     Number.isFinite(vehicle.longitude)
@@ -764,6 +785,7 @@ function getStreetViewCoords(vehicle: {
     };
   }
 
+  // Nothing usable
   return null;
 }
 
