@@ -1361,6 +1361,44 @@
   margin-left: 5px;
 }
 
+/* Night-Out Toast */
+.nightout-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 25000;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.nightout-toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.nightout-toast-card {
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.10);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
+  padding: 12px 14px;
+  max-width: 360px;
+}
+
+.nightout-toast-text {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.82);
+}
+
+.nightout-toast-text b {
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Back to top button */
 .back-to-top {
   position: fixed;

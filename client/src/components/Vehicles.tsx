@@ -252,8 +252,8 @@ const hasAssetName = (
   return typeof v.assetName === "string" && v.assetName.length > 0;
 };
 
-const formatRegistration = (value?: string) => {
-  if (!value) return value;
+const formatRegistration = (value?: string): string => {
+  if (!value) return "";
   const reg = value.trim();
   // Only act on exactly 7 characters with no existing space
   if (reg.length === 7 && !reg.includes(" ")) {
@@ -261,6 +261,20 @@ const formatRegistration = (value?: string) => {
   }
 
   return reg;
+};
+
+const getVehicleDisplayLabel = (v: {
+  assetType?: string;
+  assetName?: string;
+  assetRegistration?: string;
+}): string => {
+  const isTrailer = String(v.assetType ?? "").toLowerCase() === "trailer";
+  const base = isTrailer
+    ? (v.assetName ?? v.assetRegistration ?? "")
+    : (v.assetRegistration ?? v.assetName ?? "");
+  return base
+    ? (isTrailer ? base : formatRegistration(base))
+    : "UNKNOWN VEHICLE";
 };
 
 const isVorOrDefect = (v: { IsVor?: any; LiveDefects?: any }): boolean => {
@@ -778,6 +792,38 @@ const Vehicles: React.FC<VehiclesProps> = ({
     };
   }, [isVehicleModalOpen]);
 
+  const [nightOutToast, setNightOutToast] = useState<{
+    reg: string;
+    isOn: boolean;
+    visible: boolean;
+  } | null>(null);
+
+  const nightOutToastTimerRef = useRef<number | null>(null);
+  const nightOutToastCleanupRef = useRef<number | null>(null);
+
+  const showNightOutToast = (reg: string, isOn: boolean) => {
+    if (nightOutToastTimerRef.current) window.clearTimeout(nightOutToastTimerRef.current);
+    if (nightOutToastCleanupRef.current) window.clearTimeout(nightOutToastCleanupRef.current);
+
+    setNightOutToast({ reg, isOn, visible: true });
+
+    nightOutToastTimerRef.current = window.setTimeout(() => {
+      setNightOutToast((prev) => (prev ? { ...prev, visible: false } : prev));
+
+      // allow CSS transition to finish before unmount
+      nightOutToastCleanupRef.current = window.setTimeout(() => {
+        setNightOutToast(null);
+      }, 220);
+    }, 10000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (nightOutToastTimerRef.current) window.clearTimeout(nightOutToastTimerRef.current);
+      if (nightOutToastCleanupRef.current) window.clearTimeout(nightOutToastCleanupRef.current);
+    };
+  }, []);
+
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
@@ -1016,10 +1062,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
     vehicle: {
       assetName: string;
       isNightOut?: boolean;
+      assetRegistration?: string;
+      assetType?: string;
     }
   ) => {
     const previousState = vehicle.isNightOut;
     const updatedState = !vehicle.isNightOut;
+    const regLabel = getVehicleDisplayLabel(vehicle);
 
     // Optimistic update
     queryClient.setQueryData(["vehicles"], (old: any[] | undefined) =>
@@ -1032,9 +1081,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : []
     );
 
+    setSelectedVehicle((prev) =>
+      prev && prev.assetName === vehicle.assetName
+        ? { ...prev, isNightOut: updatedState }
+        : prev
+    );
+
     try {
       const token = localStorage.getItem("token");
-
       const response = await fetch(
         `${API_BASE_URL}/vehicles/${encodeURIComponent(vehicle.assetName)}/night-out`,
         {
@@ -1051,6 +1105,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
         throw new Error("Failed to toggle Night-Out status");
       }
 
+      showNightOutToast(regLabel, updatedState);
+
       // Re-sync with backend
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
     } catch (error) {
@@ -1065,6 +1121,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 : v
             )
           : []
+      );
+
+      setSelectedVehicle((prev) =>
+        prev && prev.assetName === vehicle.assetName
+          ? { ...prev, isNightOut: previousState }
+          : prev
       );
     }
   };
@@ -1777,7 +1839,25 @@ const Vehicles: React.FC<VehiclesProps> = ({
           </div>
         </div>
       )}
+      {/* Night-Out Toast */}
+      {nightOutToast && (
+        <div
+          className={`nightout-toast ${nightOutToast.visible ? "nightout-toast--visible" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="nightout-toast-card">
+            <span className="nightout-toast-text">
+              <b>{nightOutToast.reg}</b>{" "}
+              {nightOutToast.isOn
+                ? "has been marked as Night-Out."
+                : "has been removed from Night-Out."}
+            </span>
+          </div>
+        </div>
+      )}
 
+      {/* Back to Top Button */}
       {!isKioskMode && (
         <button
           type="button"
