@@ -531,6 +531,11 @@
   pointer-events: none;
 }
 
+.profile-disabled {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* Critical arrivals and tooltip */
 .sidebar-dark-tooltip {
   position: fixed;

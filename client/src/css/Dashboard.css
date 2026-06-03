@@ -80,6 +80,14 @@
   vertical-align: baseline;
 }
 
+.dashboard-title--kiosk {
+  margin-top: 14px;
+  margin-left: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .dashboard-content {
   margin-left: 200px; /* Space for the sidebar */
   padding-top: 120px; /* Space for the header */
@@ -92,6 +100,7 @@
   margin-left: var(--sidebar-current-width);
   width: calc(100vw - var(--sidebar-current-width));
   max-width: none;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -103,7 +112,7 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 20px;
+  padding: 0 20px 20px;
   box-sizing: border-box;
 }
 

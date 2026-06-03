@@ -484,7 +484,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>
       <div className="app-header" />
       <div className={`dashboard-header ${isKioskMode ? "header-on" : "header-off"}`}>
-        <div className="dashboard-title">
+        <div className={`dashboard-title ${isKioskMode ? "dashboard-title--kiosk" : ""}`}>
           <>
             <h2>
               <span className="dashboard-title-prefix">

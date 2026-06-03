@@ -846,7 +846,7 @@ const Sidebar: React.FC<{
           )}
         </ul>
         {/* Profile Button at bottom of sidebar */}
-        <div className="sidebar-profile">
+        <div className={`sidebar-profile ${isKioskMode ? "profile-disabled" : ""}`}>
           <ProfileButton
             username={localStorage.getItem("username") || ""}
             handleLogout={handleLogout}
