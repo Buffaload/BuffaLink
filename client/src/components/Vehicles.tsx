@@ -725,8 +725,8 @@ type DepotStreetViewRule = {
 const STREET_VIEW_DEPOTS: DepotStreetViewRule[] = [
   {
     tokens: ["BUFFALOAD", "ELLINGTON"],
-    lat: 52.335977,
-    lon: -0.294573,
+    lat: 52.33577,
+    lon: -0.294554,
   },
   {
     tokens: ["BUFFALOAD", "CREWE"],
@@ -757,41 +757,7 @@ function normalizeLocationText(value?: string): string {
     .trim();
 }
 
-// function getStreetViewLatLon(vehicle: {
-//   latitude?: number;
-//   longitude?: number;
-//   locationName?: string;
-//   formattedAddress?: string;
-// }) {
-//   const haystack = normalizeLocationText(
-//     vehicle.locationName ?? vehicle.formattedAddress
-//   );
-
-//   // Depot override (token-based)
-//   for (const depot of STREET_VIEW_DEPOTS) {
-//     if (depot.tokens.every(t => haystack.includes(t))) {
-//       return { lat: depot.lat, lon: depot.lon };
-//     }
-//   }
-
-//   // Fallback to live GPS
-//   if (
-//     Number.isFinite(vehicle.latitude) &&
-//     Number.isFinite(vehicle.longitude)
-//   ) {
-//     return {
-//       lat: vehicle.latitude!,
-//       lon: vehicle.longitude!,
-//     };
-//   }
-
-//   // Nothing usable
-//   return null;
-// }
-
 function getStreetViewLatLon(vehicle: {
-  assetName?: string;
-  assetRegistration?: string;
   latitude?: number;
   longitude?: number;
   locationName?: string;
@@ -804,32 +770,15 @@ function getStreetViewLatLon(vehicle: {
   // Depot override (token-based)
   for (const depot of STREET_VIEW_DEPOTS) {
     if (depot.tokens.every(t => haystack.includes(t))) {
-      console.log("[StreetView][DEPOT_OVERRIDE]", {
-        asset: vehicle.assetRegistration ?? vehicle.assetName,
-        locationName: vehicle.locationName,
-        formattedAddress: vehicle.formattedAddress,
-        resolvedLat: depot.lat,
-        resolvedLon: depot.lon,
-        matchedTokens: depot.tokens,
-      });
-
       return { lat: depot.lat, lon: depot.lon };
     }
   }
 
-  // Live GPS fallback
+  // Fallback to live GPS
   if (
     Number.isFinite(vehicle.latitude) &&
     Number.isFinite(vehicle.longitude)
   ) {
-    console.log("[StreetView][LIVE_GPS]", {
-      asset: vehicle.assetRegistration ?? vehicle.assetName,
-      locationName: vehicle.locationName,
-      formattedAddress: vehicle.formattedAddress,
-      resolvedLat: vehicle.latitude,
-      resolvedLon: vehicle.longitude,
-    });
-
     return {
       lat: vehicle.latitude!,
       lon: vehicle.longitude!,
@@ -837,12 +786,6 @@ function getStreetViewLatLon(vehicle: {
   }
 
   // Nothing usable
-  console.log("[StreetView][NONE]", {
-    asset: vehicle.assetRegistration ?? vehicle.assetName,
-    locationName: vehicle.locationName,
-    formattedAddress: vehicle.formattedAddress,
-  });
-
   return null;
 }
 
@@ -2041,7 +1984,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       <div className="vehicle-modal-streetview-wrapper">
                         <a
                           className="streetview-open-btn"
-                          href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selectedVehicle.latitude},${selectedVehicle.longitude}`}
+                          href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coords.lat},${coords.lon}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label="Open location in Google Maps"
@@ -2052,7 +1995,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                           className="vehicle-modal-streetview-iframe"
                           loading="lazy"
                           referrerPolicy="no-referrer-when-downgrade"
-                          src={`https://www.google.com/maps?q=&layer=c&cbll=${selectedVehicle.latitude},${selectedVehicle.longitude}&cbp=11,0,0,0,0&output=svembed`}
+                          src={`https://www.google.com/maps?q=&layer=c&cbll=${coords.lat},${coords.lon}&cbp=11,0,0,0,0&output=svembed`}
                           title="Street View"
                         />
                       </div>
