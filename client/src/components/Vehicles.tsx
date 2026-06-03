@@ -1979,7 +1979,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 <div className="vehicle-modal-section">
                   <div className="vehicle-modal-section-title">Street view</div>
                   {(() => {
-                    const coords = getStreetViewCoords(selectedVehicle);
+                    const coords = getStreetViewLatLon(selectedVehicle);
                     return coords ? (
                       <div className="vehicle-modal-streetview-wrapper">
                         <a
