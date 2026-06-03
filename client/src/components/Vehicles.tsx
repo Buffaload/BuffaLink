@@ -265,6 +265,23 @@ const formatRegistration = (value?: string): string => {
   return reg;
 };
 
+const formatRegForMarkerLabel = (value?: string) => {
+  const raw = (value ?? "").trim();
+  if (!raw) return "N/A";
+
+  // If already has a space (e.g. "AV20 OAY"), convert to line break
+  if (raw.includes(" ")) {
+    const [a, ...rest] = raw.split(" ");
+    return `${a}<br/>${rest.join(" ")}`;
+  }
+
+  if (raw.length === 7) {
+    return `${raw.slice(0, 4)}<br/>${raw.slice(4)}`;
+  }
+
+  return raw;
+};
+
 const getVehicleDisplayLabel = (v: {
   assetType?: string;
   assetName?: string;
@@ -816,7 +833,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       maxZoom: 19,
     }).addTo(map);
 
-    const reg =
+    const displayReg =
       selectedVehicle.assetRegistration ??
       selectedVehicle.assetName ??
       "N/A";
@@ -832,7 +849,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
     ).addTo(map);
 
-    marker.bindTooltip(reg, {
+    marker.bindTooltip(formatRegForMarkerLabel(displayReg), {
       permanent: true,
       direction: "center",
       className: "vehicle-reg-tooltip",

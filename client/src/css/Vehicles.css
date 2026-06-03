@@ -871,11 +871,13 @@
   border-radius: 50% !important;
   color: white !important;
   font-family: var(--app-font, inherit) !important;
-  font-weight: 800 !important;
+  font-weight: 400 !important;
   font-size: 11px !important;
+  white-space: normal !important;
   text-align: center !important;
-  line-height: 1 !important;
-  min-width: 34px !important;
+  line-height: 1.1 !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
   min-height: 18px !important;
   padding: 2px 4px !important;
   box-shadow: none !important;
