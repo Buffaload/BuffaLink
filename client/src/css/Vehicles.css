@@ -2040,7 +2040,8 @@
 }
 
 .kiosk-leaderboard-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -2095,6 +2096,14 @@
   gap: 8px;
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+.kiosk-leaderboard-time {
+  font-weight: 900;
+  font-size: 13px;
+  color: rgba(17, 24, 39, 0.75);
+  white-space: nowrap;
+  text-align: right;
 }
 
 /* Mobile fallback: stack columns */

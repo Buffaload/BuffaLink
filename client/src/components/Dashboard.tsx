@@ -482,7 +482,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
   return (
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>
-      <div className={`app-header ${isKioskMode ? "app-header-on" : "app-header-off"}`} />
+      <div className="app-header" />
       <div className={`dashboard-header ${isKioskMode ? "header-on" : "header-off"}`}>
         <div className="dashboard-title">
           <>
@@ -504,6 +504,25 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
                 </div>
               )}
             </h2>
+
+            {isKioskMode && (
+              <div className="highlight-figures kiosk-title-stats" aria-label="Leaderboard highlights">
+                <span className="figure-pill figure-pill--grey">
+                  <span className="figure-dot figure-dot--grey" aria-hidden="true" />
+                  {kioskStats.total} {kioskStats.total === 1 ? "Vehicle" : "Vehicles"}
+                </span>
+
+                <span className="figure-pill figure-pill--red">
+                  <span className="figure-dot figure-dot--red" aria-hidden="true" />
+                  {kioskStats.vor} VOR
+                </span>
+
+                <span className="figure-pill figure-pill--orange">
+                  <span className="figure-dot figure-dot--orange" aria-hidden="true" />
+                  {kioskStats.defects} Live Defects
+                </span>
+              </div>
+            )}
           </>
         </div>     
         <div className="dashboard-header-right">
@@ -523,24 +542,6 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             <div className="iso-week-banner__label">ISO Week</div>
             <div className="iso-week-banner__value">{isoWeek}</div>
           </div>
-          {isKioskMode && (
-            <div className="highlight-figures" aria-label="Leaderboard highlights">
-              <span className="figure-pill figure-pill--grey">
-                <span className="figure-dot figure-dot--grey" aria-hidden="true" />
-                {kioskStats.total} {kioskStats.total === 1 ? "Vehicle" : "Vehicles"}
-              </span>
-
-              <span className="figure-pill figure-pill--red">
-                <span className="figure-dot figure-dot--red" aria-hidden="true" />
-                {kioskStats.vor} VOR
-              </span>
-
-              <span className="figure-pill figure-pill--orange">
-                <span className="figure-dot figure-dot--orange" aria-hidden="true" />
-                {kioskStats.defects} Live Defects
-              </span>
-            </div>
-          )}
           <div className="kiosk-toggle">
             <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
               <span className="kiosk-toggle-label">Kiosk Mode</span>

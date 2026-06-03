@@ -514,6 +514,23 @@
   flex: 0 0 auto;
 }
 
+/* Kiosk mode styles */
+.sidebar--kiosk .sidebar-link {
+  cursor: default !important;
+}
+
+.sidebar--kiosk .sidebar-link:hover,
+.sidebar--kiosk .depot-tile:hover,
+.sidebar--kiosk .sidebar-item:hover {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.sidebar--kiosk .sidebar-link *,
+.sidebar--kiosk .depot-tile * {
+  pointer-events: none;
+}
+
 /* Critical arrivals and tooltip */
 .sidebar-dark-tooltip {
   position: fixed;

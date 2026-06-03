@@ -557,7 +557,11 @@ const Sidebar: React.FC<{
   return (
     <>
       <div 
-        className={`sidebar ${isMobileOpen ? "open" : ""} ${effectiveCollapsedDesktop ? "is-collapsed" : ""}`}
+        className={`sidebar 
+          ${isMobileOpen ? "open" : ""} 
+          ${effectiveCollapsedDesktop ? "is-collapsed" : ""}
+          ${isKioskMode ? "sidebar--kiosk" : ""}
+        `}
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
       >

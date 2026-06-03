@@ -790,6 +790,9 @@ function normalizeLocationText(value?: string): string {
     .trim();
 }
 
+const truncate = (value: string, max = 40) =>
+  value.length > max ? `${value.slice(0, max)}…` : value;
+
 function getStreetViewLatLon(vehicle: {
   latitude?: number;
   longitude?: number;
@@ -1455,7 +1458,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
     const renderRow = (vehicle: VehicleWithSince, position: number) => {
       const rawLocation =
         vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
-
+      const fullLocation = cleanLocationLabel(rawLocation);
+      const truncatedLocation = truncate(fullLocation, 40);
       const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
       const displayId = isTrailer
         ? (vehicle.assetName ?? vehicle.assetRegistration ?? "")
@@ -1470,9 +1474,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
             </span>
             <span
               className="kiosk-leaderboard-loc"
-              title={cleanLocationLabel(rawLocation)}
+              title={fullLocation}
             >
-              {cleanLocationLabel(rawLocation)}
+              {truncatedLocation}
             </span>
           </div>
 
@@ -1481,6 +1485,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
             {toBool(vehicle.LiveDefects) && (
               <span className="chip chip--defects">LIVE DEFECTS</span>
             )}
+          </div>
+
+          <div className="kiosk-leaderboard-time">
+            {formatTimeInState(vehicle.statusSinceMs!)}
           </div>
         </div>
       );
