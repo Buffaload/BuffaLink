@@ -1324,6 +1324,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                 const vorSkin = isVor ? "vor-banner" : "";
                 const serviceProgress = getServiceDueProgress(vehicle.ServiceDueDate ?? "");
+                const serviceBarClass = serviceProgress
+                  ? getServiceSeverityProgressClass(vehicle.ServiceDueDate)
+                  : "";
                 const maintenanceProgress = getDueProgress(vehicle.NextMaintenanceDueDate ?? "");
                 const maintenanceLabel = vehicle.NextMaintenanceType && vehicle.NextMaintenanceType !== "N/A"
                   ? `${vehicle.NextMaintenanceType} health`
@@ -1416,7 +1419,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                         <div className={`due-progress-bar ${serviceProgress ? "" : "empty-progress-bar"}`}>
                           <div
-                            className={`due-progress-bar-inner ${getServiceSeverityProgressClass(vehicle.ServiceDueDate)}`}
+                            className={`due-progress-bar-inner ${serviceBarClass}`}
                             style={{ width: `${serviceProgress?.percentage ?? 0}%` }}
                           />
                         </div>
@@ -1671,6 +1674,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
                             ? getServiceDueProgress(raw ?? "")
                             : getDueProgress(raw ?? "");
 
+                        const barColorClass = progress
+                          ? (f.kind === "service"
+                              ? getServiceSeverityProgressClass(raw)
+                              : (progress.colorClass ?? ""))
+                          : "";
+
                         const dueText =
                           f.kind === "service"
                             ? (() => {
@@ -1690,7 +1699,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                             <div className={`due-progress-bar ${progress ? "" : "empty-progress-bar"}`}>
                               <div
-                                className={`due-progress-bar-inner ${getServiceSeverityProgressClass(raw)}`}
+                                className={`due-progress-bar-inner ${barColorClass}`}
                                 style={{ width: `${progress?.percentage ?? 0}%` }}
                               />
                             </div>

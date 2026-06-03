@@ -1194,6 +1194,7 @@
 }
 
 .due-progress-bar-inner.progress-green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.due-progress-bar-inner.progress-yellow { background: linear-gradient(90deg, #d97706, #f59e0b); }
 .due-progress-bar-inner.progress-orange { background: linear-gradient(90deg, #ea580c, #f97316); }
 .due-progress-bar-inner.progress-red { background: linear-gradient(90deg, #dc2626, #ef4444); }
 
@@ -1574,6 +1575,10 @@
   border: 2px solid #22c55e;
 }
 
+.due-progress-bar:has(.progress-yellow) { 
+  border: 2px solid #f59e0b; 
+}
+
 .due-progress-bar:has(.progress-orange) {
   border: 2px solid #f97316;
 }
@@ -1594,6 +1599,10 @@
 
 .due-progress-bar-inner.progress-green {
   background-color: #22c55e;
+}
+
+.due-progress-bar-inner.progress-yellow { 
+  background-color: #f59e0b; 
 }
 
 .due-progress-bar-inner.progress-orange {
