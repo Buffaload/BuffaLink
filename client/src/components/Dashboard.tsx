@@ -142,6 +142,8 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const token = localStorage.getItem("token");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
   type SortOrder = "asc" | "desc";
+  type KioskStats = { total: number; vor: number; defects: number };
+  const [kioskStats, setKioskStats] = useState<KioskStats>({ total: 0, vor: 0, defects: 0 });
   const SERVICES_SORT_KEY = "servicesDueSortOrder";
   const [servicesSortOrder, setServicesSortOrder] = useState<SortOrder>(() => {
     const saved = localStorage.getItem(SERVICES_SORT_KEY);
@@ -209,8 +211,16 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   };
 
   const toggleKioskMode = () => {
-    setIsKioskMode((prevMode) => !prevMode);
-  };
+    setIsKioskMode((prevMode) => {
+    const next = !prevMode;
+    if (next) {
+      setIsCollapsed(true);
+      setIsMobileSidebarOpen(false);
+    }
+    return next;
+  });
+};
+
 
   const [isMobile, setIsMobile] = useState(
     window.matchMedia("(max-width: 768px)").matches
@@ -475,47 +485,60 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       <div className={`app-header ${isKioskMode ? "app-header-on" : "app-header-off"}`} />
       <div className={`dashboard-header ${isKioskMode ? "header-on" : "header-off"}`}>
         <div className="dashboard-title">
-            {isKioskMode ? (
-              <img src="/fleetpulse-logo-black.png" alt="Logo" className="kiosk-logo" />
-            ) : (
-              <>
-                <h2>
-                  <span className="dashboard-title-prefix">{title.prefix}</span>
-                  {title.suffix && (
-                    <span className="dashboard-title-suffix">
-                      {title.suffix}
-                    </span>
-                  )}
-                
-                  {(
-                    filterOption === "Services" ||
-                    filterOption === "Night-Out"
-                  ) && (
-                    <div className="dashboard-depots-indicator">
-                      {" "}({depotHeaderLabel})
-                    </div>
-                  )}
-                </h2>
-              </>
-            )}
+          <>
+            <h2>
+              <span className="dashboard-title-prefix">
+                {isKioskMode ? "Stopped Vehicles Leaderboard" : title.prefix}
+              </span>
+              <span className="dashboard-title-suffix">
+                {isKioskMode
+                  ? " - all stopped vehicles outside of a depot/maintenance site"
+                  : (title.suffix ?? "")}
+              </span>
+              {(
+                filterOption === "Services" ||
+                filterOption === "Night-Out"
+              ) && (
+                <div className="dashboard-depots-indicator">
+                  {" "}({depotHeaderLabel})
+                </div>
+              )}
+            </h2>
+          </>
         </div>     
         <div className="dashboard-header-right">
-          {!isKioskMode && (
-            <div
-              ref={weekBtnRef}
-              className="iso-week-banner"
-              role="button"
-              tabIndex={0}
-              aria-label={`ISO Week ${isoWeek}`}
-              aria-expanded={weekTooltipOpen}
-              onClick={() => setWeekTooltipOpen((v) => !v)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") setWeekTooltipOpen((v) => !v);
-                if (e.key === "Escape") setWeekTooltipOpen(false);
-              }}
-            >
-              <div className="iso-week-banner__label">ISO Week</div>
-              <div className="iso-week-banner__value">{isoWeek}</div>
+          <div
+            ref={weekBtnRef}
+            className="iso-week-banner"
+            role="button"
+            tabIndex={0}
+            aria-label={`ISO Week ${isoWeek}`}
+            aria-expanded={weekTooltipOpen}
+            onClick={() => setWeekTooltipOpen((v) => !v)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") setWeekTooltipOpen((v) => !v);
+              if (e.key === "Escape") setWeekTooltipOpen(false);
+            }}
+          >
+            <div className="iso-week-banner__label">ISO Week</div>
+            <div className="iso-week-banner__value">{isoWeek}</div>
+          </div>
+          {isKioskMode && (
+            <div className="highlight-figures" aria-label="Leaderboard highlights">
+              <span className="figure-pill figure-pill--grey">
+                <span className="figure-dot figure-dot--grey" aria-hidden="true" />
+                {kioskStats.total} {kioskStats.total === 1 ? "Vehicle" : "Vehicles"}
+              </span>
+
+              <span className="figure-pill figure-pill--red">
+                <span className="figure-dot figure-dot--red" aria-hidden="true" />
+                {kioskStats.vor} VOR
+              </span>
+
+              <span className="figure-pill figure-pill--orange">
+                <span className="figure-dot figure-dot--orange" aria-hidden="true" />
+                {kioskStats.defects} Live Defects
+              </span>
             </div>
           )}
           <div className="kiosk-toggle">
@@ -537,49 +560,53 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
         </div>
       </div>
 
-      {!isKioskMode && (
-        <>
-          <Sidebar
-            onFilterChange={setFilterOption}
-            onDepotChange={setSelectedDepots}
-            filterOption={filterOption}
-            handleLogout={handleLogout}  
-            isCollapsed={isCollapsed}
-            isMobileOpen={isMobileSidebarOpen}
-            onMobileRequestClose={() => setIsMobileSidebarOpen(false)}
-          />
-  
-          <button
-            type="button"
-            className={[
-              "sidebar-collapse-toggle",
-              isMobile
-                ? (isMobileSidebarOpen ? "is-mobile-open" : "is-mobile-closed")
-                : (isCollapsed ? "is-collapsed" : ""),
-            ].join(" ").trim()}
-            onClick={handleSidebarToggle}
-            aria-label={
-              isMobile
+      <>
+        <Sidebar
+          onFilterChange={setFilterOption}
+          onDepotChange={setSelectedDepots}
+          filterOption={filterOption}
+          handleLogout={handleLogout}  
+          isCollapsed={isKioskMode ? true : isCollapsed}
+          isMobileOpen={isMobileSidebarOpen}
+          onMobileRequestClose={() => setIsMobileSidebarOpen(false)}
+          isKioskMode={isKioskMode}
+        />
+
+        <button
+          type="button"
+          className={[
+            "sidebar-collapse-toggle",
+            isKioskMode ? "is-disabled" : "",
+            isMobile
+              ? (isMobileSidebarOpen ? "is-mobile-open" : "is-mobile-closed")
+              : (isCollapsed ? "is-collapsed" : ""),
+          ].join(" ").trim()}
+          onClick={() => {
+            if (isKioskMode) return;
+            handleSidebarToggle();
+          }}
+          aria-label={
+            isKioskMode
+              ? "Exit kiosk mode to expand Sidebar"
+              : (isMobile
                 ? (isMobileSidebarOpen ? "Close sidebar" : "Open sidebar")
-                : (isCollapsed ? "Expand sidebar" : "Collapse sidebar")
-            }
-          >
-            <span className="sidebar-collapse-icon" aria-hidden="true" />
-          </button>
-        </>
-      )}
+                : (isCollapsed ? "Expand sidebar" : "Collapse sidebar"))
+          }
+          aria-disabled={isKioskMode}
+          disabled={isKioskMode}
+        >
+          <span className="sidebar-collapse-icon" aria-hidden="true" />
+        </button>
+      </>
 
       <div className={`dashboard-content ${isKioskMode ? "dashboard-content--kiosk" : ""}`}>
         {isKioskMode ? (
-          <div className="kiosk-layout">
-            <div className="kiosk-main">
-              <DelaysMap 
-                key={`delays-map-${isKioskMode ? "kiosk" : "normal"}`}
-                filterOption="Delays" 
-                isKioskMode={true} 
-              />
-            </div>
-          </div>
+          <Vehicles
+            filterOption="Kiosk-Leaderboard"
+            selectedDepots={[]}
+            isKioskMode={true}
+            onKioskStatsChange={setKioskStats}
+          />
         ) : filterOption === "Delays" ? (
           <DelaysMap 
             filterOption={filterOption} 

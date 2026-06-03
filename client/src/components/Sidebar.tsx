@@ -207,7 +207,8 @@ const Sidebar: React.FC<{
   isCollapsed: boolean;
   isMobileOpen: boolean;
   onMobileRequestClose: () => void;
-}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed, isMobileOpen, onMobileRequestClose }) => {
+  isKioskMode: boolean;
+}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed, isMobileOpen, onMobileRequestClose, isKioskMode }) => {
   const [userRole, setUserRole] = useState<string>("");
   const [activeButton, setActiveButton] = useState<string>("HGVs");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
@@ -223,7 +224,7 @@ const Sidebar: React.FC<{
   const [isHoverExpanded, setIsHoverExpanded] = useState(false);
 
   // Collapsed unless user is hovering (hover temporarily expands)
-  const effectiveCollapsed = isCollapsed && !isHoverExpanded;
+  const effectiveCollapsed = (isKioskMode ? true : isCollapsed) && !isHoverExpanded;
 
   // Optional: disable collapsed mode on mobile (recommended)
   const isDesktop = typeof window !== "undefined"
@@ -242,12 +243,12 @@ const Sidebar: React.FC<{
   }, [effectiveCollapsedDesktop]);
 
   const handleSidebarMouseEnter = () => {
-    if (!isDesktop) return;
+    if (!isDesktop || isKioskMode) return;
     setIsHoverExpanded(true);
   };
 
   const handleSidebarMouseLeave = () => {
-    if (!isDesktop) return;
+    if (!isDesktop || isKioskMode) return;
     setIsHoverExpanded(false);
   };
 
@@ -262,6 +263,12 @@ const Sidebar: React.FC<{
       left: r.right + gap,
     });
   };
+
+  useEffect(() => {
+    if (!isKioskMode) return;
+    if (arrivalTooltipOpen) closeArrivalTooltip();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isKioskMode]);
 
   const DEPOTS = [
     "Ellington",
@@ -391,7 +398,9 @@ const Sidebar: React.FC<{
       return merged.slice(0, 6);
     });
 
-    setArrivalTooltipOpen(true);
+    if (!isKioskMode) {
+      setArrivalTooltipOpen(true);
+    }
   }, [vehicles]);
 
   const acknowledgeTooltipItems = (items: CriticalArrivalItem[]) => {
@@ -458,7 +467,9 @@ const Sidebar: React.FC<{
 
     // Only inject dummy content once (so close stays closed while styling)
     setArrivalTooltipItems((prev) => (prev.length ? prev : DUMMY_ARRIVAL_ITEMS));
-    setArrivalTooltipOpen(true);
+    if (!isKioskMode) {
+      setArrivalTooltipOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -767,7 +778,7 @@ const Sidebar: React.FC<{
             </button>
 
             {/* Tooltip anchored ONLY to Critical Arrivals */}
-            {arrivalTooltipOpen && arrivalTooltipItems.length > 0 && arrivalTooltipPos && 
+            {!isKioskMode && arrivalTooltipOpen && arrivalTooltipItems.length > 0 && arrivalTooltipPos && 
               createPortal(
                 (() => {
                   const item = arrivalTooltipItems[0]; // keep it compact: show latest only

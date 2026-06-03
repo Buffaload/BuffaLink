@@ -2015,6 +2015,121 @@
   }
 }
 
+/* Kiosk Leaderboard */
+.kiosk-leaderboard-container {
+  padding: 20px;
+  width: 100%;
+  height: calc(100% - var(--app-header-height, 120px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.kiosk-leaderboard-grid {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.kiosk-leaderboard-col {
+  display: grid;
+  gap: 10px;
+}
+
+.kiosk-leaderboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 24, 39, 0.10);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #ffffff);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.kiosk-leaderboard-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.kiosk-leaderboard-pos {
+  width: 34px;
+  flex: 0 0 34px;
+  text-align: left;
+  font-weight: 950;
+  font-size: 14px;
+  color: rgba(17, 24, 39, 0.75);
+}
+
+.kiosk-leaderboard-reg {
+  flex: 0 0 auto;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 15px;
+  color: #111827;
+}
+
+.kiosk-leaderboard-loc {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: rgba(17, 24, 39, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiosk-leaderboard-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Mobile fallback: stack columns */
+@media (max-width: 980px) {
+  .kiosk-leaderboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar-toggle-disabled-wrapper {
+  position: relative;
+}
+
+.sidebar-collapse-toggle.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sidebar-toggle-disabled-wrapper:hover::after {
+  content: "Exit kiosk mode to expand Sidebar";
+  position: fixed;
+  left: calc(var(--sidebar-current-width) + 16px);
+  top: 92px;
+  z-index: 20000;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff4cc;
+  border: 2px solid #f0c040;
+  color: #5f4b00;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .vehicles-wizard {

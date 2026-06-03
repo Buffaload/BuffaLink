@@ -65,6 +65,11 @@ interface VehiclesProps {
   filterOption: string;
   selectedDepots: string[];
   isKioskMode: boolean;
+  onKioskStatsChange?: (stats: {
+    total: number;
+    vor: number;
+    defects: number;
+  }) => void;
 }
 
 const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
@@ -319,6 +324,34 @@ const isVorOrDefect = (v: { IsVor?: any; LiveDefects?: any }): boolean => {
 
   return toBool(v.IsVor) || toBool(v.LiveDefects);
 };
+
+const toBool = (value: any): boolean => {
+  if (value === true) return true;
+  if (value === false || value == null) return false;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const s = value.trim().toLowerCase();
+    if (["true", "1", "y", "yes"].includes(s)) return true;
+    return false;
+  }
+  return false;
+};
+
+const isMaintenanceSite = (v: { locationGroupName?: string | null; locationName?: string | null; formattedAddress?: string | null }) => {
+  const g = String(v.locationGroupName ?? "").toLowerCase();
+  const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`.toLowerCase();
+  return g.includes("maintenance") || g.includes("workshop") || hay.includes("maintenance");
+};
+
+const isInAnyDepot = (v: DepotMatchableVehicle) => {
+  // Strong signals:
+  if ((v.locationGroupName ?? "") === "Buffaload") return true;
+  // Fall back to matcher:
+  return ALL_DEPOT_LABELS.some((d) => matchesSelectedDepot(v, d));
+};
+
+const isTipper = (v: { assetGroupName?: string | null }) =>
+  (v.assetGroupName ?? "").toLowerCase() === "tippers";
 
 // Helper function for percentage calculation and color coding for service/MOT due dates
 const getProgressColorClass = (percentage: number) => {
@@ -793,6 +826,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
   selectedDepots,
   isKioskMode,
+  onKioskStatsChange,
 }) => {
   const queryClient = useQueryClient();
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
@@ -1069,6 +1103,30 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
     });
 
+    if (isKioskMode) {
+      const leaderboard = vehiclesWithSince
+        .filter((v) => (v.eventType ?? "").toLowerCase() === "stopped")
+        .filter((v) => !isInAnyDepot(v))
+        .filter((v) => !isMaintenanceSite(v))
+        .filter((v) => !isTipper(v));
+
+      // Sort by LONGEST stopped time (league table)
+      const sorted = [...leaderboard].sort((a, b) => {
+        const aSince = a.statusSinceMs ?? now;
+        const bSince = b.statusSinceMs ?? now;
+        return bSince - aSince;
+      });
+
+      return {
+        categoryVehicles: sorted,
+        displayVehicles: sorted,
+        highlightFigures: {
+          total: sorted.length,
+          vor: sorted.filter((v) => toBool(v.IsVor)).length,
+        },
+      };
+    }
+
     let categoryVehicles: VehicleWithSince[] = [];
 
     if (filterOption === "Critical-Arrivals") {
@@ -1179,6 +1237,18 @@ const Vehicles: React.FC<VehiclesProps> = ({
     searchTerm,
     sortOption,
   ]);
+
+  useEffect(() => {
+    if (!isKioskMode || !onKioskStatsChange) return;
+
+    const stats = {
+      total: displayVehicles.length,
+      vor: displayVehicles.filter((v) => toBool(v.IsVor)).length,
+      defects: displayVehicles.filter((v) => toBool(v.LiveDefects)).length,
+    };
+
+    onKioskStatsChange(stats);
+  }, [isKioskMode, onKioskStatsChange, displayVehicles]);
 
   const getTipperAlertClass = (
     vehicle: {
@@ -1372,6 +1442,71 @@ const Vehicles: React.FC<VehiclesProps> = ({
           <p className="vehicle-empty-text">{errorMessage}</p>
         </div>
       </>
+    );
+  }
+
+  if (isKioskMode) {
+    const list = displayVehicles;
+    const mid = Math.ceil(list.length / 2);
+    const left = list.slice(0, mid);
+    const right = list.slice(mid);
+
+    const renderRow = (vehicle: VehicleWithSince, position: number) => {
+      const rawLocation =
+        vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
+
+      const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
+      const displayId = isTrailer
+        ? (vehicle.assetName ?? vehicle.assetRegistration ?? "")
+        : (vehicle.assetRegistration ?? vehicle.assetName ?? "");
+
+      return (
+        <div className="kiosk-leaderboard-row" key={`${vehicle.assetName}-${position}`}>
+          <div className="kiosk-leaderboard-left">
+            <span className="kiosk-leaderboard-pos">{position}</span>
+            <span className="kiosk-leaderboard-reg">
+              {isTrailer ? displayId : formatRegistration(displayId)}
+            </span>
+            <span
+              className="kiosk-leaderboard-loc"
+              title={cleanLocationLabel(rawLocation)}
+            >
+              {cleanLocationLabel(rawLocation)}
+            </span>
+          </div>
+
+          <div className="kiosk-leaderboard-right">
+            {toBool(vehicle.IsVor) && <span className="chip chip--vor">VOR</span>}
+            {toBool(vehicle.LiveDefects) && (
+              <span className="chip chip--defects">LIVE DEFECTS</span>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="kiosk-leaderboard-container" ref={scrollRef} onScroll={handleScroll}>
+        {isLoading ? (
+          <div className="vehicle-empty-state">
+            <p className="vehicle-empty-text">Loading leaderboard…</p>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="vehicle-empty-state">
+            <TriangleAlert className="vehicle-empty-icon" aria-hidden />
+            <p className="vehicle-empty-text">No stopped vehicles outside depots/maintenance.</p>
+          </div>
+        ) : (
+          <div className="kiosk-leaderboard-grid">
+            <div className="kiosk-leaderboard-col">
+              {left.map((v, idx) => renderRow(v, idx + 1))}
+            </div>
+            <div className="kiosk-leaderboard-col">
+              {right.map((v, idx) => renderRow(v, mid + idx + 1))}
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
