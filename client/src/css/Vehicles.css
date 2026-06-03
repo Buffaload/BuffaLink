@@ -1376,6 +1376,7 @@
 .nightout-toast--visible {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 .nightout-toast-card {
@@ -1408,6 +1409,7 @@
 .nightout-toast-close:hover {
   background: rgba(17, 24, 39, 0.06);
   color: rgba(17, 24, 39, 0.85);
+  cursor: pointer;
 }
 
 .nightout-toast-close:focus-visible {
