@@ -8,6 +8,7 @@ import {
   Bug,
   TriangleAlert,
   ChevronUp,
+  Moon,
 } from "lucide-react";
 import "../css/Vehicles.css";
 import API_BASE_URL from "../config";
@@ -815,6 +816,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
         setNightOutToast(null);
       }, 220);
     }, 10000);
+  };
+
+  const dismissNightOutToast = () => {
+    if (nightOutToastTimerRef.current) {
+      window.clearTimeout(nightOutToastTimerRef.current);
+      nightOutToastTimerRef.current = null;
+    }
+
+    setNightOutToast((prev) => (prev ? { ...prev, visible: false } : prev));
+
+    nightOutToastCleanupRef.current = window.setTimeout(() => {
+      setNightOutToast(null);
+    }, 220); // match CSS transition
   };
 
   useEffect(() => {
@@ -1847,12 +1861,28 @@ const Vehicles: React.FC<VehiclesProps> = ({
           aria-live="polite"
         >
           <div className="nightout-toast-card">
-            <span className="nightout-toast-text">
+            <button
+              type="button"
+              className="nightout-toast-close"
+              aria-label="Dismiss notification"
+              onClick={dismissNightOutToast}
+            >
+              ✕
+            </button>
+
+            <div className="nightout-toast-header">
+              <span className="nightout-toast-icon" aria-hidden="true">
+                <Moon size={18} />
+              </span>
+              <span className="nightout-toast-title">Night-Out</span>
+            </div>
+
+            <div className="nightout-toast-body">
               <b>{nightOutToast.reg}</b>{" "}
               {nightOutToast.isOn
                 ? "has been marked as Night-Out."
                 : "has been removed from Night-Out."}
-            </span>
+            </div>
           </div>
         </div>
       )}

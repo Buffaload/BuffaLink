@@ -1387,13 +1387,62 @@
   max-width: 360px;
 }
 
-.nightout-toast-text {
-  font-size: 13px;
-  font-weight: 800;
-  color: rgba(17, 24, 39, 0.82);
+.nightout-toast-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(17, 24, 39, 0.55);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
 }
 
-.nightout-toast-text b {
+.nightout-toast-close:hover {
+  background: rgba(17, 24, 39, 0.06);
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.nightout-toast-close:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+}
+
+.nightout-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.nightout-toast-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.nightout-toast-title {
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.nightout-toast-body {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(17, 24, 39, 0.75);
+  line-height: 1.4;
+}
+
+.nightout-toast-body b {
   font-weight: 950;
   letter-spacing: 0.04em;
   text-transform: uppercase;
