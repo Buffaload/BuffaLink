@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Moon,
 } from "lucide-react";
+import L from "leaflet";
 import "../css/Vehicles.css";
 import API_BASE_URL from "../config";
 
@@ -792,6 +793,55 @@ const Vehicles: React.FC<VehiclesProps> = ({
       document.body.style.overflow = previousOverflow;
     };
   }, [isVehicleModalOpen]);
+
+  useEffect(() => {
+    if (
+      !isVehicleModalOpen ||
+      !selectedVehicle ||
+      !Number.isFinite(selectedVehicle.latitude) ||
+      !Number.isFinite(selectedVehicle.longitude)
+    ) {
+      return;
+    }
+
+    const map = L.map("vehicle-modal-map", {
+      zoomControl: false,
+      attributionControl: false,
+    }).setView(
+      [selectedVehicle.latitude!, selectedVehicle.longitude!],
+      13
+    );
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
+
+    const reg =
+      selectedVehicle.assetRegistration ??
+      selectedVehicle.assetName ??
+      "N/A";
+
+    const marker = L.circleMarker(
+      [selectedVehicle.latitude!, selectedVehicle.longitude!],
+      {
+        radius: 24,
+        fillColor: "#6b7280", // ✅ grey
+        fillOpacity: 0.85,
+        color: "#ffffff",
+        weight: 2,
+      }
+    ).addTo(map);
+
+    marker.bindTooltip(reg, {
+      permanent: true,
+      direction: "center",
+      className: "vehicle-reg-tooltip",
+    });
+
+    return () => {
+      map.remove();
+    };
+  }, [isVehicleModalOpen, selectedVehicle]);
 
   const [nightOutToast, setNightOutToast] = useState<{
     reg: string;
@@ -1809,24 +1859,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                   {Number.isFinite(selectedVehicle.latitude) && Number.isFinite(selectedVehicle.longitude) ? (
                     <div className="vehicle-modal-map">
-                      <iframe
-                        title="Vehicle map"
-                        className="vehicle-modal-map-iframe"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        src={(() => {
-                          const lat = selectedVehicle.latitude as number;
-                          const lon = selectedVehicle.longitude as number;
-                          const d = 0.01;
-                          const left = lon - d;
-                          const right = lon + d;
-                          const top = lat + d;
-                          const bottom = lat - d;
-                          return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${lat}%2C${lon}`;
-                        })()}
+                      <div
+                        id="vehicle-modal-map"
+                        style={{
+                          width: "100%",
+                          height: 320,
+                        }}
                       />
+
                       <div className="vehicle-modal-map-caption">
-                        {displayText(selectedVehicle.formattedAddress ?? selectedVehicle.locationName, "Unknown location")}
+                        {displayText(
+                          selectedVehicle.formattedAddress ??
+                            selectedVehicle.locationName,
+                          "Unknown location"
+                        )}
                       </div>
                     </div>
                   ) : (

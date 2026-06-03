@@ -339,7 +339,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         const minutes = Math.floor((stopDuration % (1000 * 60 * 60)) / (1000 * 60));
 
         circleMarker.bindPopup(`
-          <div style="font-family: Arial, sans-serif; max-width: 200px;">
+          <div class="leaflet-popup-app">
             <h4 style="margin: 0 0 8px 0; color: #333;">${reg}</h4>
             <p style="margin: 4px 0;"><strong>Location:</strong> ${vehicle.locationName || vehicle.formattedAddress || "Unknown"}</p>
             <p style="margin: 4px 0;"><strong>Temperature:</strong> ${vehicle.temperature}°C</p>

@@ -865,6 +865,23 @@
   display: block;
 }
 
+.vehicle-reg-tooltip {
+  background: none !important;
+  border: none !important;
+  border-radius: 50% !important;
+  color: white !important;
+  font-family: var(--app-font, inherit) !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  min-width: 34px !important;
+  min-height: 18px !important;
+  padding: 2px 4px !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
 .vehicle-modal-map-caption {
   padding: 10px 12px;
   font-size: 12px;

@@ -310,6 +310,7 @@
   border: none !important;
   border-radius: 50% !important;
   color: white !important;
+  font-family: var(--app-font, inherit) !important;
   font-weight: bold !important;
   font-size: 10px !important;
   text-align: center !important;
@@ -331,6 +332,11 @@
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-app {
+  font-family: var(--app-font, inherit);
+  max-width: 200px;
 }
 
 .leaflet-popup-content {
