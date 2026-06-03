@@ -1,7 +1,3 @@
-.dashboard-content--kiosk {
-  padding-top: 80px;
-}
-
 .map-viewport {
   position: fixed;
   top: var(--app-header-height, 120px);

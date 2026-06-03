@@ -1117,8 +1117,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
       const sorted = [...leaderboard].sort((a, b) => {
         const aSince = a.statusSinceMs ?? now;
         const bSince = b.statusSinceMs ?? now;
-        return bSince - aSince;
-      });
+
+        const aDuration = now - aSince;
+        const bDuration = now - bSince;
+
+        return bDuration - aDuration;
+      }).slice(0, 100); // Top 100
 
       return {
         categoryVehicles: sorted,

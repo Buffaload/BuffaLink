@@ -95,6 +95,10 @@
   overflow: hidden;
 }
 
+.header-on {
+  left: calc(var(--sidebar-current-width) - 55px) !important;
+}
+
 .kiosk-leaderboard-container {
   width: 100%;
   max-width: none;
