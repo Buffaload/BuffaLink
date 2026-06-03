@@ -323,7 +323,6 @@ const Sidebar: React.FC<{
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!vehicles || vehicles.length === 0) return;
 
@@ -402,7 +401,7 @@ const Sidebar: React.FC<{
     if (!isKioskMode) {
       setArrivalTooltipOpen(true);
     }
-  }, [vehicles]);
+  }, [vehicles, isKioskMode]);
 
   const acknowledgeTooltipItems = (items: CriticalArrivalItem[]) => {
     const ack = safeJsonParse<Record<string, true>>(
@@ -462,7 +461,6 @@ const Sidebar: React.FC<{
     setArrivalTooltipItems([]);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!FORCE_ARRIVALS_TOOLTIP_FOR_STYLING) return;
 
@@ -471,7 +469,7 @@ const Sidebar: React.FC<{
     if (!isKioskMode) {
       setArrivalTooltipOpen(true);
     }
-  }, []);
+  }, [isKioskMode]);
 
   useEffect(() => {
     if (!isLoading && vehicles.length >= 0) {
