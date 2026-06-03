@@ -757,7 +757,41 @@ function normalizeLocationText(value?: string): string {
     .trim();
 }
 
+// function getStreetViewLatLon(vehicle: {
+//   latitude?: number;
+//   longitude?: number;
+//   locationName?: string;
+//   formattedAddress?: string;
+// }) {
+//   const haystack = normalizeLocationText(
+//     vehicle.locationName ?? vehicle.formattedAddress
+//   );
+
+//   // Depot override (token-based)
+//   for (const depot of STREET_VIEW_DEPOTS) {
+//     if (depot.tokens.every(t => haystack.includes(t))) {
+//       return { lat: depot.lat, lon: depot.lon };
+//     }
+//   }
+
+//   // Fallback to live GPS
+//   if (
+//     Number.isFinite(vehicle.latitude) &&
+//     Number.isFinite(vehicle.longitude)
+//   ) {
+//     return {
+//       lat: vehicle.latitude!,
+//       lon: vehicle.longitude!,
+//     };
+//   }
+
+//   // Nothing usable
+//   return null;
+// }
+
 function getStreetViewLatLon(vehicle: {
+  assetName?: string;
+  assetRegistration?: string;
   latitude?: number;
   longitude?: number;
   locationName?: string;
@@ -770,15 +804,32 @@ function getStreetViewLatLon(vehicle: {
   // Depot override (token-based)
   for (const depot of STREET_VIEW_DEPOTS) {
     if (depot.tokens.every(t => haystack.includes(t))) {
+      console.log("[StreetView][DEPOT_OVERRIDE]", {
+        asset: vehicle.assetRegistration ?? vehicle.assetName,
+        locationName: vehicle.locationName,
+        formattedAddress: vehicle.formattedAddress,
+        resolvedLat: depot.lat,
+        resolvedLon: depot.lon,
+        matchedTokens: depot.tokens,
+      });
+
       return { lat: depot.lat, lon: depot.lon };
     }
   }
 
-  // Fallback to live GPS
+  // Live GPS fallback
   if (
     Number.isFinite(vehicle.latitude) &&
     Number.isFinite(vehicle.longitude)
   ) {
+    console.log("[StreetView][LIVE_GPS]", {
+      asset: vehicle.assetRegistration ?? vehicle.assetName,
+      locationName: vehicle.locationName,
+      formattedAddress: vehicle.formattedAddress,
+      resolvedLat: vehicle.latitude,
+      resolvedLon: vehicle.longitude,
+    });
+
     return {
       lat: vehicle.latitude!,
       lon: vehicle.longitude!,
@@ -786,6 +837,12 @@ function getStreetViewLatLon(vehicle: {
   }
 
   // Nothing usable
+  console.log("[StreetView][NONE]", {
+    asset: vehicle.assetRegistration ?? vehicle.assetName,
+    locationName: vehicle.locationName,
+    formattedAddress: vehicle.formattedAddress,
+  });
+
   return null;
 }
 
