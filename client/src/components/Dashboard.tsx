@@ -263,6 +263,25 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     bottom: 0,
   };
 
+  const [isWideEnoughForKiosk, setIsWideEnoughForKiosk] = useState(
+    window.innerWidth > 1300
+  );
+
+  useEffect(() => {
+    const onResize = () => {
+      setIsWideEnoughForKiosk(window.innerWidth > 1300);
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isWideEnoughForKiosk && isKioskMode) {
+      toggleKioskMode();
+    }
+  }, [isWideEnoughForKiosk, isKioskMode]);
+
   useEffect(() => {
     // next tick + after layout changes
     const t1 = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 0);
@@ -544,22 +563,24 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             <div className="iso-week-banner__label">ISO Week</div>
             <div className="iso-week-banner__value">{isoWeek}</div>
           </div>
-          <div className="kiosk-toggle">
-            <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
-              <span className="kiosk-toggle-label">Kiosk Mode</span>
-              <button
-                className={`kiosk-toggle ${isKioskMode ? "on" : "off"}`}
-                onClick={toggleKioskMode}
-                aria-pressed={isKioskMode}
-                type="button"
-              >
-                <span className="sr-only">Toggle Kiosk Mode</span>
-                <span className="kiosk-slider">
-                  <span className="kiosk-thumb" />
-                </span>
-              </button>
+          {isWideEnoughForKiosk && (
+            <div className="kiosk-toggle">
+              <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
+                <span className="kiosk-toggle-label">Kiosk Mode</span>
+                <button
+                  className={`kiosk-toggle ${isKioskMode ? "on" : "off"}`}
+                  onClick={toggleKioskMode}
+                  aria-pressed={isKioskMode}
+                  type="button"
+                >
+                  <span className="sr-only">Toggle Kiosk Mode</span>
+                  <span className="kiosk-slider">
+                    <span className="kiosk-thumb" />
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

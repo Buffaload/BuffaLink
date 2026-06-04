@@ -2114,6 +2114,18 @@
   text-align: right;
 }
 
+@media (max-width: 1700px) {
+  .dashboard-content--kiosk .kiosk-leaderboard-container {
+    padding-right: 40px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .dashboard-content--kiosk .kiosk-title-stats {
+    justify-content: flex-start;
+  }
+}
+
 /* Mobile fallback: stack columns */
 @media (max-width: 980px) {
   .kiosk-leaderboard-grid {
