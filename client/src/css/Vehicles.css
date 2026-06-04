@@ -2016,6 +2016,10 @@
 }
 
 /* Kiosk Leaderboard */
+.kiosk-title-stats .figure-pill {
+  margin-left: 0 !important;
+}
+
 .kiosk-leaderboard-container {
   padding: 20px;
   width: 100%;
