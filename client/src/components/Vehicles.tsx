@@ -1270,6 +1270,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     searchTerm,
     sortOption,
     isKioskMode,
+    maxRows,
   ]);
 
   useEffect(() => {
