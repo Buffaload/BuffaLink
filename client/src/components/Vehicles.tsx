@@ -353,6 +353,12 @@ const isInAnyDepot = (v: DepotMatchableVehicle) => {
 const isTipper = (v: { assetGroupName?: string | null }) =>
   (v.assetGroupName ?? "").toLowerCase() === "tippers";
 
+const isTrailerVehicle = (v: { assetType?: string | null; assetGroupName?: string | null }) => {
+  const t = (v.assetType ?? "").toLowerCase().trim();
+  const g = (v.assetGroupName ?? "").toLowerCase();
+  return t === "trailer" || g.includes("trailer");
+};
+
 // Helper function for percentage calculation and color coding for service/MOT due dates
 const getProgressColorClass = (percentage: number) => {
   if (percentage < 33.33) return "progress-red";
@@ -886,32 +892,57 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   useEffect(() => {
     if (!isKioskMode || !scrollRef.current) return;
-
-    const BOTTOM_PADDING = 12;
+    const BOTTOM_BUFFER = 12;
+    const TWO_COL_BREAKPOINT = 980; // Matches CSS breakpoint where grid becomes 1 column
+    
+    let raf = 0;
 
     const recalc = () => {
       const container = scrollRef.current!;
       const rect = container.getBoundingClientRect();
 
-      // Find the first rendered row to measure its real height
-      const firstRow = container.querySelector(
-        ".kiosk-leaderboard-row"
-      ) as HTMLElement | null;
+      const rows = Array.from(
+        container.querySelectorAll(".kiosk-leaderboard-row")
+      ) as HTMLElement[];
 
-      if (!firstRow) return;
+      // If rows aren't rendered yet (loading / first paint), try again next frame
+      if (rows.length === 0) {
+        raf = requestAnimationFrame(recalc);
+        return;
+      }
 
-      const rowHeight = firstRow.getBoundingClientRect().height;
-      const availableHeight =
-        window.innerHeight - rect.top - BOTTOM_PADDING;
+      // Determine the "step" between rows (height + gap)
+      let rowStep = 52; // fallback
+      if (rows.length >= 2) {
+        const r1 = rows[0].getBoundingClientRect();
+        const r2 = rows[1].getBoundingClientRect();
+        rowStep = Math.max(1, Math.round(r2.top - r1.top));
+      } else {
+        // Fallback: single row rendered, approximate row step from height + CSS gap
+        const r1 = rows[0].getBoundingClientRect();
+        const col = container.querySelector(".kiosk-leaderboard-col") as HTMLElement | null;
+        const gapStr =
+          col ? (getComputedStyle(col).rowGap || getComputedStyle(col).gap) : "0px";
+        const gap = Number.parseFloat(gapStr) || 0;
+        rowStep = Math.max(1, Math.round(r1.height + gap));
+      }
 
-      const rowsThatFit = Math.floor(availableHeight / rowHeight);
+      const availableHeight = window.innerHeight - rect.top - BOTTOM_BUFFER;
+      const rowsPerColumn = Math.max(1, Math.floor(availableHeight / rowStep));
 
-      setMaxRows(Math.max(1, rowsThatFit));
+      const isTwoCol = window.innerWidth > TWO_COL_BREAKPOINT;
+      const columns = isTwoCol ? 2 : 1;
+
+      setMaxRows(rowsPerColumn * columns);
     };
 
     recalc();
     window.addEventListener("resize", recalc);
-    return () => window.removeEventListener("resize", recalc);
+
+    return () => {
+      window.removeEventListener("resize", recalc);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [isKioskMode]);
 
   const openVehicleModal = (vehicle: VehicleWithSince) => {
@@ -1143,7 +1174,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
         .filter((v) => (v.eventType ?? "").toLowerCase() === "stopped")
         .filter((v) => !isInAnyDepot(v))
         .filter((v) => !isMaintenanceSite(v))
-        .filter((v) => !isTipper(v));
+        .filter((v) => !isTipper(v))
+        .filter((v) => !isTrailerVehicle(v));
 
       // Sort by LONGEST stopped time (league table)
       const sorted = [...leaderboard].sort((a, b) => {
