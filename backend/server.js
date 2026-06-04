@@ -6,6 +6,7 @@ import auth from "./middleware/auth.js"; // Auth middleware
 import checkRole from "./middleware/role.js"; // Role checking middleware
 import authRoutes from "./routes/auth.js"; // Auth routes (register/login)
 import vehicleRoutes from "./routes/vehicles.js";
+import User from "./models/User.js";
 
 dotenv.config();
 
@@ -63,7 +64,27 @@ app.options("*", cors(corsOptions));
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected successfully"))
+  //.then(() => console.log("MongoDB connected successfully"))
+  mongoose.connect(process.env.MONGO_URI)
+  .then(async () => {
+    console.log("MongoDB connected");
+
+    const users = await User.find(
+      {},
+      { username: 1, role: 1, depot: 1, _id: 0 }
+    ).lean();
+
+    console.log("=== CURRENT USERS ===");
+    console.log(`Total users: ${users.length}`);
+
+    users.forEach((u, i) => {
+      console.log(
+        `${i + 1}. ${u.username} | role: ${u.role} | depot: ${u.depot}`
+      );
+    });
+
+    console.log("=====================");
+  })
   .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
 //Test route
