@@ -90,7 +90,7 @@ app.get("/api/user", auth, (req, res) => {
 });
 
 // TEMP: User logging
-app.get("/debug/users", auth, async (req, res) => {
+app.get("/api/debug/users", auth, async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ msg: "Forbidden" });
