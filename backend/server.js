@@ -89,13 +89,8 @@ app.get("/api/user", auth, (req, res) => {
   res.send("User content");
 });
 
-// Start the server
-export default function handler(req, res) {
-  return app(req, res);
-}
-
 // TEMP: User logging
-app.get("/api/debug/users", auth, async (req, res) => {
+app.get("/debug/users", auth, async (req, res) => {
   try {
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ msg: "Forbidden" });
@@ -119,3 +114,8 @@ app.get("/api/debug/users", auth, async (req, res) => {
     return res.status(500).json({ msg: "Failed to fetch users" });
   }
 });
+
+// Start the server
+export default function handler(req, res) {
+  return app(req, res);
+}
