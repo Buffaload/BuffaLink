@@ -845,6 +845,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
   void timelineTick;
   const [searchTerm, setSearchTerm] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const skeletonGridRef = useRef<HTMLUListElement | null>(null);
+  const [skeletonCount, setSkeletonCount] = useState(8);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleWithSince | null>(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isVehicleModalClosing, setIsVehicleModalClosing] = useState(false);
@@ -1127,6 +1129,39 @@ const Vehicles: React.FC<VehiclesProps> = ({
     refetchInterval: 30000, // Poll every 30 sec
     staleTime: 60000, // Data is fresh for 1 minute
   });
+
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const recalcSkeletons = () => {
+      const grid = skeletonGridRef.current;
+      if (!grid) return;
+
+      const width = grid.getBoundingClientRect().width;
+
+      // Must match CSS min widths
+      const minCardWidth =
+        filterOption === "Critical" || filterOption === "Critical-Arrivals"
+          ? 360
+          : filterOption === "Depots"
+          ? 320
+          : 340;
+
+      const gap = 16; // matches CSS
+      const columns = Math.max(
+        1,
+        Math.floor((width + gap) / (minCardWidth + gap))
+      );
+
+      const rows = 2;
+      setSkeletonCount(columns * rows);
+    };
+
+    recalcSkeletons();
+    window.addEventListener("resize", recalcSkeletons);
+
+    return () => window.removeEventListener("resize", recalcSkeletons);
+  }, [isLoading, filterOption]);
 
   // Tracks when each vehicle entered its current eventType (state)
   type StatusSince = {
@@ -1433,6 +1468,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const SKELETON_COUNT = 8;
   const renderVehicleSkeletons = () => (
     <ul
+      ref={skeletonGridRef}
       className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${
         filterOption === "Critical" || filterOption === "Critical-Arrivals"
           ? "vehicle-list--critical"

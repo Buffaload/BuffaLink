@@ -2121,7 +2121,7 @@
 }
 
 @media (max-width: 1400px) {
-  .dashboard-content--kiosk .kiosk-title-stats {
+  .dashboard-title--kiosk .kiosk-title-stats {
     justify-content: flex-start !important;
   }
 }
