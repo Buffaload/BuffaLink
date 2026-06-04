@@ -205,10 +205,11 @@ const Sidebar: React.FC<{
   filterOption: string;
   handleLogout: () => void;
   isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
   isMobileOpen: boolean;
   onMobileRequestClose: () => void;
   isKioskMode: boolean;
-}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed, isMobileOpen, onMobileRequestClose, isKioskMode }) => {
+}> = ({ onFilterChange, onDepotChange, filterOption, handleLogout, isCollapsed, setIsCollapsed, isMobileOpen, onMobileRequestClose, isKioskMode }) => {
   const [userRole, setUserRole] = useState<string>("");
   const [activeButton, setActiveButton] = useState<string>("HGVs");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
@@ -273,10 +274,11 @@ const Sidebar: React.FC<{
   useEffect(() => {
     if (!isKioskMode) {
       // Expand sidebar when exiting kiosk mode
+      setIsCollapsed(false);
       setIsHoverExpanded(false);
       localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "false");
     }
-  }, [isKioskMode]);
+  }, [isKioskMode, setIsCollapsed]);
 
   const DEPOTS = [
     "Ellington",

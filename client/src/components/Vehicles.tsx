@@ -887,25 +887,31 @@ const Vehicles: React.FC<VehiclesProps> = ({
   useEffect(() => {
     if (!isKioskMode || !scrollRef.current) return;
 
-    const ROW_HEIGHT = 52;
-    const BOTTOM_PADDING = 20;
+    const BOTTOM_PADDING = 12;
 
     const recalc = () => {
-      const rect = scrollRef.current!.getBoundingClientRect();
-      // Available vertical space from top of leaderboard to bottom of viewport
+      const container = scrollRef.current!;
+      const rect = container.getBoundingClientRect();
+
+      // Find the first rendered row to measure its real height
+      const firstRow = container.querySelector(
+        ".kiosk-leaderboard-row"
+      ) as HTMLElement | null;
+
+      if (!firstRow) return;
+
+      const rowHeight = firstRow.getBoundingClientRect().height;
       const availableHeight =
         window.innerHeight - rect.top - BOTTOM_PADDING;
-      const rowsThatFit = Math.floor(availableHeight / ROW_HEIGHT);
+
+      const rowsThatFit = Math.floor(availableHeight / rowHeight);
 
       setMaxRows(Math.max(1, rowsThatFit));
     };
 
     recalc();
     window.addEventListener("resize", recalc);
-
-    return () => {
-      window.removeEventListener("resize", recalc);
-    };
+    return () => window.removeEventListener("resize", recalc);
   }, [isKioskMode]);
 
   const openVehicleModal = (vehicle: VehicleWithSince) => {

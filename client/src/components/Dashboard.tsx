@@ -128,7 +128,9 @@ const renderStatusIcon = (rawType?: string) => {
 
 const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const [filterOption, setFilterOption] = useState<string>("HGVs");
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem("buffalink:sidebarCollapsed") === "true";
+  });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
   const [isoWeek, setIsoWeek] = useState(() => getISOWeek());
@@ -501,7 +503,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
               ) && (
                 <div className="dashboard-depots-indicator">
                   {" "}{!isKioskMode
-                    ? depotHeaderLabel
+                    ? (depotHeaderLabel)
                     : ""}
                 </div>
               )}
@@ -570,6 +572,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
           filterOption={filterOption}
           handleLogout={handleLogout}  
           isCollapsed={isKioskMode ? true : isCollapsed}
+          setIsCollapsed={setIsCollapsed}
           isMobileOpen={isMobileSidebarOpen}
           onMobileRequestClose={() => setIsMobileSidebarOpen(false)}
           isKioskMode={isKioskMode}
