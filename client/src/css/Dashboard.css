@@ -171,6 +171,13 @@
   z-index: 6;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
+
+@media (max-width: 1300px) {
+  .iso-week-banner {
+    margin-right: -45px;
+  }
+}
+
 .iso-week-banner__label {
   font-size: 12px;
   font-weight: 400;

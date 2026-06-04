@@ -2122,7 +2122,7 @@
 
 @media (max-width: 1400px) {
   .dashboard-content--kiosk .kiosk-title-stats {
-    justify-content: flex-start;
+    justify-content: flex-start !important;
   }
 }
 
