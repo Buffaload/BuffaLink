@@ -7,6 +7,7 @@ import checkRole from "./middleware/role.js"; // Role checking middleware
 import authRoutes from "./routes/auth.js"; // Auth routes (register/login)
 import vehicleRoutes from "./routes/vehicles.js";
 import User from "./models/User.js";
+import auth from "./middleware/auth.js";
 
 dotenv.config();
 
@@ -15,6 +16,32 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5050",
 ];
+
+// TEMP: User logging
+app.get("/api/debug/users", auth, async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ msg: "Forbidden" });
+    }
+
+    const users = await User.find({}, { username: 1, role: 1, depot: 1, _id: 0 })
+      .sort({ username: 1 })
+      .lean();
+
+    console.log("=== CURRENT USERS ===");
+    console.log(`Total users: ${users.length}`);
+    users.forEach((u, i) => {
+      console.log(`${i + 1}. ${u.username} | role: ${u.role} | depot: ${u.depot}`);
+    });
+    console.log("=====================");
+
+    // Return in response too
+    return res.json({ count: users.length, users });
+  } catch (err) {
+    console.error("Failed to fetch users:", err);
+    return res.status(500).json({ msg: "Failed to fetch users" });
+  }
+});
 
 // Regex to allow all Vercel preview URLs for BuffaLink Staging
 const vercelPreviewRegex = /^https:\/\/buffalink(-[a-z0-9-]+)?\.vercel\.app$/i;
@@ -64,27 +91,7 @@ app.options("*", cors(corsOptions));
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  //.then(() => console.log("MongoDB connected successfully"))
-  mongoose.connect(process.env.MONGO_URI)
-  .then(async () => {
-    console.log("MongoDB connected");
-
-    const users = await User.find(
-      {},
-      { username: 1, role: 1, depot: 1, _id: 0 }
-    ).lean();
-
-    console.log("=== CURRENT USERS ===");
-    console.log(`Total users: ${users.length}`);
-
-    users.forEach((u, i) => {
-      console.log(
-        `${i + 1}. ${u.username} | role: ${u.role} | depot: ${u.depot}`
-      );
-    });
-
-    console.log("=====================");
-  })
+  .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
 //Test route
