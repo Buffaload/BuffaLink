@@ -270,6 +270,14 @@ const Sidebar: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isKioskMode]);
 
+  useEffect(() => {
+    if (!isKioskMode) {
+      // Expand sidebar when exiting kiosk mode
+      setIsHoverExpanded(false);
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "false");
+    }
+  }, [isKioskMode]);
+
   const DEPOTS = [
     "Ellington",
     "Crewe",

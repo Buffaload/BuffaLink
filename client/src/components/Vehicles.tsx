@@ -747,6 +747,7 @@ const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
   "RflDueDate",
   "LolerDueDate",
   "TlWeightDueDate",
+  "TailDueDate",
 ]);
 
 type DepotStreetViewRule = {
@@ -841,6 +842,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleWithSince | null>(null);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isVehicleModalClosing, setIsVehicleModalClosing] = useState(false);
+  const [maxRows, setMaxRows] = useState<number>(100);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
   const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -881,6 +883,30 @@ const Vehicles: React.FC<VehiclesProps> = ({
     window.addEventListener("buffalink:timelineChanged", onTimelineChanged);
     return () => window.removeEventListener("buffalink:timelineChanged", onTimelineChanged);
   }, []);
+
+  useEffect(() => {
+    if (!isKioskMode || !scrollRef.current) return;
+
+    const ROW_HEIGHT = 52;
+    const BOTTOM_PADDING = 20;
+
+    const recalc = () => {
+      const rect = scrollRef.current!.getBoundingClientRect();
+      // Available vertical space from top of leaderboard to bottom of viewport
+      const availableHeight =
+        window.innerHeight - rect.top - BOTTOM_PADDING;
+      const rowsThatFit = Math.floor(availableHeight / ROW_HEIGHT);
+
+      setMaxRows(Math.max(1, rowsThatFit));
+    };
+
+    recalc();
+    window.addEventListener("resize", recalc);
+
+    return () => {
+      window.removeEventListener("resize", recalc);
+    };
+  }, [isKioskMode]);
 
   const openVehicleModal = (vehicle: VehicleWithSince) => {
     lastActiveElementRef.current = document.activeElement as HTMLElement | null;
@@ -1122,7 +1148,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         const bDuration = now - bSince;
 
         return bDuration - aDuration;
-      }).slice(0, 100); // Top 100
+      }).slice(0, maxRows);
 
       return {
         categoryVehicles: sorted,

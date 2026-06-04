@@ -8,11 +8,6 @@
   --app-header-height: 120px;
 }
 
-/* kiosk mode header height */
-.dashboard-container.kiosk-mode {
-  --app-header-height: 80px;
-}
-
 .dashboard-content {
   flex-grow: 1;
   overflow: hidden;
@@ -102,10 +97,11 @@
 
 .dashboard-content--kiosk {
   margin-left: var(--sidebar-current-width) !important;
+  height: calc(100vh - var(--app-header-height));
   width: calc(100vw - var(--sidebar-current-width));
   max-width: none;
   padding: 0;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 .header-on {
