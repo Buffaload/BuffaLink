@@ -502,9 +502,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
                 filterOption === "Night-Out"
               ) && (
                 <div className="dashboard-depots-indicator">
-                  {" "}{!isKioskMode
-                    ? (depotHeaderLabel)
-                    : ""}
+                  {!isKioskMode && depotHeaderLabel && ` (${depotHeaderLabel})`}
                 </div>
               )}
             </h2>
