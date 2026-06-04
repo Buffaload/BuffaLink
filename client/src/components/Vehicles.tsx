@@ -1465,7 +1465,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   };
 
   // Loading state
-  const SKELETON_COUNT = 8;
   const renderVehicleSkeletons = () => (
     <ul
       ref={skeletonGridRef}
@@ -1477,7 +1476,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       aria-label="Loading vehicles"
       aria-busy="true"
     >
-      {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+      {Array.from({ length: skeletonCount }).map((_, i) => (
         <li key={`vehicle-skeleton-${i}`} className="vehicle-card vehicle-card--skeleton" aria-hidden="true">
           {/* Header */}
           <header className="vehicle-card__header">
