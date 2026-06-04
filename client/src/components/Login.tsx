@@ -25,7 +25,9 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
       try {
         const payload = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
         console.log("Decoded Payload:", payload); // Log to check structure
-        expiryTime = payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+        //expiryTime = payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+        // TEMP: disable auto‑logout by setting expiry far in the future
+        expiryTime = Date.now() + 100 * 365 * 24 * 60 * 60 * 1000; // ~100 years
       } catch (err) {
         console.error("Error decoding token:", err);
         throw new Error("Invalid token format.");
