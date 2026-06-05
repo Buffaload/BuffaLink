@@ -570,7 +570,7 @@ const getKioskSeverityClass = (sinceMs?: number): string => {
   if (hours >= 2) return "pastel-orange";
   if (hours >= 1) return "pastel-yellow";
 
-  return ""; // green = default (no pastel class)
+  return "pastel-green";
 };
 
 const renderStatusIcon = (rawType?: string) => {
