@@ -67,8 +67,10 @@ interface VehiclesProps {
   isKioskMode: boolean;
   onKioskStatsChange?: (stats: {
     total: number;
-    vor: number;
-    defects: number;
+    red: number;
+    orange: number;
+    yellow: number;
+    green: number;
   }) => void;
 }
 
@@ -557,6 +559,18 @@ const formatTimeInState = (sinceMs: number) => {
   parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
 
   return parts.join(", ");
+};
+
+const getKioskSeverityClass = (sinceMs?: number): string => {
+  if (!sinceMs) return "";
+
+  const hours = (Date.now() - sinceMs) / (1000 * 60 * 60);
+
+  if (hours >= 4) return "pastel-red";
+  if (hours >= 2) return "pastel-orange";
+  if (hours >= 1) return "pastel-yellow";
+
+  return ""; // green = default (no pastel class)
 };
 
 const renderStatusIcon = (rawType?: string) => {
@@ -1210,7 +1224,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
         .filter((v) => !isInAnyDepot(v))
         .filter((v) => !isMaintenanceSite(v))
         .filter((v) => !isTipper(v))
-        .filter((v) => !isTrailerVehicle(v));
+        .filter((v) => !isTrailerVehicle(v))
+        .filter((v) => !toBool(v.IsVor) && !toBool(v.LiveDefects));
 
       // Sort by LONGEST stopped time (league table)
       const sorted = [...leaderboard].sort((a, b) => {
@@ -1349,13 +1364,35 @@ const Vehicles: React.FC<VehiclesProps> = ({
   useEffect(() => {
     if (!isKioskMode || !onKioskStatsChange) return;
 
-    const stats = {
-      total: displayVehicles.length,
-      vor: displayVehicles.filter((v) => toBool(v.IsVor)).length,
-      defects: displayVehicles.filter((v) => toBool(v.LiveDefects)).length,
-    };
+    const now = Date.now();
 
-    onKioskStatsChange(stats);
+    let red = 0;
+    let orange = 0;
+    let yellow = 0;
+    let green = 0;
+
+    displayVehicles.forEach((v) => {
+      const since = v.statusSinceMs ?? now;
+      const hours = (now - since) / (1000 * 60 * 60);
+
+      if (hours >= 4) {
+        red++;
+      } else if (hours >= 2) {
+        orange++;
+      } else if (hours >= 1) {
+        yellow++;
+      } else {
+        green++;
+      }
+    });
+
+    onKioskStatsChange({
+      total: displayVehicles.length,
+      red,
+      orange,
+      yellow,
+      green,
+    });
   }, [isKioskMode, onKioskStatsChange, displayVehicles]);
 
   const getTipperAlertClass = (
@@ -1570,7 +1607,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : (vehicle.assetRegistration ?? vehicle.assetName ?? "");
 
       return (
-        <div className="kiosk-leaderboard-row" key={`${vehicle.assetName}-${position}`}>
+        <div className={`kiosk-leaderboard-row ${getKioskSeverityClass(vehicle.statusSinceMs!)}`} key={`${vehicle.assetName}-${position}`}>
           <div className="kiosk-leaderboard-left">
             <span className="kiosk-leaderboard-pos">{position}</span>
             <span className="kiosk-leaderboard-reg">
@@ -1585,10 +1622,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
           </div>
 
           <div className="kiosk-leaderboard-right">
-            {toBool(vehicle.IsVor) && <span className="chip chip--vor">VOR</span>}
-            {toBool(vehicle.LiveDefects) && (
-              <span className="chip chip--defects">LIVE DEFECTS</span>
-            )}
           </div>
 
           <div className="kiosk-leaderboard-time">
@@ -1607,7 +1640,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         ) : list.length === 0 ? (
           <div className="vehicle-empty-state">
             <TriangleAlert className="vehicle-empty-icon" aria-hidden />
-            <p className="vehicle-empty-text">No stopped vehicles outside depots/maintenance.</p>
+            <p className="vehicle-empty-text">No stopped vehicles outside depots/maintenance sites</p>
           </div>
         ) : (
           <div className="kiosk-leaderboard-grid">

@@ -241,6 +241,13 @@
   color: #047857;
 }
 
+/* yellow "Misc" */
+.figure-pill--yellow {
+  background: #fef9c3;
+  border-color: rgba(234, 179, 8, 0.45);
+  color: #a16207;
+}
+
 /* small dot icon */
 .figure-dot {
   width: 8px;
@@ -268,6 +275,9 @@
   background: #10b981;
 }
 
+.figure-dot--yellow {
+  background: #eab308;
+}
 
 /* Mobile: make search take full width */
 @media (max-width: 768px) {
@@ -2058,6 +2068,42 @@
   border: 1px solid rgba(17, 24, 39, 0.10);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #ffffff);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.kiosk-leaderboard-row {
+  position: relative;
+  --row-tint: transparent;
+}
+
+.kiosk-leaderboard-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--row-tint),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.kiosk-leaderboard-row > * {
+  position: relative;
+  z-index: 1;
+}
+
+.kiosk-leaderboard-row.pastel-yellow {
+  --row-tint: rgba(217, 119, 6, 0.12);
+}
+
+.kiosk-leaderboard-row.pastel-orange {
+  --row-tint: rgba(234, 88, 12, 0.12);
+}
+
+.kiosk-leaderboard-row.pastel-red {
+  --row-tint: rgba(220, 38, 38, 0.14);
 }
 
 .kiosk-leaderboard-left {

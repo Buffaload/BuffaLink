@@ -144,8 +144,8 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const token = localStorage.getItem("token");
   const [selectedDepots, setSelectedDepots] = useState<string[]>([]);
   type SortOrder = "asc" | "desc";
-  type KioskStats = { total: number; vor: number; defects: number };
-  const [kioskStats, setKioskStats] = useState<KioskStats>({ total: 0, vor: 0, defects: 0 });
+  type KioskStats = { total: number; red: number; orange: number; yellow: number; green: number };
+  const [kioskStats, setKioskStats] = useState<KioskStats>({ total: 0, red: 0, orange: 0, yellow: 0, green: 0 });
   const SERVICES_SORT_KEY = "servicesDueSortOrder";
   const [servicesSortOrder, setServicesSortOrder] = useState<SortOrder>(() => {
     const saved = localStorage.getItem(SERVICES_SORT_KEY);
@@ -181,7 +181,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     },
     Delays: {
       prefix: "Map ",
-      suffix: "- stopped vehicles (past 30 days)",
+      suffix: "- stopped vehicles",
     },
     Depots: {
       prefix: "Depots ",
@@ -527,20 +527,22 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             </h2>
 
             {isKioskMode && (
-              <div className="highlight-figures kiosk-title-stats" aria-label="Leaderboard highlights">
-                <span className="figure-pill figure-pill--grey">
-                  <span className="figure-dot figure-dot--grey" aria-hidden="true" />
-                  {kioskStats.total} {kioskStats.total === 1 ? "Vehicle" : "Vehicles"}
-                </span>
-
+              <div className="highlight-figures kiosk-title-stats" aria-label="Leaderboard timing bands">
                 <span className="figure-pill figure-pill--red">
                   <span className="figure-dot figure-dot--red" aria-hidden="true" />
-                  {kioskStats.vor} VOR
+                  4 Hours+
                 </span>
-
                 <span className="figure-pill figure-pill--orange">
                   <span className="figure-dot figure-dot--orange" aria-hidden="true" />
-                  {kioskStats.defects} Live Defects
+                  2-4 Hours
+                </span>
+                <span className="figure-pill figure-pill--yellow">
+                  <span className="figure-dot figure-dot--yellow" aria-hidden="true" />
+                  1-2 Hours
+                </span>
+                <span className="figure-pill figure-pill--green">
+                  <span className="figure-dot figure-dot--green" aria-hidden="true" />
+                  Under 1 Hour
                 </span>
               </div>
             )}
