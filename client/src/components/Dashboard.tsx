@@ -530,19 +530,19 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
               <div className="highlight-figures kiosk-title-stats" aria-label="Leaderboard timing bands">
                 <span className="figure-pill figure-pill--red">
                   <span className="figure-dot figure-dot--red" aria-hidden="true" />
-                  4 Hours+
+                  {kioskStats.red} 4 Hours+
                 </span>
                 <span className="figure-pill figure-pill--orange">
                   <span className="figure-dot figure-dot--orange" aria-hidden="true" />
-                  2-4 Hours
+                  {kioskStats.red} 2-4 Hours
                 </span>
                 <span className="figure-pill figure-pill--yellow">
                   <span className="figure-dot figure-dot--yellow" aria-hidden="true" />
-                  1-2 Hours
+                  {kioskStats.red} 1-2 Hours
                 </span>
                 <span className="figure-pill figure-pill--green">
                   <span className="figure-dot figure-dot--green" aria-hidden="true" />
-                  Under 1 Hour
+                  {kioskStats.red} Under 1 Hour
                 </span>
               </div>
             )}
