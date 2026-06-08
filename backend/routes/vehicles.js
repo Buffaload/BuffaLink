@@ -1236,6 +1236,18 @@ router.get("/", auth, diagnostics, async (req, res) => {
             !m.Category?.toLowerCase().includes("equipment")
         ); 
         
+        if (maintenanceDetails.length > 0) {
+          console.log(
+            "[BlueCrystal sample keys]",
+            Object.keys(maintenanceDetails[0])
+          );
+
+          console.log(
+            "[BlueCrystal sample object]",
+            maintenanceDetails[0]
+          );
+        }
+
         // Build O(1) lookup by VehicleId
         maintenanceByVehicleId.clear();
         for (const m of maintenanceDetails) {
