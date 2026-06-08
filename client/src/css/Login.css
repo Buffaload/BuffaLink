@@ -75,7 +75,7 @@ html {
   background: var(--login-input-bg);
   border: 1px solid var(--login-input-border);
   border-radius: 999px;
-  padding: 14px 44px 14px 18px;
+  padding: 14px 18px;
   margin-bottom: 16px;
   color: #fff;
   font-size: 14px;
@@ -111,40 +111,47 @@ html {
   box-shadow: 0 0 0 3px rgba(55, 214, 122, 0.18);
 }
 
-.password-wrapper {
-  position: relative;
+.password-field {
+  display: flex;
+  align-items: center;
   width: 100%;
   margin-bottom: 16px;
+  background: var(--login-input-bg);
+  border: 1px solid var(--login-input-border);
+  border-radius: 999px;
 }
 
-.password-wrapper input {
-  width: 100%;
-  padding-right: 44px; /* space for the eye icon */
+.password-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 14px 18px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.password-field input:focus {
+  outline: none;
 }
 
 .password-toggle {
-  position: absolute;
-  inset: 0 14px 0 auto;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
   background: none;
   border: none;
-  padding: 0;
   cursor: pointer;
   color: #9aa0a6;
-}
-
-.password-toggle svg {
-  width: 18px;
-  height: 18px;
 }
 
 .password-toggle:hover {
   color: #ffffff;
 }
 
-.password-toggle:focus {
-  outline: none;
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Error */
