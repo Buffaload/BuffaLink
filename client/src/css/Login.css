@@ -75,7 +75,7 @@ html {
   background: var(--login-input-bg);
   border: 1px solid var(--login-input-border);
   border-radius: 999px;
-  padding: 14px 16px;
+  padding: 14px 44px 14px 18px;
   margin-bottom: 16px;
   color: #fff;
   font-size: 14px;
@@ -124,17 +124,19 @@ html {
 
 .password-toggle {
   position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 100%;
-  display: flex;
-  align-items: center;
+  inset: 0 14px 0 auto;
+  display: grid;
+  place-items: center;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   color: #9aa0a6;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
 .password-toggle:hover {
