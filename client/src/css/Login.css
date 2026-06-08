@@ -72,6 +72,8 @@ html {
 
 /* Inputs */
 .login-form input {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--login-input-bg);
   border: 1px solid var(--login-input-border);
   border-radius: 999px;
@@ -112,6 +114,7 @@ html {
 }
 
 .password-field {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   width: 100%;
@@ -121,11 +124,20 @@ html {
   border-radius: 999px;
 }
 
+.password-field:focus-within {
+  background: var(--login-input-bg-focus);
+  border-color: var(--login-input-border-focus);
+  box-shadow: 0 0 0 3px rgba(55, 214, 122, 0.18);
+}
+
 .password-field input {
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
   background: transparent;
   border: none;
-  padding: 14px 18px;
+  margin: 0;
+  padding: 14px 10px 14px 18px;
   color: #fff;
   font-size: 14px;
 }
@@ -138,7 +150,8 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
+  height: 100%;
+  padding: 0 16px;
   background: none;
   border: none;
   cursor: pointer;
