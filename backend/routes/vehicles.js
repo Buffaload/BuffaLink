@@ -1120,10 +1120,14 @@ router.get("/", auth, diagnostics, async (req, res) => {
             }
 
             return {
+              assetVin: v.vin,
               assetName: reg ?? v.vin,
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
+              energyType: v.energyType ?? null,
+              fuelType: v.fuelType ?? null,
+              driverName: p.driverName ?? null,
               eventType: isMoving ? "driving" : "stopped",
               status: isMoving ? "In Transit" : "Available",
               latitude: lat,
@@ -1413,6 +1417,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
       if (michelin && volvo) {
         return {
           ...michelin,
+
+          // Preserve Volvo enrichment fields
+          assetVin: michelin.assetVin ?? volvo.assetVin,
+          energyType: michelin.energyType ?? volvo.energyType,
+          fuelType: michelin.fuelType ?? volvo.fuelType,
+          driverName: michelin.driverName ?? volvo.driverName,
 
           // Take Volvo GNSS only if Michelin is missing it
           latitude: michelin.latitude ?? volvo.latitude,
