@@ -5,6 +5,12 @@ export interface VehicleLike {
     assetType?: string;
     assetGroupName?: string;
     driverGroupName?: string;
+    // Enrichment from Volvo
+    driverName?: string;
+    energyType?: string | null;
+    fuelType?: string[] | string | null;
+    // Numeric speed value in mph when available
+    speed?: number;
     locationGroupName?: string | null;
     Branch?: string;
     locationName?: string | null;

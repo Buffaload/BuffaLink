@@ -1091,9 +1091,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
       
       const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
         // Build an index for O(1) lookup by VIN
-        const posByVin = new Map(volvoPositions.map(p => [p.vin, p]));
+        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
         let budget = REVERSE_GEOCODE_BUDGET;
-        let reverseGeocodeBudget = Number(process.env.REVERSE_GEOCODE_BUDGET ?? 10);
 
         return Promise.all(
           volvoVehicles.map(async (v) => {
@@ -1101,17 +1100,35 @@ router.get("/", auth, diagnostics, async (req, res) => {
             if (!p?.gnssPosition) return null;
             const gnss = p.gnssPosition;
             if (gnss.latitude == null || gnss.longitude == null) return null;
-            const rawSpeed = p.wheelBasedSpeed ?? gnss.speed ?? 0;
-            const speed = Number(rawSpeed);
-            // Volvo feeds often jitter around 0 when stationary
-            const MOVING_THRESHOLD = 1;
-            const isMoving = Number.isFinite(speed) && speed > MOVING_THRESHOLD;
+
+            // Raw speed may be provided in different units depending on endpoint
+            const rawSpeedVal = p.wheelBasedSpeed ?? gnss.speed ?? 0;
+            const rawSpeedNum = Number(rawSpeedVal ?? 0);
+
+            // Heuristic: if raw speed is small (<=50) treat as m/s, otherwise as km/h
+            // Convert to mph for client display (rounded to 1 decimal)
+            let speedMph = null;
+            if (Number.isFinite(rawSpeedNum)) {
+              if (rawSpeedNum <= 50) {
+                // m/s -> mph
+                speedMph = Math.round((rawSpeedNum * 2.2369362920544) * 10) / 10;
+              } else {
+                // km/h -> mph
+                speedMph = Math.round((rawSpeedNum * 0.621371) * 10) / 10;
+              }
+            }
+
+            const MOVING_THRESHOLD = 1; // same threshold as before (units-agnostic heuristic)
+            const isMoving = Number.isFinite(rawSpeedNum) && rawSpeedNum > MOVING_THRESHOLD;
+
             const reg = v?.volvoGroupVehicle?.registrationNumber;
             const name = v.customerVehicleName;
             const lat = gnss.latitude;
             const lon = gnss.longitude;
+
             // Geofence match (depots / maintenance)
             const site = matchGeofenceSite(lat, lon);
+
             // Reverse geocode ONLY if enabled, NOT geofenced, vehicle is stopped, still have budget
             let reverseName = null;
             if (REVERSE_GEOCODE_ENABLED && !site && !isMoving && budget > 0) {
@@ -1119,29 +1136,43 @@ router.get("/", auth, diagnostics, async (req, res) => {
               reverseName = await reverseGeocodeLimit(() => reverseGeocode(lat, lon));
             }
 
+            // Normalise energy and fuel fields from possible shapes
+            const energyType =
+              v.volvoGroupVehicle?.energyType ?? v.energyType ?? v.energy ?? null;
+
+            let fuelType =
+              v.volvoGroupVehicle?.fuelType ?? v.fuelType ?? v.fuelTypes ?? v.fuel ?? null;
+
+            if (fuelType && !Array.isArray(fuelType)) {
+              fuelType = [String(fuelType)];
+            }
+
+            // Driver name may appear on the position object or nested driver object
+            const driverName = p.driverName ?? p.driver?.name ?? p.driver?.fullName ?? null;
+
             return {
               assetVin: v.vin,
               assetName: reg ?? v.vin,
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
-              energyType: v.energyType ?? null,
-              fuelType: v.fuelType ?? null,
-              driverName: p.driverName ?? null,
+              energyType: energyType ?? null,
+              fuelType: fuelType ?? null,
+              driverName: driverName ?? null,
+              // numeric speed in mph for UI; keep rawSpeed for traceability
+              speed: speedMph ?? undefined,
+              rawSpeed: Number.isFinite(rawSpeedNum) ? rawSpeedNum : undefined,
               eventType: isMoving ? "driving" : "stopped",
               status: isMoving ? "In Transit" : "Available",
               latitude: lat,
               longitude: lon,
               date:
-                gnss.positionDateTime ||
-                p.receivedDateTime ||
-                p.createdDateTime ||
-                new Date().toISOString(),
+                gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
               locationName: site?.name ?? reverseName ?? "Unknown location",
               locationGroupName: site?.group ?? null,
             };
           })
-        ).then(arr => arr.filter(Boolean));
+        ).then((arr) => arr.filter(Boolean));
       };
 
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
@@ -1423,6 +1454,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
           energyType: michelin.energyType ?? volvo.energyType,
           fuelType: michelin.fuelType ?? volvo.fuelType,
           driverName: michelin.driverName ?? volvo.driverName,
+          // speed from Volvo mapped into mph (enrichment)
+          speed: michelin.speed ?? volvo.speed,
+          rawSpeed: michelin.rawSpeed ?? volvo.rawSpeed,
 
           // Take Volvo GNSS only if Michelin is missing it
           latitude: michelin.latitude ?? volvo.latitude,
