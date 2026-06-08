@@ -73,27 +73,27 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
             onChange={(e) => setUsername(e.target.value)}
             required
           />
-          <div className="password-wrapper">
+          <div className="password-field">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               aria-label="Password"
             />
+
             <button
               type="button"
               className="password-toggle"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={togglePasswordVisibility}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                // Eye-off icon
+                // Eye-off
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -101,16 +101,14 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-5 0-9.27-3-11-8a10.94 10.94 0 0 1 5.17-5.17" />
                   <path d="M1 1l22 22" />
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.17-5.17" />
                   <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
                 </svg>
               ) : (
-                // Eye icon
+                // Eye
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
