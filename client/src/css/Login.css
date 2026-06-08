@@ -74,7 +74,7 @@ html {
 .login-form input {
   background: var(--login-input-bg);
   border: 1px solid var(--login-input-border);
-  border-radius: 6px;
+  border-radius: 999px;
   padding: 14px 16px;
   margin-bottom: 16px;
   color: #fff;
@@ -113,6 +113,8 @@ html {
 
 .password-wrapper {
   position: relative;
+  width: 100%;
+  margin-bottom: 16px;
 }
 
 .password-wrapper input {
@@ -122,16 +124,17 @@ html {
 
 .password-toggle {
   position: absolute;
+  right: 14px;
   top: 50%;
-  right: 12px;
   transform: translateY(-50%);
+  height: 100%;
+  display: flex;
+  align-items: center;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   color: #9aa0a6;
-  display: flex;
-  align-items: center;
 }
 
 .password-toggle:hover {
@@ -155,7 +158,7 @@ html {
   padding: 14px;
   background: #15a841;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
