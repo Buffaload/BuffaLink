@@ -6,6 +6,7 @@ export interface VehicleLike {
     assetGroupName?: string;
     driverGroupName?: string;
     locationGroupName?: string | null;
+    Branch?: string;
     locationName?: string | null;
     formattedAddress?: string | null;
     eventType?: string;

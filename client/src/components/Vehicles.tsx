@@ -25,6 +25,7 @@ interface Vehicle {
   eventType: string;
   date: string;
   locationGroupName?: string;
+  Branch?: string;
   depotMatch?: string | null;
   assetGroupName?: string;
   assetType?: string;
@@ -2096,6 +2097,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <div className="vehicle-modal-section-title">Vehicle details</div>
 
                   <div className="vehicle-modal-details">
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">Branch</span>
+                      <span className="vehicle-modal-detail-value">
+                        {displayText((selectedVehicle as any).Branch, "Not available")}
+                      </span>
+                    </div>
+
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">VIN</span>
                       <span className="vehicle-modal-detail-value">
