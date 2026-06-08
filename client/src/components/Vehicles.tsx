@@ -2095,6 +2095,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
               <div className="vehicle-modal-left">
                 <div className="vehicle-modal-section">
                   <div className="vehicle-modal-section-title">Vehicle details</div>
+
+                  <div className="vehicle-modal-details">
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">VIN</span>
                       <span className="vehicle-modal-detail-value">
