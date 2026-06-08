@@ -1177,6 +1177,18 @@ router.get("/", auth, diagnostics, async (req, res) => {
           VehicleMetadata.find({}),
         ]);
     
+      if (blueCrystalResponse.status === "fulfilled") {
+        console.log(
+          "[BlueCrystal RAW response]",
+          blueCrystalResponse.value.data
+        );
+      } else {
+        console.warn(
+          "[BlueCrystal ERROR]",
+          blueCrystalResponse.reason
+        );
+      }
+
       const settledToDebug = (r) =>
         r.status === "fulfilled"
           ? { status: "fulfilled", http: r.value?.status, contentType: r.value?.headers?.["content-type"] }
@@ -1234,19 +1246,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           (m) =>
             typeof m.VehicleId === "string" &&
             !m.Category?.toLowerCase().includes("equipment")
-        ); 
-        
-        if (maintenanceDetails.length > 0) {
-          console.log(
-            "[BlueCrystal sample keys]",
-            Object.keys(maintenanceDetails[0])
-          );
-
-          console.log(
-            "[BlueCrystal sample object]",
-            maintenanceDetails[0]
-          );
-        }
+        );
 
         // Build O(1) lookup by VehicleId
         maintenanceByVehicleId.clear();
