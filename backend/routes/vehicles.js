@@ -1089,7 +1089,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         });
       };
       
-      const mapVolvoVehicles = (volvoVehicles, volvoPositions) => {
+      const mapVolvoVehicles = (volvoVehicles, volvoPositions, driverMap) => {
         // Build an index for O(1) lookup by VIN
         const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
         let budget = REVERSE_GEOCODE_BUDGET;
@@ -1136,19 +1136,19 @@ router.get("/", auth, diagnostics, async (req, res) => {
               reverseName = await reverseGeocodeLimit(() => reverseGeocode(lat, lon));
             }
 
-            // Normalise energy and fuel fields from possible shapes
-            const energyType =
-              v.volvoGroupVehicle?.energyType ?? v.energyType ?? v.energy ?? null;
-
-            let fuelType =
-              v.volvoGroupVehicle?.fuelType ?? v.fuelType ?? v.fuelTypes ?? v.fuel ?? null;
-
+            // Extract fuelType from possibleFuelType (Volvo API field)
+            let fuelType = v.possibleFuelType ?? null;
             if (fuelType && !Array.isArray(fuelType)) {
               fuelType = [String(fuelType)];
             }
 
-            // Driver name may appear on the position object or nested driver object
-            const driverName = p.driverName ?? p.driver?.name ?? p.driver?.fullName ?? null;
+            // Extract driver name by matching driverId from position to driverMap
+            let driverName = null;
+            const driverId = p.triggerType?.driverId?.tachoDriverIdentification?.driverIdentification;
+            if (driverId && driverMap.has(driverId)) {
+              const driver = driverMap.get(driverId);
+              driverName = `${driver.firstName} ${driver.lastName}`.trim() || null;
+            }
 
             return {
               assetVin: v.vin,
@@ -1156,7 +1156,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
-              energyType: energyType ?? null,
               fuelType: fuelType ?? null,
               driverName: driverName ?? null,
               // numeric speed in mph for UI; keep rawSpeed for traceability
@@ -1175,7 +1174,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         ).then((arr) => arr.filter(Boolean));
       };
 
-      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
+      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, volvoTachofilesResponse, nightOutMetadataResult] =
         await Promise.allSettled([
           // Michelin with retry: prevents Volvo-only first loads when Michelin is flaky/cold
           withRetry(
@@ -1208,6 +1207,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
             accept: VOLVO_ACCEPT.positions,
             extractItems: (data) => data?.vehiclePositionResponse?.vehiclePositions,
             getNextPageParam: null,
+          }),
+          // Fetch driver data from tachofiles
+          volvoAxios.get("/tacho/tachofiles", {
+            params: { contentFilter: "DRIVERCARDFILE" },
+            headers: { Accept: VOLVO_ACCEPT.positions },
+            timeout: 10000,
           }),
           VehicleMetadata.find({}),
         ]);
@@ -1252,6 +1257,23 @@ router.get("/", auth, diagnostics, async (req, res) => {
         });
       } else {
         console.log("[VOLVO /vehiclepositions] fulfilled", { count: volvoPositionsResponse.value?.length ?? 0 });
+      }
+
+      // Build driver map from tachofiles
+      let driverMap = new Map();
+      if (volvoTachofilesResponse.status === "fulfilled") {
+        const tachoData = volvoTachofilesResponse.value.data?.tachoFilesResponse?.driverCardFiles ?? [];
+        for (const file of tachoData) {
+          const driverId = file.driverId?.tachoDriverIdentification?.driverIdentification;
+          if (driverId && file.firstName && file.lastName) {
+            driverMap.set(driverId, {
+              firstName: file.firstName,
+              lastName: file.lastName,
+            });
+          }
+        }
+      } else if (volvoTachofilesResponse.status === "rejected") {
+        console.warn("[VOLVO /tacho/tachofiles] failed:", volvoTachofilesResponse.reason?.message);
       }
 
       let volvoMapped = [];
@@ -1299,7 +1321,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         volvoVehicles = volvoVehiclesResponse.value;
         volvoPositions = volvoPositionsResponse.value;
 
-        const mapped = await mapVolvoVehicles(volvoVehicles, volvoPositions);
+        const mapped = await mapVolvoVehicles(volvoVehicles, volvoPositions, driverMap);
         volvoMapped = cacheIfNonEmpty("volvoMapped", mapped);
       } else {
         volvoMapped = isFresh(sourceCache.volvoMapped.ts)
@@ -1451,7 +1473,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
           // Preserve Volvo enrichment fields
           assetVin: michelin.assetVin ?? volvo.assetVin,
-          energyType: michelin.energyType ?? volvo.energyType,
           fuelType: michelin.fuelType ?? volvo.fuelType,
           driverName: michelin.driverName ?? volvo.driverName,
           // speed from Volvo mapped into mph (enrichment)

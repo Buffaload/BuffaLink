@@ -7,7 +7,6 @@ export interface VehicleLike {
     driverGroupName?: string;
     // Enrichment from Volvo
     driverName?: string;
-    energyType?: string | null;
     fuelType?: string[] | string | null;
     // Numeric speed value in mph when available
     speed?: number;

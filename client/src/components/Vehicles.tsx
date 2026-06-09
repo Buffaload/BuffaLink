@@ -2111,12 +2111,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       </span>
                     </div>
 
-                    <div className="vehicle-modal-detail-row">
-                      <span className="vehicle-modal-detail-label">Energy</span>
-                      <span className="vehicle-modal-detail-value">
-                        {humanizeEnum(selectedVehicle.energyType)}
-                      </span>
-                    </div>
+                    {isTrailer && (
+                      <div className="vehicle-modal-detail-row">
+                        <span className="vehicle-modal-detail-label">Energy</span>
+                        <span className="vehicle-modal-detail-value">
+                          {humanizeEnum(selectedVehicle.energyType)}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">Fuel</span>
