@@ -1093,6 +1093,26 @@ router.get("/", auth, diagnostics, async (req, res) => {
         // Build an index for O(1) lookup by VIN
         const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
         let budget = REVERSE_GEOCODE_BUDGET;
+@@
+@@      // Mapping for Volvo fuel type codes to human-readable names
+@@      const mapVolvofuelType = (codes) => {
+@@        if (!codes || !Array.isArray(codes)) return codes;
+@@        const fuelCodeMap = {
+@@          "1A": "Diesel",
+@@          "1B": "Petrol",
+@@          "1C": "LPG",
+@@          "1D": "CNG",
+@@          "1E": "Electric",
+@@          "1F": "Hybrid",
+@@          "1G": "Hydrogen",
+@@        };
+@@        return codes.map((code) => fuelCodeMap[code] ?? code);
+@@      };
+@@
+@@      const mapVolvoVehicles = (volvoVehicles, volvoPositions, driverMap) => {
+@@        // Build an index for O(1) lookup by VIN
+@@        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
+@@        let budget = REVERSE_GEOCODE_BUDGET;
 
         return Promise.all(
           volvoVehicles.map(async (v) => {
@@ -1125,11 +1145,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
             const name = v.customerVehicleName;
             const lat = gnss.latitude;
             const lon = gnss.longitude;
-
-            // Geofence match (depots / maintenance)
-            const site = matchGeofenceSite(lat, lon);
-
-            // Reverse geocode ONLY if enabled, NOT geofenced, vehicle is stopped, still have budget
+            // Extract fuelType from possibleFuelType (Volvo API field) and map codes to names
+            let fuelType = v.possibleFuelType ?? null;
+            if (fuelType) {
+              fuelType = mapVolvofuelType(Array.isArray(fuelType) ? fuelType : [String(fuelType)]);
+            }
             let reverseName = null;
             if (REVERSE_GEOCODE_ENABLED && !site && !isMoving && budget > 0) {
               budget -= 1;
@@ -1264,11 +1284,21 @@ router.get("/", auth, diagnostics, async (req, res) => {
       if (volvoTachofilesResponse.status === "fulfilled") {
         const tachoData = volvoTachofilesResponse.value.data?.tachoFilesResponse?.driverCardFiles ?? [];
         for (const file of tachoData) {
+          @@        console.log("[VOLVO /tacho/tachofiles] response structure:", {
+          @@          hasTachoFilesResponse: !!volvoTachofilesResponse.value.data?.tachoFilesResponse,
+          @@          driverCardFilesCount: tachoData.length,
+          @@          sampleDriverIds: tachoData.slice(0, 3).map(f => ({
+          @@            driverId: f.driverId?.tachoDriverIdentification?.driverIdentification,
+          @@            firstName: f.firstName,
+          @@            lastName: f.lastName,
+          @@          })),
+          @@        });
           const driverId = file.driverId?.tachoDriverIdentification?.driverIdentification;
           if (driverId && file.firstName && file.lastName) {
             driverMap.set(driverId, {
               firstName: file.firstName,
               lastName: file.lastName,
+            @@        console.log("[VOLVO Driver Map] Built map with", driverMap.size, "entries");
             });
           }
         }
@@ -1475,6 +1505,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           assetVin: michelin.assetVin ?? volvo.assetVin,
           fuelType: michelin.fuelType ?? volvo.fuelType,
           driverName: michelin.driverName ?? volvo.driverName,
+          @@          energyType: michelin.energyType ?? volvo.energyType,
           // speed from Volvo mapped into mph (enrichment)
           speed: michelin.speed ?? volvo.speed,
           rawSpeed: michelin.rawSpeed ?? volvo.rawSpeed,

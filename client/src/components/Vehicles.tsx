@@ -62,14 +62,14 @@ interface Vehicle {
   driverGroupName?: string;
 }
 
-interface VehiclesProps {
-  filterOption: string;
-  selectedDepots: string[];
-  isKioskMode: boolean;
-  onKioskStatsChange?: (stats: {
-    total: number;
-    red: number;
-    orange: number;
+  @@                    {isTrailer && selectedVehicle.energyType && (
+  @@                      <div className="vehicle-modal-detail-row">
+  @@                        <span className="vehicle-modal-detail-label">Energy</span>
+  @@                        <span className="vehicle-modal-detail-value">
+  @@                          {humanizeEnum(selectedVehicle.energyType)}
+  @@                        </span>
+  @@                      </div>
+  @@                    )}
     yellow: number;
     green: number;
   }) => void;
