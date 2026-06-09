@@ -1088,84 +1088,64 @@ router.get("/", auth, diagnostics, async (req, res) => {
           ...config,
         });
       };
-      
-      const mapVolvoVehicles = (volvoVehicles, volvoPositions, driverMap) => {
-        // Build an index for O(1) lookup by VIN
-        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
-        let budget = REVERSE_GEOCODE_BUDGET;
-@@
-@@      // Mapping for Volvo fuel type codes to human-readable names
-@@      const mapVolvofuelType = (codes) => {
-@@        if (!codes || !Array.isArray(codes)) return codes;
-@@        const fuelCodeMap = {
-@@          "1A": "Diesel",
-@@          "1B": "Petrol",
-@@          "1C": "LPG",
-@@          "1D": "CNG",
-@@          "1E": "Electric",
-@@          "1F": "Hybrid",
-@@          "1G": "Hydrogen",
-@@        };
-@@        return codes.map((code) => fuelCodeMap[code] ?? code);
-@@      };
-@@
-@@      const mapVolvoVehicles = (volvoVehicles, volvoPositions, driverMap) => {
-@@        // Build an index for O(1) lookup by VIN
-@@        const posByVin = new Map(volvoPositions.map((p) => [p.vin, p]));
-@@        let budget = REVERSE_GEOCODE_BUDGET;
 
-        return Promise.all(
-          volvoVehicles.map(async (v) => {
+      // Mapping for Volvo fuel type codes to human-readable names
+      const mapVolvoFuelType = (codes) => {
+        if (!codes) return null;
+
+        const arr = Array.isArray(codes) ? codes : [String(codes)];
+        const fuelCodeMap = {
+          "1A": "Diesel",
+        };
+
+        return arr.map((code) => fuelCodeMap[code] ?? code);
+      };
+
+      const mapVolvoVehicles = async (volvoVehicles, volvoPositions, driverMap) => {
+        const posByVin = new Map((volvoPositions ?? []).map((p) => [p.vin, p]));
+        let budget = REVERSE_GEOCODE_BUDGET;
+
+        const mapped = await Promise.all(
+          (volvoVehicles ?? []).map(async (v) => {
             const p = posByVin.get(v.vin);
             if (!p?.gnssPosition) return null;
             const gnss = p.gnssPosition;
-            if (gnss.latitude == null || gnss.longitude == null) return null;
+            const lat = gnss.latitude;
+            const lon = gnss.longitude;
+            if (lat == null || lon == null) return null;
 
-            // Raw speed may be provided in different units depending on endpoint
+            // Determine moving/stopped + mph conversion
             const rawSpeedVal = p.wheelBasedSpeed ?? gnss.speed ?? 0;
             const rawSpeedNum = Number(rawSpeedVal ?? 0);
 
-            // Heuristic: if raw speed is small (<=50) treat as m/s, otherwise as km/h
-            // Convert to mph for client display (rounded to 1 decimal)
             let speedMph = null;
             if (Number.isFinite(rawSpeedNum)) {
-              if (rawSpeedNum <= 50) {
-                // m/s -> mph
-                speedMph = Math.round((rawSpeedNum * 2.2369362920544) * 10) / 10;
-              } else {
-                // km/h -> mph
-                speedMph = Math.round((rawSpeedNum * 0.621371) * 10) / 10;
-              }
+              speedMph =
+                rawSpeedNum <= 50
+                  ? Math.round(rawSpeedNum * 2.2369362920544 * 10) / 10 // m/s -> mph
+                  : Math.round(rawSpeedNum * 0.621371 * 10) / 10; // km/h -> mph
             }
 
-            const MOVING_THRESHOLD = 1; // same threshold as before (units-agnostic heuristic)
+            const MOVING_THRESHOLD = 1;
             const isMoving = Number.isFinite(rawSpeedNum) && rawSpeedNum > MOVING_THRESHOLD;
 
+            const site = matchGeofenceSite(lat, lon);
+
             const reg = v?.volvoGroupVehicle?.registrationNumber;
-            const name = v.customerVehicleName;
-            const lat = gnss.latitude;
-            const lon = gnss.longitude;
-            // Extract fuelType from possibleFuelType (Volvo API field) and map codes to names
-            let fuelType = v.possibleFuelType ?? null;
-            if (fuelType) {
-              fuelType = mapVolvofuelType(Array.isArray(fuelType) ? fuelType : [String(fuelType)]);
-            }
+            const fuelType = mapVolvoFuelType(v.possibleFuelType);
+
             let reverseName = null;
             if (REVERSE_GEOCODE_ENABLED && !site && !isMoving && budget > 0) {
               budget -= 1;
               reverseName = await reverseGeocodeLimit(() => reverseGeocode(lat, lon));
             }
 
-            // Extract fuelType from possibleFuelType (Volvo API field)
-            let fuelType = v.possibleFuelType ?? null;
-            if (fuelType && !Array.isArray(fuelType)) {
-              fuelType = [String(fuelType)];
-            }
-
-            // Extract driver name by matching driverId from position to driverMap
+            // driver name lookup
             let driverName = null;
-            const driverId = p.triggerType?.driverId?.tachoDriverIdentification?.driverIdentification;
-            if (driverId && driverMap.has(driverId)) {
+            const driverId =
+              p.triggerType?.driverId?.tachoDriverIdentification?.driverIdentification;
+
+            if (driverId && driverMap?.has(driverId)) {
               const driver = driverMap.get(driverId);
               driverName = `${driver.firstName} ${driver.lastName}`.trim() || null;
             }
@@ -1176,9 +1156,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
               assetRegistration: reg || undefined,
               assetType: "HGV",
               assetGroupName: "HGVs",
-              fuelType: fuelType ?? null,
-              driverName: driverName ?? null,
-              // numeric speed in mph for UI; keep rawSpeed for traceability
+              energyType: v.energyType ?? null,
+              fuelType,
+              driverName,
               speed: speedMph ?? undefined,
               rawSpeed: Number.isFinite(rawSpeedNum) ? rawSpeedNum : undefined,
               eventType: isMoving ? "driving" : "stopped",
@@ -1186,13 +1166,19 @@ router.get("/", auth, diagnostics, async (req, res) => {
               latitude: lat,
               longitude: lon,
               date:
-                gnss.positionDateTime || p.receivedDateTime || p.createdDateTime || new Date().toISOString(),
+                gnss.positionDateTime ||
+                p.receivedDateTime ||
+                p.createdDateTime ||
+                new Date().toISOString(),
               locationName: site?.name ?? reverseName ?? "Unknown location",
               locationGroupName: site?.group ?? null,
             };
           })
-        ).then((arr) => arr.filter(Boolean));
+        );
+
+        return mapped.filter(Boolean);
       };
+
 
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, volvoTachofilesResponse, nightOutMetadataResult] =
         await Promise.allSettled([
@@ -1229,7 +1215,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             getNextPageParam: null,
           }),
           // Fetch driver data from tachofiles
-          volvoAxios.get("/tacho/tachofiles", {
+          volvoAxios.get("/tachofiles", {
             params: { contentFilter: "DRIVERCARDFILE" },
             headers: { Accept: VOLVO_ACCEPT.positions },
             timeout: 10000,
@@ -1284,22 +1270,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
       if (volvoTachofilesResponse.status === "fulfilled") {
         const tachoData = volvoTachofilesResponse.value.data?.tachoFilesResponse?.driverCardFiles ?? [];
         for (const file of tachoData) {
-          @@        console.log("[VOLVO /tacho/tachofiles] response structure:", {
-          @@          hasTachoFilesResponse: !!volvoTachofilesResponse.value.data?.tachoFilesResponse,
-          @@          driverCardFilesCount: tachoData.length,
-          @@          sampleDriverIds: tachoData.slice(0, 3).map(f => ({
-          @@            driverId: f.driverId?.tachoDriverIdentification?.driverIdentification,
-          @@            firstName: f.firstName,
-          @@            lastName: f.lastName,
-          @@          })),
-          @@        });
+          console.log("[VOLVO /tacho/tachofiles] response structure:", {
+            hasTachoFilesResponse: !!volvoTachofilesResponse.value.data?.tachoFilesResponse,
+            driverCardFilesCount: tachoData.length,
+            sampleDriverIds: tachoData.slice(0, 3).map(f => ({
+              driverId: f.driverId?.tachoDriverIdentification?.driverIdentification,
+              firstName: f.firstName,
+              lastName: f.lastName,
+            })),
+          });
           const driverId = file.driverId?.tachoDriverIdentification?.driverIdentification;
           if (driverId && file.firstName && file.lastName) {
             driverMap.set(driverId, {
               firstName: file.firstName,
               lastName: file.lastName,
-            @@        console.log("[VOLVO Driver Map] Built map with", driverMap.size, "entries");
             });
+            console.log("[VOLVO Driver Map] Built map with", driverMap.size, "entries");
           }
         }
       } else if (volvoTachofilesResponse.status === "rejected") {
@@ -1505,7 +1491,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           assetVin: michelin.assetVin ?? volvo.assetVin,
           fuelType: michelin.fuelType ?? volvo.fuelType,
           driverName: michelin.driverName ?? volvo.driverName,
-          @@          energyType: michelin.energyType ?? volvo.energyType,
+          energyType: michelin.energyType ?? volvo.energyType,
           // speed from Volvo mapped into mph (enrichment)
           speed: michelin.speed ?? volvo.speed,
           rawSpeed: michelin.rawSpeed ?? volvo.rawSpeed,
@@ -1587,7 +1573,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
   }
 });
 
-router.patch("/:assetName/night-out", async (req, res) => {
+router.patch("/:assetName/night-out", auth, async (req, res) => {
   const { assetName } = req.params;
   const { isNightOut } = req.body;
 

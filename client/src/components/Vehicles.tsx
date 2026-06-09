@@ -61,15 +61,14 @@ interface Vehicle {
   driverName?: string;
   driverGroupName?: string;
 }
-
-  @@                    {isTrailer && selectedVehicle.energyType && (
-  @@                      <div className="vehicle-modal-detail-row">
-  @@                        <span className="vehicle-modal-detail-label">Energy</span>
-  @@                        <span className="vehicle-modal-detail-value">
-  @@                          {humanizeEnum(selectedVehicle.energyType)}
-  @@                        </span>
-  @@                      </div>
-  @@                    )}
+interface VehiclesProps {
+  filterOption: string;
+  selectedDepots: string[];
+  isKioskMode: boolean;
+  onKioskStatsChange?: (stats: {
+    total: number;
+    red: number;
+    orange: number;
     yellow: number;
     green: number;
   }) => void;
@@ -77,7 +76,6 @@ interface Vehicle {
 
 const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
 const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
-
 const DEFAULT_SERVICE_TIMELINE_DAYS = 42;
 const DEFAULT_MOT_TIMELINE_DAYS = 364;
 
