@@ -1321,13 +1321,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : categoryVehicles;
 
     let list: VehicleWithSince[] = depotFilteredVehicles;
-    let branchList: VehicleWithSince[] = depotFilteredVehicles;
 
     if (shouldApplyBranchFilter(filterOption, isKioskMode)) {
       const allowedBranches = getAllowedBranchIds();
 
       if (allowedBranches.size > 0) {
-        branchList = branchList.filter(
+        list = list.filter(
           v =>
             v.branchId != null &&
             allowedBranches.has(String(v.branchId))
