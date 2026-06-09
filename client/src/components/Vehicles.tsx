@@ -25,7 +25,7 @@ interface Vehicle {
   eventType: string;
   date: string;
   locationGroupName?: string;
-  Branch?: string;
+  branchId?: string;
   depotMatch?: string | null;
   assetGroupName?: string;
   assetType?: string;
@@ -1049,6 +1049,50 @@ const Vehicles: React.FC<VehiclesProps> = ({
     };
   }, [isVehicleModalOpen, selectedVehicle]);
 
+  const BRANCH_FILTER_VIEWS = new Set([
+    "Services",
+    "Night-Out",
+  ]);
+
+  const shouldApplyBranchFilter = (
+    filterOption: string,
+    isKioskMode: boolean
+  ) => {
+    return isKioskMode || BRANCH_FILTER_VIEWS.has(filterOption);
+  };
+
+  const DEPOT_TO_BRANCH_ID: Record<string, string> = {
+    Ellington: "1",
+    Crewe: "2",
+    Coventry: "10",
+    Skelmersdale: "3",
+    Bellshill: "11",
+    Avonmouth: "4",
+  };
+
+  const getAllowedBranchIds = (): Set<string> => {
+    const role = (localStorage.getItem("role") ?? "").toLowerCase();
+
+    if (role !== "admin") {
+      const depot = localStorage.getItem("depot");
+      const id = depot ? DEPOT_TO_BRANCH_ID[depot] : null;
+      return id ? new Set([id]) : new Set();
+    }
+
+    // Admin
+    try {
+      const raw = localStorage.getItem("buffalink:locationSelectedDepots");
+      const depots = raw ? JSON.parse(raw) : [];
+      return new Set(
+        depots
+          .map((d: string) => DEPOT_TO_BRANCH_ID[d])
+          .filter(Boolean)
+      );
+    } catch {
+      return new Set();
+    }
+  };
+
   const [nightOutToast, setNightOutToast] = useState<{
     reg: string;
     isOn: boolean;
@@ -1277,6 +1321,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : categoryVehicles;
 
     let list: VehicleWithSince[] = depotFilteredVehicles;
+    let branchList: VehicleWithSince[] = depotFilteredVehicles;
+
+    if (shouldApplyBranchFilter(filterOption, isKioskMode)) {
+      const allowedBranches = getAllowedBranchIds();
+
+      if (allowedBranches.size > 0) {
+        branchList = branchList.filter(
+          v =>
+            v.branchId != null &&
+            allowedBranches.has(String(v.branchId))
+        );
+      }
+    }
 
     if (isVorFilterActive) {
       list = list.filter(isVorOrDefect);

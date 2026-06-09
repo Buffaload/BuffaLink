@@ -1438,7 +1438,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
             : depotByText
               ? "Buffaload"
               : vehicle.locationGroupName,
-          Branch: maintenance?.Branch ?? maintenance?.branch ?? null,
           ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
           MotDueDate: maintenance?.MotDueDate || "N/A",
           BrakeDueDate: maintenance?.BrakeDueDate || "N/A",         

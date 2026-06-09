@@ -11,7 +11,7 @@ export interface VehicleLike {
     // Numeric speed value in mph when available
     speed?: number;
     locationGroupName?: string | null;
-    Branch?: string;
+    branchId?: string | number | null;
     locationName?: string | null;
     formattedAddress?: string | null;
     eventType?: string;
