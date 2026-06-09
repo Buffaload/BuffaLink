@@ -753,6 +753,22 @@ async function fetchVolvoPaged({
   return all;
 }
 
+async function fetchVolvoOnce({
+  axiosInstance,
+  path,
+  params,
+  accept,
+  extractItems,
+}) {
+  const resp = await axiosInstance.get(path, {
+    params: { ...(params ?? {}), requestId: makeRequestId() },
+    headers: { Accept: accept },
+    timeout: 10000,
+  });
+
+  return typeof extractItems === "function" ? (extractItems(resp.data) ?? []) : resp.data;
+}
+
 const SOURCE_CACHE_TTL_MS = Number(process.env.SOURCE_CACHE_TTL_MS ?? 120000);
 const MICHELIN_RETRY_ATTEMPTS = Number(process.env.MICHELIN_RETRY_ATTEMPTS ?? 1); // 1 retry => 2 total tries
 const BLUE_RETRY_ATTEMPTS = Number(process.env.BLUE_RETRY_ATTEMPTS ?? 0);
@@ -1215,10 +1231,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
             getNextPageParam: null,
           }),
           // Fetch driver data from tachofiles
-          volvoAxios.get("/tachofiles", {
+          fetchVolvoOnce({
+            axiosInstance: volvoAxios,
+            path: "/tachofiles",
             params: { contentFilter: "DRIVERCARDFILE" },
-            headers: { Accept: VOLVO_ACCEPT.positions },
-            timeout: 10000,
+            accept: VOLVO_ACCEPT.positions,
+            extractItems: (data) => data?.tachoFilesResponse?.driverCardFiles,
           }),
           VehicleMetadata.find({}),
         ]);
@@ -1268,7 +1286,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
       // Build driver map from tachofiles
       let driverMap = new Map();
       if (volvoTachofilesResponse.status === "fulfilled") {
-        const tachoData = volvoTachofilesResponse.value.data?.tachoFilesResponse?.driverCardFiles ?? [];
+        const tachoData = volvoTachofilesResponse.value ?? [];
         for (const file of tachoData) {
           console.log("[VOLVO /tacho/tachofiles] response structure:", {
             hasTachoFilesResponse: !!volvoTachofilesResponse.value.data?.tachoFilesResponse,
@@ -1389,21 +1407,32 @@ router.get("/", auth, diagnostics, async (req, res) => {
       return acc;
     }, {});
 
+    const metadataMap = new Map();
+
+    for (const item of nightOutMetadata) {
+      const key = normalizeId(item?.assetName);
+      if (!key) continue;
+
+      metadataMap.set(key, {
+        isNightOut: Boolean(item?.isNightOut),
+        branchId: item?.branchId ?? null,
+        lastEventType: item?.lastEventType ?? null,
+      });
+    }
+
     // Merge data
     const mergedVehicles = await Promise.all(
       vehicles.map(async (vehicle) => {
-        // const normalisedAssetName = vehicle.assetName
-        //   .replace(/\s+/g, "")
-        //   .toUpperCase();
         const normalisedAssetName = normalizeId(vehicle.assetName);
         const normalisedReg = normalizeId(vehicle.assetRegistration);
+        const meta =
+          metadataMap.get(normalisedReg) ||
+          metadataMap.get(normalisedAssetName) ||
+          null;
+        const branchId = meta?.branchId ?? null;
+        const isNightOut = meta?.isNightOut ?? false;
 
         // Match BlueCrystal data
-        // const maintenance = maintenanceDetails.find(
-        //   (m) =>
-        //     m.VehicleId.replace(/\s+/g, "").toUpperCase() ===
-        //     normalisedAssetName
-        // );
         const maintenance =
           maintenanceByVehicleId.get(normalisedReg) ||
           maintenanceByVehicleId.get(normalisedAssetName) ||
@@ -1453,7 +1482,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
           NextMaintenanceDueDate: nextMaint.dueDate ?? "N/A",
           IsVor: maintenance?.IsVor ?? false,
           LiveDefects: maintenance?.LiveDefects ?? false,
-          isNightOut: !!nightOutMap[normalisedAssetName],
+          branchId,
+          isNightOut,
         };
       })
     );
@@ -1591,18 +1621,13 @@ router.patch("/:assetName/night-out", auth, async (req, res) => {
         .status(200)
         .json({ message: `Night-Out status set for ${assetName}.` });
     } else {
-      const result = await VehicleMetadata.deleteOne({
-        assetName: normalisedAssetName,
-      });
+      const result = await VehicleMetadata.updateOne(
+        { assetName: normalisedAssetName },
+        { $set: { isNightOut: false } },
+        { upsert: true } // ensure doc exists; preserve branchId if already present
+      );
 
-      if (result.deletedCount > 0) {
-        console.log("Night-Out disabled:", result);
-        res
-          .status(200)
-          .json({ message: `Night-Out status removed for ${assetName}` });
-      } else {
-        res.status(404).json({ message: "Vehicle not found" });
-      }
+      res.status(200).json({ message: `Night-Out status removed for ${assetName}` });
     }
   } catch (error) {
     console.error("Error updating Night-Out status:", error);
