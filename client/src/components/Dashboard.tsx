@@ -53,6 +53,18 @@ const DEPOT_CODE: Record<string, string> = {
 
 const DEPOT_ORDER = ["Ellington", "Crewe", "Coventry", "Skelmersdale", "Bellshill", "Avonmouth"];
 
+const getDepotFromToken = (): string | null => {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload?.depot ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const renderStatusIcon = (rawType?: string) => {
   const type = (rawType ?? "unknown").toLowerCase();
 
@@ -214,14 +226,14 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
   const toggleKioskMode = () => {
     setIsKioskMode((prevMode) => {
-    const next = !prevMode;
-    if (next) {
-      setIsCollapsed(true);
-      setIsMobileSidebarOpen(false);
-    }
-    return next;
-  });
-};
+      const next = !prevMode;
+      if (next) {
+        setIsCollapsed(true);
+        setIsMobileSidebarOpen(false);
+      }
+      return next;
+    });
+  };
 
 
   const [isMobile, setIsMobile] = useState(
@@ -400,6 +412,15 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   const depotHeaderLabel = useMemo(() => {
     // locationTick is used only to trigger recompute when selection changes
     void locationTick;
+    const role = (localStorage.getItem("role") ?? "").toLowerCase();
+    const isAdmin = role === "admin";
+
+    if (!isAdmin) {
+      const depot = getDepotFromToken();
+      return depot
+        ? DEPOT_CODE[depot] ?? depot.slice(0, 3).toUpperCase()
+        : "ALL";
+    }
 
     let selected: string[] = [];
     try {

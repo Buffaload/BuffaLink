@@ -1425,9 +1425,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
       vehicles.map(async (vehicle) => {
         const normalisedAssetName = normalizeId(vehicle.assetName);
         const normalisedReg = normalizeId(vehicle.assetRegistration);
+        const normalisedVehicleId = normalizeId(vehicle.VehicleId);
         const meta =
-          metadataMap.get(normalisedReg) ||
-          metadataMap.get(normalisedAssetName) ||
+          (normalisedVehicleId && metadataMap.get(normalisedVehicleId)) ||
+          metadataMap.get(normalisedReg) ||          // fallback (rare)
+          metadataMap.get(normalisedAssetName) ||    // legacy fallback
           null;
         const branchId = meta?.branchId ?? null;
         const isNightOut = meta?.isNightOut ?? false;
