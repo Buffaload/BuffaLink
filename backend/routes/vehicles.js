@@ -1439,19 +1439,29 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
-        const maintenance =
-          maintenanceByVehicleId.get(normalisedReg) ||
-          maintenanceByVehicleId.get(normalisedAssetName) ||
-          null;
+        const maintenance = maintenanceData.find(m =>
+          normalizeId(m.VehicleId) === normalizeId(vehicle.assetRegistration) ||
+          normalizeId(m.VehicleId) === normalizeId(vehicle.assetName)
+        );
+
+        // Log once (remove later)
+        if (maintenance) {
+          console.log("JOIN DEBUG SUCCESS", {
+            assetName: vehicle.assetName,
+            assetRegistration: vehicle.assetRegistration,
+            matchedVehicleId: maintenance.VehicleId,
+          });
+        } else {
+          console.log("JOIN DEBUG FAIL", {
+            assetName: vehicle.assetName,
+            assetRegistration: vehicle.assetRegistration,
+          });
+        }
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
         const ownershipKey = normalizeId(maintenance?.VehicleId);
-        const meta =
-          (ownershipKey && metadataMap.get(ownershipKey)) ||
-          metadataMap.get(normalisedReg) ||          // fallback (rare)
-          metadataMap.get(normalisedAssetName) ||    // legacy fallback
-          null;
+        const meta = ownershipKey ? metadataMap.get(ownershipKey) : null;
         const branchId = meta?.branchId ?? null;
         const isNightOut = meta?.isNightOut ?? false;
 
@@ -1485,6 +1495,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         return {
           ...vehicle,
+          ...maintenance,
           depotMatch: depotByText ?? null,
           locationGroupName: maintenanceByText
             ? "Maintenance"
