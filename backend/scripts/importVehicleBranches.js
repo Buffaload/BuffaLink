@@ -82,7 +82,9 @@ if (rows.length === 0) {
 console.log(`Loaded ${rows.length} rows from spreadsheet`);
 
 /* Import loop */
-const DEBUG_LIMIT = 50; // limit console spam
+const DEBUG_LIMIT = 50; // Limit console spam
+let skipped = 0;
+let updated = 0;
 let debugCount = 0;
 
 for (const row of rows) {
