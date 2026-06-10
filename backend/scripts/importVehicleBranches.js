@@ -6,7 +6,6 @@
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
-import xlsx from "xlsx";
 import dotenv from "dotenv";
 import VehicleMetadata from "../models/VehicleMetadata.js";
 
@@ -41,19 +40,40 @@ console.log("Connected to MongoDB");
 
 /* Load spreadsheet */
 const ext = path.extname(inputFile).toLowerCase();
-let rows = [];
-
-if (ext === ".xlsx" || ext === ".xls") {
-    const workbook = xlsx.readFile(inputFile);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    rows = xlsx.utils.sheet_to_json(sheet, { defval: "" });
-} else if (ext === ".csv") {
-    const workbook = xlsx.readFile(inputFile, { type: "file" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    rows = xlsx.utils.sheet_to_json(sheet, { defval: "" });
-} else {
-    die("Unsupported file type (use .xlsx or .csv)");
+if (ext !== ".csv") {
+    die("Only CSV files are supported. Please convert your spreadsheet to CSV UTF-8.");
 }
+
+const csvRaw = fs.readFileSync(inputFile, "utf8");
+
+// Basic CSV parsing (safe for simple 2-column sheets)
+const lines = csvRaw
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
+
+if (lines.length < 2) {
+    die("CSV file contains no data rows");
+}
+
+const headers = lines[0].split(",").map(h => h.trim());
+
+if (!headers.includes("VehicleID") || !headers.includes("BranchID")) {
+    die("CSV headers must be exactly: VehicleID,BranchID");
+}
+
+const vehicleIdx = headers.indexOf("VehicleID");
+const branchIdx = headers.indexOf("BranchID");
+
+const rows = lines.slice(1).map(line => {
+    const cols = line.split(",").map(c => c.trim());
+    return {
+        VehicleID: cols[vehicleIdx],
+        BranchID: cols[branchIdx],
+    };
+});
+
+console.log(`Loaded ${rows.length} rows from CSV`);
 
 if (rows.length === 0) {
     die("Spreadsheet contains no rows");
