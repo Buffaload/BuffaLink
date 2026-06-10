@@ -1312,7 +1312,16 @@ router.get("/", auth, diagnostics, async (req, res) => {
           }
         }
       } else if (volvoTachofilesResponse.status === "rejected") {
-        console.warn("[VOLVO /tachofiles] failed:", volvoTachofilesResponse.reason?.message);
+        console.warn("[VOLVO /tachofiles] failed:", {
+          message: volvoTachofilesResponse.reason?.message,
+          status: volvoTachofilesResponse.reason?.response?.status,
+          baseURL: volvoTachofilesResponse.reason?.config?.baseURL,
+          url: volvoTachofilesResponse.reason?.config?.url,
+          fullUrl: `${volvoTachofilesResponse.reason?.config?.baseURL ?? ""}${volvoTachofilesResponse.reason?.config?.url ?? ""}`,
+          params: volvoTachofilesResponse.reason?.config?.params,
+          accept: volvoTachofilesResponse.reason?.config?.headers?.Accept,
+          data: volvoTachofilesResponse.reason?.response?.data,
+        });
       }
 
       let volvoMapped = [];
