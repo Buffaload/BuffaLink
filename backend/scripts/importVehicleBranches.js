@@ -82,38 +82,80 @@ if (rows.length === 0) {
 console.log(`Loaded ${rows.length} rows from spreadsheet`);
 
 /* Import loop */
-let updated = 0;
-let skipped = 0;
+const DEBUG_LIMIT = 50; // limit console spam
+let debugCount = 0;
 
 for (const row of rows) {
-    const rawAssetName = row.VehicleID;
+    const rawVehicleId = row.VehicleID;
     const rawBranchId = row.BranchID;
+    const vehicleId = normalizeId(rawVehicleId);
+    const branchId = rawBranchId ? Number(rawBranchId) : null;
 
-    if (!rawAssetName || !rawBranchId) {
+    if (!vehicleId) {
+        console.warn("Skipping row (no vehicleId):", row);
         skipped++;
         continue;
     }
 
-    const assetName = normalizeId(rawAssetName);
-    const branchId = Number(rawBranchId);
-
-    if (!assetName || Number.isNaN(branchId)) {
+    if (!branchId) {
+        console.warn("Skipping row (no valid branchId):", {
+            rawVehicleId,
+            rawBranchId,
+        });
         skipped++;
         continue;
     }
 
-    await VehicleMetadata.updateOne(
-        { assetName },
+    // Fetch existing document
+    const existing = await VehicleMetadata.findOne({ assetName: vehicleId });
+    const action = existing ? "UPDATE" : "INSERT";
+
+    // Prevent overwriting valid branchId with null
+    if (existing && existing.branchId != null && branchId == null) {
+        console.warn("Skipping overwrite (existing branchId retained):", {
+            vehicleId,
+            existingBranchId: existing.branchId,
+        });
+        skipped++;
+        continue;
+    }
+
+    // Perform upsert
+    const result = await VehicleMetadata.updateOne(
+    { assetName: vehicleId },
         {
-            $set: { branchId },
+            $set: {
+                branchId, // Always set valid branchId
+            },
             $setOnInsert: {
-            isNightOut: false,
+                isNightOut: false, // Preserve defaults
             },
         },
         { upsert: true }
     );
 
     updated++;
+
+    // Debug output (limited)
+    if (debugCount < DEBUG_LIMIT) {
+        console.log("IMPORT DEBUG", {
+            action,
+            rawVehicleId,
+            normalizedVehicleId: vehicleId,
+            branchId,
+            before: existing
+            ? {
+                branchId: existing.branchId,
+                isNightOut: existing.isNightOut,
+            }
+            : null,
+        result:
+            result.upsertedCount === 1
+                ? "NEW DOC CREATED"
+                : "UPDATED",
+        });
+        debugCount++;
+    }
 }
 
 console.log("Import complete");

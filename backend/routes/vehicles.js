@@ -1243,6 +1243,15 @@ router.get("/", auth, diagnostics, async (req, res) => {
           VehicleMetadata.find({}),
       ]);
 
+      console.log("METADATA COUNTS", {
+        totalDocs: nightOutMetadata.length,
+        withBranchId: nightOutMetadata.filter(d => d.branchId != null).length,
+        sampleWithBranch: nightOutMetadata
+          .filter(d => d.branchId != null)
+          .slice(0, 5)
+          .map(d => ({ assetName: d.assetName, branchId: d.branchId })),
+      });
+
       if (blueCrystalResponse.status === "fulfilled") {
         console.log(
           "[BlueCrystal RAW response]",
@@ -1426,8 +1435,16 @@ router.get("/", auth, diagnostics, async (req, res) => {
       if (!key) continue;
 
       metadataMap.set(key, {
-        branchId: item.branchId ?? null,
-        isNightOut: Boolean(item.isNightOut),
+        branchId:
+          item?.branchId ??
+          existing?.branchId ??
+          null,
+        isNightOut:
+          Boolean(item?.isNightOut) || Boolean(existing?.isNightOut),
+        lastEventType:
+          item?.lastEventType ??
+          existing?.lastEventType ??
+          null,
       });
     }
 
@@ -1455,15 +1472,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const meta = ownershipKey ? metadataMap.get(ownershipKey) : null;
         const branchId = meta?.branchId ?? null;
         const isNightOut = meta?.isNightOut ?? false;
-
-        console.log("BRANCH RESOLVE", {
-          assetName: vehicle.assetName,
-          assetRegistration: vehicle.assetRegistration,
-          matchedVehicleId: maintenance?.VehicleId,
-          ownershipKey,
-          meta,
-          branchId,
-        });
 
         // Check if the vehicle is "driving"
         if (
@@ -1651,7 +1659,7 @@ router.patch("/:assetName/night-out", auth, async (req, res) => {
   const { isNightOut } = req.body;
 
   try {
-    const normalisedAssetName = assetName.trim().toUpperCase();
+    const normalisedAssetName = normalizeId(assetName);
 
     if (isNightOut) {
       const result = await VehicleMetadata.updateOne(
