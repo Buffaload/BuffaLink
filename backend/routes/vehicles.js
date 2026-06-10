@@ -1237,7 +1237,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             getNextPageParam: null,
           }),
           // Fetch driver data from tachofiles
-          volvoTachoAxios.get("/tachofiles", {
+          volvoClients.tacho.get("/tachofiles", {
             params: { contentFilter: "DRIVERCARDFILE" },
             timeout: 10000,
           }),
