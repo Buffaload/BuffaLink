@@ -22,7 +22,10 @@ const nominatimHttpsAgent = new https.Agent({
   maxSockets: 5,
 });
 
-const VOLVO_BASE_URL = "https://api.volvotrucks.com/vehicle";
+const VOLVO_BASE_URLS = {
+  vehicle: "https://api.volvotrucks.com/vehicle",
+  tacho: "https://api.volvotrucks.com/tacho",
+};
 
 const VOLVO_ACCEPT = {
   vehicles: "application/x.volvogroup.com.vehicles.v1.0+json",
@@ -30,19 +33,22 @@ const VOLVO_ACCEPT = {
 };
 
 // Create a single reusable Volvo axios client (avoid per-request listener accumulation)
-const createVolvoAxios = () => {
+const createVolvoAxios = (baseURL) => {
   const volvoUsername = process.env.VOLVO_USERNAME;
   const volvoPassword = process.env.VOLVO_PASSWORD;
 
   return axios.create({
-    baseURL: VOLVO_BASE_URL,
+    baseURL,
     auth: { username: volvoUsername, password: volvoPassword },
     timeout: 10000,
     httpsAgent: upstreamHttpsAgent,
   });
 };
 
-const volvoAxios = createVolvoAxios();
+const volvoClients = {
+  vehicle: createVolvoAxios(VOLVO_BASE_URLS.vehicle),
+  tacho: createVolvoAxios(VOLVO_BASE_URLS.tacho),
+};
 
 const makeRequestId = () => {
   try {
@@ -1215,7 +1221,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             { attempts: BLUE_RETRY_ATTEMPTS, baseDelayMs: 300 }
           ),
           fetchVolvoPaged({
-            axiosInstance: volvoAxios,
+            axiosInstance: volvoClients.vehicle,
             path: "/vehicles",
             params: { additionalContent: "VOLVOGROUPVEHICLE" },
             accept: VOLVO_ACCEPT.vehicles,
@@ -1223,7 +1229,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             getNextPageParam: ({ items }) => ({ lastVin: items?.[items.length - 1]?.vin }),
           }),
           fetchVolvoPaged({
-            axiosInstance: volvoAxios,
+            axiosInstance: volvoClients.vehicle,
             path: "/vehiclepositions",
             params: { latestOnly: true },
             accept: VOLVO_ACCEPT.positions,
@@ -1232,7 +1238,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           }),
           // Fetch driver data from tachofiles
           fetchVolvoOnce({
-            axiosInstance: volvoAxios,
+            axiosInstance: volvoClients.tacho,
             path: "/tachofiles",
             params: { contentFilter: "DRIVERCARDFILE" },
             accept: VOLVO_ACCEPT.positions,
@@ -1288,7 +1294,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
       if (volvoTachofilesResponse.status === "fulfilled") {
         const tachoData = volvoTachofilesResponse.value ?? [];
         for (const file of tachoData) {
-          console.log("[VOLVO /tacho/tachofiles] response structure:", {
+          console.log("[VOLVO /tachofiles] response structure:", {
             hasTachoFilesResponse: !!volvoTachofilesResponse.value.data?.tachoFilesResponse,
             driverCardFilesCount: tachoData.length,
             sampleDriverIds: tachoData.slice(0, 3).map(f => ({
@@ -1307,7 +1313,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           }
         }
       } else if (volvoTachofilesResponse.status === "rejected") {
-        console.warn("[VOLVO /tacho/tachofiles] failed:", volvoTachofilesResponse.reason?.message);
+        console.warn("[VOLVO /tachofiles] failed:", volvoTachofilesResponse.reason?.message);
       }
 
       let volvoMapped = [];
