@@ -1241,7 +1241,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
             axiosInstance: volvoClients.tacho,
             path: "/tachofiles",
             params: { contentFilter: "DRIVERCARDFILE" },
-            accept: VOLVO_ACCEPT.positions,
             extractItems: (data) => data?.tachoFilesResponse?.driverCardFiles,
           }),
           VehicleMetadata.find({}),
