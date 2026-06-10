@@ -1244,6 +1244,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
           VehicleMetadata.find({}),
         ]);
     
+      const maintenanceData =
+            blueCrystalResponse.status === "fulfilled"
+              ? (blueCrystalResponse.value.data?.data ??
+                blueCrystalResponse.value.data ??
+                [])
+              : [];
+
       if (blueCrystalResponse.status === "fulfilled") {
         console.log(
           "[BlueCrystal RAW response]",
@@ -1439,10 +1446,20 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
-        const maintenance = maintenanceData.find(m =>
-          normalizeId(m.VehicleId) === normalizeId(vehicle.assetRegistration) ||
-          normalizeId(m.VehicleId) === normalizeId(vehicle.assetName)
-        );
+        const maintenance = maintenanceData.find(m => {
+          const vehicleIdNorm = normalizeId(m.VehicleId);
+
+          return (
+            vehicleIdNorm === normalizeId(vehicle.assetRegistration) ||
+            vehicleIdNorm === normalizeId(vehicle.assetName)
+          );
+        });
+
+        console.log("JOIN DEBUG", {
+          assetName: vehicle.assetName,
+          assetRegistration: vehicle.assetRegistration,
+          matchedVehicleId: maintenance?.VehicleId,
+        });
 
         // Log once (remove later)
         if (maintenance) {
