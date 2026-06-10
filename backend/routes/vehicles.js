@@ -1201,7 +1201,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return mapped.filter(Boolean);
       };
 
-
       const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, volvoTachofilesResponse, nightOutMetadataResult] =
         await Promise.allSettled([
           // Michelin with retry: prevents Volvo-only first loads when Michelin is flaky/cold
@@ -1242,14 +1241,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             timeout: 10000,
           }),
           VehicleMetadata.find({}),
-        ]);
-    
-      const maintenanceData =
-            blueCrystalResponse.status === "fulfilled"
-              ? (blueCrystalResponse.value.data?.data ??
-                blueCrystalResponse.value.data ??
-                [])
-              : [];
+      ]);
 
       if (blueCrystalResponse.status === "fulfilled") {
         console.log(
@@ -1446,7 +1438,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
-        const maintenance = maintenanceData.find(m => {
+        const maintenance = maintenanceDetails.find(m => {
           const vehicleIdNorm = normalizeId(m.VehicleId);
 
           return (
@@ -1512,7 +1504,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         return {
           ...vehicle,
-          ...maintenance,
           depotMatch: depotByText ?? null,
           locationGroupName: maintenanceByText
             ? "Maintenance"
