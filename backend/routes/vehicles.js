@@ -1237,11 +1237,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
             getNextPageParam: null,
           }),
           // Fetch driver data from tachofiles
-          fetchVolvoOnce({
-            axiosInstance: volvoClients.tacho,
-            path: "/tachofiles",
+          volvoTachoAxios.get("/tachofiles", {
             params: { contentFilter: "DRIVERCARDFILE" },
-            extractItems: (data) => data?.tachoFilesResponse?.driverCardFiles,
+            timeout: 10000,
           }),
           VehicleMetadata.find({}),
         ]);
@@ -1439,21 +1437,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       vehicles.map(async (vehicle) => {
         const normalisedAssetName = normalizeId(vehicle.assetName);
         const normalisedReg = normalizeId(vehicle.assetRegistration);
-        const rawVehicleId =
-          vehicle.VehicleId ??
-          vehicle.vehicleId ??
-          vehicle.VehicleID ??
-          null;
-        const normalisedVehicleId = rawVehicleId
-          ? normalizeId(rawVehicleId)
-          : null
-        const meta =
-          (normalisedVehicleId && metadataMap.get(normalisedVehicleId)) ||
-          metadataMap.get(normalisedReg) ||          // fallback (rare)
-          metadataMap.get(normalisedAssetName) ||    // legacy fallback
-          null;
-        const branchId = meta?.branchId ?? null;
-        const isNightOut = meta?.isNightOut ?? false;
 
         // Match BlueCrystal data
         const maintenance =
@@ -1462,6 +1445,15 @@ router.get("/", auth, diagnostics, async (req, res) => {
           null;
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
+
+        const ownershipKey = normalizeId(maintenance?.VehicleId);
+        const meta =
+          (ownershipKey && metadataMap.get(ownershipKey)) ||
+          metadataMap.get(normalisedReg) ||          // fallback (rare)
+          metadataMap.get(normalisedAssetName) ||    // legacy fallback
+          null;
+        const branchId = meta?.branchId ?? null;
+        const isNightOut = meta?.isNightOut ?? false;
 
         // Check if the vehicle is "driving"
         if (
