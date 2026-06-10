@@ -87,16 +87,26 @@ let skipped = 0;
 let updated = 0;
 let debugCount = 0;
 
+const TARGETS = new Set([
+    "BV72NVY",
+    "AY20TVA",
+    "D347",
+    "AV74VGD",
+    "AY19TZP",
+]);
+
 for (const row of rows) {
     const rawVehicleId = row.VehicleID;
     const rawBranchId = row.BranchID;
     const vehicleId = normalizeId(rawVehicleId);
     const branchId = rawBranchId ? Number(rawBranchId) : null;
 
-    if (!vehicleId) {
-        console.warn("Skipping row (no vehicleId):", row);
-        skipped++;
-        continue;
+    if (TARGETS.has(vehicleId)) {
+        console.log("TARGET ROW FOUND", {
+            rawVehicleId,
+            normalizedVehicleId: vehicleId,
+            branchId,
+        });
     }
 
     if (!branchId) {
@@ -123,17 +133,18 @@ for (const row of rows) {
     }
 
     // Perform upsert
-    const result = await VehicleMetadata.updateOne(
-    { assetName: vehicleId },
+    const result = await VehicleMetadata.updateMany(
         {
-            $set: {
-                branchId, // Always set valid branchId
-            },
-            $setOnInsert: {
-                isNightOut: false, // Preserve defaults
+            $expr: {
+                $eq: [
+                    { $replaceAll: { input: "$assetName", find: " ", replacement: "" } },
+                    vehicleId,
+                ],
             },
         },
-        { upsert: true }
+        {
+            $set: { branchId },
+        }
     );
 
     updated++;

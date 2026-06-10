@@ -1435,24 +1435,23 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
       const existing = metadataMap.get(key);
 
-      metadataMap.set(key, {
-        // Avoid losing valid branchIds
+      const merged = {
         branchId:
-          item?.branchId != null
-            ? item.branchId
-            : existing?.branchId ?? null,
+          existing?.branchId != null
+            ? existing.branchId // ALWAYS preserve existing if valid
+            : item?.branchId ?? null,
 
-        // OR combine Night-Out flags
         isNightOut:
-          Boolean(item?.isNightOut) ||
-          Boolean(existing?.isNightOut),
+          Boolean(existing?.isNightOut) ||
+          Boolean(item?.isNightOut),
 
-        // Preserve other fields if needed
         lastEventType:
-          item?.lastEventType ??
           existing?.lastEventType ??
+          item?.lastEventType ??
           null,
-      });
+      };
+
+      metadataMap.set(key, merged);
     }
 
     console.log("METADATA SAMPLE VALUES", Array.from(metadataMap.entries()).slice(0, 5));
