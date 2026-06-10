@@ -1430,17 +1430,24 @@ router.get("/", auth, diagnostics, async (req, res) => {
     const metadataMap = new Map();
 
     for (const item of nightOutMetadata) {
-      const key = normalizeId(item.assetName);
-
+      const key = normalizeId(item?.assetName);
       if (!key) continue;
 
+      const existing = metadataMap.get(key);
+
       metadataMap.set(key, {
+        // Avoid losing valid branchIds
         branchId:
-          item?.branchId ??
-          existing?.branchId ??
-          null,
+          item?.branchId != null
+            ? item.branchId
+            : existing?.branchId ?? null,
+
+        // OR combine Night-Out flags
         isNightOut:
-          Boolean(item?.isNightOut) || Boolean(existing?.isNightOut),
+          Boolean(item?.isNightOut) ||
+          Boolean(existing?.isNightOut),
+
+        // Preserve other fields if needed
         lastEventType:
           item?.lastEventType ??
           existing?.lastEventType ??
