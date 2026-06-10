@@ -1453,6 +1453,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         const ownershipKey = normalizeId(maintenance?.VehicleId);
         const meta = ownershipKey ? metadataMap.get(ownershipKey) : null;
+        const branchId = meta?.branchId ?? null;
+        const isNightOut = meta?.isNightOut ?? false;
 
         console.log("BRANCH RESOLVE", {
           assetName: vehicle.assetName,
@@ -1462,9 +1464,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           meta,
           branchId,
         });
-
-        const branchId = meta?.branchId ?? null;
-        const isNightOut = meta?.isNightOut ?? false;
 
         // Check if the vehicle is "driving"
         if (
