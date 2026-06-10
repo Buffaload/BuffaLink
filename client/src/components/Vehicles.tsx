@@ -658,12 +658,12 @@ export const shouldApplyBranchFilter = (
 };
 
 const DEPOT_TO_BRANCH_ID: Record<string, string> = {
-  Ellington: "1",
-  Crewe: "2",
-  Coventry: "10",
-  Skelmersdale: "3",
-  Bellshill: "11",
-  Avonmouth: "4",
+  ellington: "1",
+  crewe: "2",
+  coventry: "10",
+  skelmersdale: "3",
+  bellshill: "11",
+  avonmouth: "4",
 };
 
 const getAllowedBranchIds = (): Set<string> => {

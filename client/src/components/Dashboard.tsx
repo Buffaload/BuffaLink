@@ -43,23 +43,29 @@ const LOCATION_DEPOTS_KEY = "buffalink:locationSelectedDepots";
 const LOCATION_DEPOTS_EVENT = "buffalink:locationDepotsChanged";
 
 const DEPOT_CODE: Record<string, string> = {
-  Ellington: "ELL",
-  Crewe: "CRE",
-  Coventry: "COV",
-  Skelmersdale: "SKE",
-  Bellshill: "BEL",
-  Avonmouth: "AVO",
+  ellington: "ELL",
+  crewe: "CRE",
+  coventry: "COV",
+  skelmersdale: "SKE",
+  bellshill: "BEL",
+  avonmouth: "AVO",
 };
 
 const DEPOT_ORDER = ["Ellington", "Crewe", "Coventry", "Skelmersdale", "Bellshill", "Avonmouth"];
 
+const normalizeDepot = (value: string | null | undefined): string | null =>
+  value
+    ? value.trim().toLowerCase()
+    : null;
+
 const getDepotFromToken = (): string | null => {
-  const token = localStorage.getItem("token");
+  
+const token = localStorage.getItem("token");
   if (!token) return null;
 
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload?.depot ?? null;
+    return normalizeDepot(payload?.depot);
   } catch {
     return null;
   }
