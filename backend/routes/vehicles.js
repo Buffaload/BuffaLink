@@ -1425,7 +1425,14 @@ router.get("/", auth, diagnostics, async (req, res) => {
       vehicles.map(async (vehicle) => {
         const normalisedAssetName = normalizeId(vehicle.assetName);
         const normalisedReg = normalizeId(vehicle.assetRegistration);
-        const normalisedVehicleId = normalizeId(vehicle.VehicleId);
+        const rawVehicleId =
+          vehicle.VehicleId ??
+          vehicle.vehicleId ??
+          vehicle.VehicleID ??
+          null;
+        const normalisedVehicleId = rawVehicleId
+          ? normalizeId(rawVehicleId)
+          : null
         const meta =
           (normalisedVehicleId && metadataMap.get(normalisedVehicleId)) ||
           metadataMap.get(normalisedReg) ||          // fallback (rare)
@@ -1460,6 +1467,15 @@ router.get("/", auth, diagnostics, async (req, res) => {
             site?.group === "Maintenance"
               ? null
               : matchDepotByText(vehicle);
+
+        if (Math.random() < 0.002) {
+          console.log("BRANCH DEBUG keys", {
+            assetName: vehicle.assetName,
+            assetRegistration: vehicle.assetRegistration,
+            VehicleId: vehicle.VehicleId,
+            vehicleId: vehicle.vehicleId,
+          });
+        }
 
         return {
           ...vehicle,
