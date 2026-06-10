@@ -1431,6 +1431,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
       });
     }
 
+    console.log("METADATA SAMPLE", Array.from(metadataMap.keys()).slice(0, 5));
+
     // Merge data
     const mergedVehicles = await Promise.all(
       vehicles.map(async (vehicle) => {
