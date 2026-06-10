@@ -1421,17 +1421,17 @@ router.get("/", auth, diagnostics, async (req, res) => {
     const metadataMap = new Map();
 
     for (const item of nightOutMetadata) {
-      const key = normalizeId(item?.assetName);
+      const key = normalizeId(item.assetName);
+
       if (!key) continue;
 
       metadataMap.set(key, {
-        isNightOut: Boolean(item?.isNightOut),
-        branchId: item?.branchId ?? null,
-        lastEventType: item?.lastEventType ?? null,
+        branchId: item.branchId ?? null,
+        isNightOut: Boolean(item.isNightOut),
       });
     }
 
-    console.log("METADATA SAMPLE", Array.from(metadataMap.keys()).slice(0, 5));
+    console.log("METADATA SAMPLE VALUES", Array.from(metadataMap.entries()).slice(0, 5));
 
     // Merge data
     const mergedVehicles = await Promise.all(
@@ -1449,30 +1449,20 @@ router.get("/", auth, diagnostics, async (req, res) => {
           );
         });
 
-        console.log("JOIN DEBUG", {
-          assetName: vehicle.assetName,
-          assetRegistration: vehicle.assetRegistration,
-          matchedVehicleId: maintenance?.VehicleId,
-        });
-
-        // Log once (remove later)
-        if (maintenance) {
-          console.log("JOIN DEBUG SUCCESS", {
-            assetName: vehicle.assetName,
-            assetRegistration: vehicle.assetRegistration,
-            matchedVehicleId: maintenance.VehicleId,
-          });
-        } else {
-          console.log("JOIN DEBUG FAIL", {
-            assetName: vehicle.assetName,
-            assetRegistration: vehicle.assetRegistration,
-          });
-        }
-
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
         const ownershipKey = normalizeId(maintenance?.VehicleId);
         const meta = ownershipKey ? metadataMap.get(ownershipKey) : null;
+
+        console.log("BRANCH RESOLVE", {
+          assetName: vehicle.assetName,
+          assetRegistration: vehicle.assetRegistration,
+          matchedVehicleId: maintenance?.VehicleId,
+          ownershipKey,
+          meta,
+          branchId,
+        });
+
         const branchId = meta?.branchId ?? null;
         const isNightOut = meta?.isNightOut ?? false;
 
@@ -1630,6 +1620,16 @@ router.get("/", auth, diagnostics, async (req, res) => {
       res.set("X-Served-From", "combined-cache");
       return res.json(sourceCache.combined.data);
     }
+
+    console.log(
+      "RESPONSE SAMPLE",
+      dedupedVehicles.slice(0, 10).map(v => ({
+        assetName: v.assetName,
+        assetRegistration: v.assetRegistration,
+        branchId: v.branchId,
+        isNightOut: v.isNightOut,
+      }))
+    );
 
     res.json(dedupedVehicles);
   } catch (err) {
