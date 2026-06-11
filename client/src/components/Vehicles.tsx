@@ -703,12 +703,13 @@ const DEPOT_TO_BRANCH_ID: Record<string, string> = {
   avonmouth: "4",
 };
 
-const getAllowedBranchIds = (): Set<string> | null => {
-  const claims = getUserClaims();
-  const role = claims.role;
-  const userDepot = claims.depot;
+const LOCATION_DEPOT_KEYS = Object.keys(DEPOT_TO_BRANCH_ID);
 
-  // Non-admin → always exactly one depot
+const getAllowedBranchIds = (): Set<string> | null => {
+  const role = (localStorage.getItem("role") ?? "").toLowerCase();
+  const userDepot = (localStorage.getItem("depot") ?? "").toLowerCase();
+
+  // Non-admin → always one depot
   if (role !== "admin") {
     const id = DEPOT_TO_BRANCH_ID[userDepot];
     return id ? new Set([id]) : new Set();
@@ -717,25 +718,32 @@ const getAllowedBranchIds = (): Set<string> | null => {
   // Admin → use selected depots from location settings
   try {
     const raw = localStorage.getItem("buffalink:locationSelectedDepots");
-    const selected = raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
 
-    const normalized = Array.isArray(selected)
-      ? selected
-          .map((d: string) => d.toLowerCase())
-          .filter(Boolean)
+    const normalized: string[] = Array.isArray(parsed)
+      ? parsed
+          .map((d: string) => d.toLowerCase().trim())
+          .filter((d: string) => LOCATION_DEPOT_KEYS.indexOf(d) !== -1)
+          .filter((d: string, index: number, arr: string[]) => arr.indexOf(d) === index)
       : [];
 
-    // No selection OR all selected = ALL vehicles
-    if (
-      normalized.length === 0 ||
-      normalized.length === Object.keys(DEPOT_TO_BRANCH_ID).length
-    ) {
+    // Nothing selected = ALL
+    if (normalized.length === 0) {
+      return null;
+    }
+
+    // All selectable depots selected = ALL
+    const allSelected = LOCATION_DEPOT_KEYS.every((depot) => {
+      return normalized.indexOf(depot) !== -1;
+    });
+
+    if (allSelected) {
       return null;
     }
 
     return new Set(
       normalized
-        .map((d: string) => DEPOT_TO_BRANCH_ID[d])
+        .map((depot) => DEPOT_TO_BRANCH_ID[depot])
         .filter(Boolean)
     );
   } catch {
@@ -1342,15 +1350,18 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
 
       // Sort by LONGEST stopped time (league table)
-      const sorted = [...leaderboard].sort((a, b) => {
-        const aSince = a.statusSinceMs ?? now;
-        const bSince = b.statusSinceMs ?? now;
+      const sorted = leaderboard
+        .slice() // clone, avoids mutating the original array
+        .sort((a, b) => {
+          const aSince = a.statusSinceMs ?? now;
+          const bSince = b.statusSinceMs ?? now;
 
-        const aDuration = now - aSince;
-        const bDuration = now - bSince;
+          const aDuration = now - aSince;
+          const bDuration = now - bSince;
 
-        return bDuration - aDuration;
-      }).slice(0, maxRows);
+          return bDuration - aDuration;
+        })
+        .slice(0, maxRows);
 
       return {
         categoryVehicles: sorted,
