@@ -25,7 +25,7 @@ interface Vehicle {
   eventType: string;
   date: string;
   locationGroupName?: string;
-  branchId?: string;
+  branchId?: string | number;
   depotMatch?: string | null;
   assetGroupName?: string;
   assetType?: string;
@@ -666,26 +666,33 @@ const DEPOT_TO_BRANCH_ID: Record<string, string> = {
   avonmouth: "4",
 };
 
-const getAllowedBranchIds = (): Set<string> => {
+const getAllowedBranchIds = (): Set<string> | null => {
   const role = (localStorage.getItem("role") ?? "").toLowerCase();
+  const userDepot = (localStorage.getItem("depot") ?? "").toLowerCase();
 
+  // Non-Admin → ALWAYS 1 depot
   if (role !== "admin") {
-    const depot = localStorage.getItem("depot");
-    const id = depot ? DEPOT_TO_BRANCH_ID[depot] : null;
+    const id = DEPOT_TO_BRANCH_ID[userDepot];
     return id ? new Set([id]) : new Set();
   }
 
-  // Admin
+  // Admin → depends on selected depots
   try {
     const raw = localStorage.getItem("buffalink:locationSelectedDepots");
-    const depots = raw ? JSON.parse(raw) : [];
+    const selected = raw ? JSON.parse(raw) : [];
+
+    // If none OR all → treat as ALL (no filter)
+    if (!selected || selected.length === 0 || selected.length === ALL_DEPOT_LABELS.length) {
+      return null;
+    }
+
     return new Set(
-      depots
-        .map((d: string) => DEPOT_TO_BRANCH_ID[d])
+      selected
+        .map((d: string) => DEPOT_TO_BRANCH_ID[d.toLowerCase()])
         .filter(Boolean)
     );
   } catch {
-    return new Set();
+    return null;
   }
 };
 
@@ -1324,12 +1331,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
     if (shouldApplyBranchFilter(filterOption, isKioskMode)) {
       const allowedBranches = getAllowedBranchIds();
 
-      if (allowedBranches.size > 0) {
-        list = list.filter(
-          v =>
-            v.branchId != null &&
-            allowedBranches.has(String(v.branchId))
-        );
+      if (allowedBranches !== null) {
+        list = list.filter((v) => {
+          if (v.branchId == null) return false;
+          return allowedBranches.has(String(v.branchId));
+        });
       }
     }
 

@@ -22,6 +22,8 @@ interface ProfileButtonProps {
 const getNumber = (key: string, fallback: number) =>
   Number(localStorage.getItem(key)) || fallback;
 
+const capitalize = (str: string) =>
+  str.charAt(0).toUpperCase() + str.slice(1);
 
 const getRoleFromToken = (): string | null => {
   const token = localStorage.getItem("token");
@@ -104,10 +106,31 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
 
   type Depot = (typeof DEPOTS)[number];
 
+  const toDepot = (value?: string | null): Depot | null => {
+    if (!value) return null;
+
+    return DEPOTS.find(
+      d => d.toLowerCase() === value.toLowerCase()
+    ) ?? null;
+  };
+
   // UI-only selection state (default = ALL selected)
-  const [selectedDepots, setSelectedDepots] = useState<Set<Depot>>(
-    () => new Set(DEPOTS)
-  );
+  const [selectedDepots, setSelectedDepots] = useState<Set<Depot>>(() => {
+    const role = (localStorage.getItem("role") ?? "").toLowerCase();
+    // Non-admin → lock to their depot
+    if (role !== "admin") {
+      const userDepotRaw = localStorage.getItem("depot");
+      const userDepot = toDepot(userDepotRaw);
+
+      return userDepot
+        ? new Set<Depot>([userDepot])
+        : new Set<Depot>();
+    }
+
+    // Admin → default ALL
+    return new Set<Depot>(DEPOTS);
+  });
+
 
   const allSelected = selectedDepots.size === DEPOTS.length;
 

@@ -420,11 +420,11 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
     // Non-Admin → show their depot, not ALL
     if (!isAdmin) {
-      const depot = claims?.depot;
+      const depot = claims?.depot ?? localStorage.getItem("depot");
 
       return depot
         ? (DEPOT_CODE[depot] ?? depot.slice(0, 3).toUpperCase())
-        : "ALL";
+        : "";
     }
 
     // Admin → existing behaviour unchanged
