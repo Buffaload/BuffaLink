@@ -2241,13 +2241,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       </span>
                     </div>
 
-                    <div className="vehicle-modal-detail-row">
-                      <span className="vehicle-modal-detail-label">Vehicle type</span>
-                      <span className="vehicle-modal-detail-value">
-                        {displayText(selectedVehicle.assetGroupName, "Not available")}
-                      </span>
-                    </div>
-
                     {String(selectedVehicle.assetType ?? "").toLowerCase() !== "trailer" && (
                       <div className="vehicle-modal-detail-row">
                         <span className="vehicle-modal-detail-label">Vehicle driver</span>
@@ -2256,6 +2249,21 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         </span>
                       </div>
                     )}
+
+                    <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">VEHICLE DEPOT</span>
+                      <span className="vehicle-modal-detail-value">
+                        {(() => {
+                          const depot = selectedVehicle.depotMatch;
+
+                          if (!depot || depot.trim() === "") {
+                            return "No assigned depot";
+                          }
+
+                          return depot.toUpperCase();
+                        })()}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
