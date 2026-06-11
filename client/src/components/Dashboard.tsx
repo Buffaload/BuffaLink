@@ -53,19 +53,16 @@ const DEPOT_CODE: Record<string, string> = {
 
 const DEPOT_ORDER = ["Ellington", "Crewe", "Coventry", "Skelmersdale", "Bellshill", "Avonmouth"];
 
-const normalizeDepot = (value: string | null | undefined): string | null =>
-  value
-    ? value.trim().toLowerCase()
-    : null;
-
-const getDepotFromToken = (): string | null => {
-  
-const token = localStorage.getItem("token");
+const getUserClaims = () => {
+  const token = localStorage.getItem("token");
   if (!token) return null;
 
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return normalizeDepot(payload?.depot);
+    return {
+      role: payload?.role?.toLowerCase(),
+      depot: payload?.depot?.toLowerCase(),
+    };
   } catch {
     return null;
   }
@@ -416,37 +413,39 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   }, []);
 
   const depotHeaderLabel = useMemo(() => {
-    // locationTick is used only to trigger recompute when selection changes
     void locationTick;
-    const role = (localStorage.getItem("role") ?? "").toLowerCase();
-    const isAdmin = role === "admin";
 
+    const claims = getUserClaims();
+    const isAdmin = claims?.role === "admin";
+
+    // Non-Admin → show their depot, not ALL
     if (!isAdmin) {
-      const depot = getDepotFromToken();
+      const depot = claims?.depot;
+
       return depot
-        ? DEPOT_CODE[depot] ?? depot.slice(0, 3).toUpperCase()
+        ? (DEPOT_CODE[depot] ?? depot.slice(0, 3).toUpperCase())
         : "ALL";
     }
 
+    // Admin → existing behaviour unchanged
     let selected: string[] = [];
     try {
       const raw = localStorage.getItem(LOCATION_DEPOTS_KEY);
-      selected = raw ? (JSON.parse(raw) as string[]) : [];
+      selected = raw ? JSON.parse(raw) : [];
     } catch {
       selected = [];
     }
 
-    // If nothing stored yet, treat as ALL (portal defaults to all selected)
     if (!selected || selected.length === 0) return "ALL";
 
-    // Normalize + order
     const normalized = DEPOT_ORDER.filter(d => selected.includes(d));
 
-    // If all depots selected -> ALL
     if (normalized.length === DEPOT_ORDER.length) return "ALL";
 
-    // Map to codes and join
-    const codes = normalized.map(d => DEPOT_CODE[d] ?? d.slice(0, 3).toUpperCase());
+    const codes = normalized.map(
+      d => DEPOT_CODE[d] ?? d.slice(0, 3).toUpperCase()
+    );
+
     return codes.join(", ");
   }, [locationTick]);
 

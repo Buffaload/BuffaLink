@@ -1483,7 +1483,10 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
-        const ownershipKey = normalizeId(maintenance?.VehicleId);
+        const ownershipKey = 
+          normalizeId(maintenance?.VehicleId) ||
+          normalisedReg ||
+          normalisedAssetName;
         const meta = ownershipKey ? metadataMap.get(ownershipKey) : null;
         const branchId = meta?.branchId ?? null;
         const isNightOut = meta?.isNightOut ?? false;
