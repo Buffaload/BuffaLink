@@ -95,24 +95,25 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
 }) => {
   const isAdmin = isUserAdmin();
   const portalTitle = isAdmin ? "Admin portal" : "Portal";
-
   // Get the first letter of the username
   const displayName = normalizeDisplayName(username);
-
   const queryClient = useQueryClient();
-
   const portalRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<PortalView>("menu");
-
   const [serviceDays, setServiceDays] = useState(() =>
     getNumber(SERVICE_TIMELINE_DAYS_KEY, 42)
   );
   const [motDays, setMotDays] = useState(() =>
     getNumber(MOT_TIMELINE_DAYS_KEY, 364)
   );
+
+  useEffect(() => {
+    if (open) {
+      setView("menu");
+    }
+  }, [open]);
 
   const DEPOTS = [
     "Ellington",
@@ -401,7 +402,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      // If click is inside the portal or the trigger button, ignore
+      // If click is inside the portal or the trigger button
       if (
         portalRef.current?.contains(target) ||
         triggerRef.current?.contains(target)
@@ -465,7 +466,10 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
             <button
               type="button"
               className="admin-portal-close"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                setView("menu");
+              }}
               aria-label="Close admin portal"
             >
               <X size={16} />
