@@ -74,6 +74,7 @@ interface VehiclesProps {
   }) => void;
 }
 
+const LOCATION_DEPOTS_EVENT = "buffalink:locationDepotsChanged";
 const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
 const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
 const DEFAULT_SERVICE_TIMELINE_DAYS = 42;
@@ -948,6 +949,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   onKioskStatsChange,
 }) => {
   const queryClient = useQueryClient();
+  const [locationTick, setLocationTick] = useState(0);
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
   const [sortOption, setSortOption] = useState<"stoppedTime" | "serviceDue" | "reg" | "location">("stoppedTime");
   const [timelineTick, setTimelineTick] = useState(0);
@@ -963,6 +965,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
   const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onLocationChanged = () => setLocationTick((t) => t + 1);
+    window.addEventListener(LOCATION_DEPOTS_EVENT, onLocationChanged);
+    return () =>
+      window.removeEventListener(LOCATION_DEPOTS_EVENT, onLocationChanged);
+  }, []);
 
   const scrollToTop = () => {
     const el = scrollRef.current;
@@ -1064,7 +1073,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   };
 
   const requestCloseVehicleModal = () => {
-    // allow CSS transition to animate out
+    // Allow CSS transition to animate out
     setIsVehicleModalClosing(true);
     window.setTimeout(() => {
       setIsVehicleModalOpen(false);
@@ -1083,11 +1092,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     document.addEventListener("keydown", onKeyDown);
 
-    // lock background scroll
+    // Lock background scroll
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    // focus close button for accessibility
+    // Focus close button for accessibility
     window.setTimeout(() => modalCloseBtnRef.current?.focus(), 0);
 
     return () => {
@@ -1127,7 +1136,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       [selectedVehicle.latitude!, selectedVehicle.longitude!],
       {
         radius: 24,
-        fillColor: "#6b7280", // ✅ grey
+        fillColor: "#6b7280",
         fillOpacity: 0.85,
         color: "#ffffff",
         weight: 2,
@@ -1282,6 +1291,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   // Depot matching helpers (geofence + text/address fallback)
   const { categoryVehicles, displayVehicles, highlightFigures } = useMemo<VehiclesMemoResult>(() => {
+    void locationTick;
     const now = Date.now();
     const currentKeys = new Set<string>();
     const vehiclesWithSince: VehicleWithSince[] = vehicles.map((v) => {
@@ -1314,13 +1324,22 @@ const Vehicles: React.FC<VehiclesProps> = ({
     });
 
     if (isKioskMode) {
-      const leaderboard = vehiclesWithSince
+      let leaderboard = vehiclesWithSince
         .filter((v) => (v.eventType ?? "").toLowerCase() === "stopped")
         .filter((v) => !isInAnyDepot(v))
         .filter((v) => !isMaintenanceSite(v))
         .filter((v) => !isTipper(v))
         .filter((v) => !isTrailerVehicle(v))
         .filter((v) => !toBool(v.IsVor) && !toBool(v.LiveDefects));
+
+      const allowedBranches = getAllowedBranchIds();
+
+      if (allowedBranches !== null) {
+        leaderboard = leaderboard.filter((v) => {
+          if (v.branchId == null) return false;
+          return allowedBranches.has(String(v.branchId));
+        });
+      }
 
       // Sort by LONGEST stopped time (league table)
       const sorted = [...leaderboard].sort((a, b) => {
@@ -1465,6 +1484,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     sortOption,
     isKioskMode,
     maxRows,
+    locationTick,
   ]);
 
   useEffect(() => {

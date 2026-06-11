@@ -141,22 +141,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
       return userDepot ? new Set<Depot>([userDepot]) : new Set<Depot>();
     }
 
-    try {
-      const raw = localStorage.getItem(LOCATION_DEPOTS_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-
-      const storedDepots = Array.isArray(parsed)
-        ? parsed
-            .map((value) => toDepot(String(value)))
-            .filter((d): d is Depot => d !== null)
-        : [];
-
-      return storedDepots.length > 0
-        ? new Set<Depot>(storedDepots)
-        : new Set<Depot>(DEPOTS);
-    } catch {
-      return new Set<Depot>(DEPOTS);
-    }
+    return new Set<Depot>(DEPOTS);
   };
 
   // UI-only selection state (default = ALL selected)
