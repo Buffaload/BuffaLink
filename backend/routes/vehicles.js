@@ -1261,15 +1261,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           VehicleMetadata.find({}),
       ]);
 
-      console.log("METADATA COUNTS", {
-        totalDocs: nightOutMetadata.length,
-        withBranchId: nightOutMetadata.filter(d => d.branchId != null).length,
-        sampleWithBranch: nightOutMetadata
-          .filter(d => d.branchId != null)
-          .slice(0, 5)
-          .map(d => ({ assetName: d.assetName, branchId: d.branchId })),
-      });
-
       if (blueCrystalResponse.status === "fulfilled") {
         console.log(
           "[BlueCrystal RAW response]",
@@ -1433,32 +1424,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           });
         }
 
-        // Only print duplicates (2+ docs for same normalized key)
-        const duplicateMetadataEntries = Array.from(groupedMetadata.entries())
-          .filter(([, docs]) => docs.length > 1);
-
-        // Print a few duplicates first
-        console.log(
-          "DUPLICATE METADATA GROUPS",
-          duplicateMetadataEntries.slice(0, 20).map(([key, docs]) => ({
-            normalizedKey: key,
-            docs,
-          }))
-        );
-
-        // Optional targeted check for known problem vehicles
-        const TARGET_KEYS = ["AY19TZP", "BV72NVY", "AV74VGD", "AY20TVA", "D347"];
-
-        for (const key of TARGET_KEYS) {
-          const docs = groupedMetadata.get(key);
-          if (docs) {
-            console.log("TARGET METADATA GROUP", {
-              normalizedKey: key,
-              docs,
-            });
-          }
-        }
-
         sourceCache.nightOut = { ts: Date.now(), data: nightOutMetadata };
       }
 
@@ -1519,8 +1484,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       metadataMap.set(key, merged);
     }
 
-    console.log("METADATA SAMPLE VALUES (NEW)", nightOutMetadata.slice(0, 5));
-
     // Merge data
     const mergedVehicles = await Promise.all(
       vehicles.map(async (vehicle) => {
@@ -1528,14 +1491,10 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
-        const maintenance = maintenanceDetails.find(m => {
-          const vehicleIdNorm = normalizeId(m.VehicleId);
-
-          return (
-            vehicleIdNorm === normalizeId(vehicle.assetRegistration) ||
-            vehicleIdNorm === normalizeId(vehicle.assetName)
-          );
-        });
+        const maintenance = 
+          maintenanceByVehicleId.get(normalisedReg) ||
+          maintenanceByVehicleId.get(normalisedAssetName) ||
+          null;
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
@@ -1562,15 +1521,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
             site?.group === "Maintenance"
               ? null
               : matchDepotByText(vehicle);
-
-        if (Math.random() < 0.002) {
-          console.log("BRANCH DEBUG keys", {
-            assetName: vehicle.assetName,
-            assetRegistration: vehicle.assetRegistration,
-            VehicleId: vehicle.VehicleId,
-            vehicleId: vehicle.vehicleId,
-          });
-        }
 
         return {
           ...vehicle,
@@ -1698,16 +1648,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       res.set("X-Served-From", "combined-cache");
       return res.json(sourceCache.combined.data);
     }
-
-    console.log(
-      "RESPONSE SAMPLE",
-      dedupedVehicles.slice(0, 10).map(v => ({
-        assetName: v.assetName,
-        assetRegistration: v.assetRegistration,
-        branchId: v.branchId,
-        isNightOut: v.isNightOut,
-      }))
-    );
 
     res.json(dedupedVehicles);
   } catch (err) {
