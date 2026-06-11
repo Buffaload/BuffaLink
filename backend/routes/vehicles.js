@@ -850,8 +850,8 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
-  console.log("BACKEND MONGOOSE DB NAME", mongoose.connection?.name);
-  console.log("BACKEND VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
+  // console.log("BACKEND MONGOOSE DB NAME", mongoose.connection?.name);
+  // console.log("BACKEND VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
 
   console.log("Authenticated request from user:", req.user);
   const forceDebug =
