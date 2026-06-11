@@ -646,6 +646,42 @@ const renderStatusIcon = (rawType?: string) => {
   }
 };
 
+const getUserClaims = () => {
+  const token = localStorage.getItem("token");
+
+  try {
+    if (!token) throw new Error("No token");
+
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
+    return {
+      role: String(
+        payload?.role ??
+        payload?.Role ??
+        payload?.user?.role ??
+        payload?.user?.Role ??
+        localStorage.getItem("role") ??
+        ""
+      ).toLowerCase(),
+      depot: String(
+        payload?.depot ??
+        payload?.Depot ??
+        payload?.user?.depot ??
+        payload?.user?.Depot ??
+        localStorage.getItem("depot") ??
+        ""
+      ).toLowerCase(),
+    };
+  } catch {
+    return {
+      role: String(localStorage.getItem("role") ?? "").toLowerCase(),
+      depot: String(localStorage.getItem("depot") ?? "").toLowerCase(),
+    };
+  }
+};
+
 export const shouldApplyBranchFilter = (
   filterOption: string,
   isKioskMode: boolean
@@ -667,28 +703,38 @@ const DEPOT_TO_BRANCH_ID: Record<string, string> = {
 };
 
 const getAllowedBranchIds = (): Set<string> | null => {
-  const role = (localStorage.getItem("role") ?? "").toLowerCase();
-  const userDepot = (localStorage.getItem("depot") ?? "").toLowerCase();
+  const claims = getUserClaims();
+  const role = claims.role;
+  const userDepot = claims.depot;
 
-  // Non-Admin → ALWAYS 1 depot
+  // Non-admin → always exactly one depot
   if (role !== "admin") {
     const id = DEPOT_TO_BRANCH_ID[userDepot];
     return id ? new Set([id]) : new Set();
   }
 
-  // Admin → depends on selected depots
+  // Admin → use selected depots from location settings
   try {
     const raw = localStorage.getItem("buffalink:locationSelectedDepots");
     const selected = raw ? JSON.parse(raw) : [];
 
-    // If none OR all → treat as ALL (no filter)
-    if (!selected || selected.length === 0 || selected.length === ALL_DEPOT_LABELS.length) {
+    const normalized = Array.isArray(selected)
+      ? selected
+          .map((d: string) => d.toLowerCase())
+          .filter(Boolean)
+      : [];
+
+    // No selection OR all selected = ALL vehicles
+    if (
+      normalized.length === 0 ||
+      normalized.length === Object.keys(DEPOT_TO_BRANCH_ID).length
+    ) {
       return null;
     }
 
     return new Set(
-      selected
-        .map((d: string) => DEPOT_TO_BRANCH_ID[d.toLowerCase()])
+      normalized
+        .map((d: string) => DEPOT_TO_BRANCH_ID[d])
         .filter(Boolean)
     );
   } catch {

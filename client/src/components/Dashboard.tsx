@@ -55,16 +55,37 @@ const DEPOT_ORDER = ["Ellington", "Crewe", "Coventry", "Skelmersdale", "Bellshil
 
 const getUserClaims = () => {
   const token = localStorage.getItem("token");
-  if (!token) return null;
 
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (!token) throw new Error("No token");
+
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
     return {
-      role: payload?.role?.toLowerCase(),
-      depot: payload?.depot?.toLowerCase(),
+      role: String(
+        payload?.role ??
+        payload?.Role ??
+        payload?.user?.role ??
+        payload?.user?.Role ??
+        localStorage.getItem("role") ??
+        ""
+      ).toLowerCase(),
+      depot: String(
+        payload?.depot ??
+        payload?.Depot ??
+        payload?.user?.depot ??
+        payload?.user?.Depot ??
+        localStorage.getItem("depot") ??
+        ""
+      ).toLowerCase(),
     };
   } catch {
-    return null;
+    return {
+      role: String(localStorage.getItem("role") ?? "").toLowerCase(),
+      depot: String(localStorage.getItem("depot") ?? "").toLowerCase(),
+    };
   }
 };
 
@@ -420,7 +441,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 
     // Non-Admin → show their depot, not ALL
     if (!isAdmin) {
-      const depot = claims?.depot ?? localStorage.getItem("depot");
+      const depot = claims?.depot;
 
       return depot
         ? (DEPOT_CODE[depot] ?? depot.slice(0, 3).toUpperCase())

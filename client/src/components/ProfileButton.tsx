@@ -44,6 +44,28 @@ const getRoleFromToken = (): string | null => {
   }
 };
 
+const getDepotFromToken = (): string | null => {
+  const token = localStorage.getItem("token");
+
+  try {
+    if (!token) return null;
+
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
+    return (
+      payload?.depot ??
+      payload?.Depot ??
+      payload?.user?.depot ??
+      payload?.user?.Depot ??
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
 const isUserAdmin = (): boolean => {
   const storedRole = localStorage.getItem("role");
   const role = (storedRole ?? getRoleFromToken() ?? "").toLowerCase();
@@ -111,23 +133,36 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
     ) ?? null;
   };
 
-  // UI-only selection state (default = ALL selected)
-  const [selectedDepots, setSelectedDepots] = useState<Set<Depot>>(() => {
-    const role = (localStorage.getItem("role") ?? "").toLowerCase();
-    // Non-admin → lock to their depot
-    if (role !== "admin") {
-      const userDepotRaw = localStorage.getItem("depot");
-      const userDepot = toDepot(userDepotRaw);
+  const getInitialSelectedDepots = (isAdmin: boolean): Set<Depot> => {
+    if (!isAdmin) {
+      const rawDepot = getDepotFromToken() ?? localStorage.getItem("depot");
+      const userDepot = toDepot(rawDepot);
 
-      return userDepot
-        ? new Set<Depot>([userDepot])
-        : new Set<Depot>();
+      return userDepot ? new Set<Depot>([userDepot]) : new Set<Depot>();
     }
 
-    // Admin → default ALL
-    return new Set<Depot>(DEPOTS);
-  });
+    try {
+      const raw = localStorage.getItem(LOCATION_DEPOTS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
 
+      const storedDepots = Array.isArray(parsed)
+        ? parsed
+            .map((value) => toDepot(String(value)))
+            .filter((d): d is Depot => d !== null)
+        : [];
+
+      return storedDepots.length > 0
+        ? new Set<Depot>(storedDepots)
+        : new Set<Depot>(DEPOTS);
+    } catch {
+      return new Set<Depot>(DEPOTS);
+    }
+  };
+
+  // UI-only selection state (default = ALL selected)
+  const [selectedDepots, setSelectedDepots] = useState<Set<Depot>>(
+    () => getInitialSelectedDepots(isAdmin)
+  );
 
   const allSelected = selectedDepots.size === DEPOTS.length;
 
