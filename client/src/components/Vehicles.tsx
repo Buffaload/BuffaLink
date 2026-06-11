@@ -647,42 +647,6 @@ const renderStatusIcon = (rawType?: string) => {
   }
 };
 
-const getUserClaims = () => {
-  const token = localStorage.getItem("token");
-
-  try {
-    if (!token) throw new Error("No token");
-
-    const payload = JSON.parse(
-      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
-    );
-
-    return {
-      role: String(
-        payload?.role ??
-        payload?.Role ??
-        payload?.user?.role ??
-        payload?.user?.Role ??
-        localStorage.getItem("role") ??
-        ""
-      ).toLowerCase(),
-      depot: String(
-        payload?.depot ??
-        payload?.Depot ??
-        payload?.user?.depot ??
-        payload?.user?.Depot ??
-        localStorage.getItem("depot") ??
-        ""
-      ).toLowerCase(),
-    };
-  } catch {
-    return {
-      role: String(localStorage.getItem("role") ?? "").toLowerCase(),
-      depot: String(localStorage.getItem("depot") ?? "").toLowerCase(),
-    };
-  }
-};
-
 export const shouldApplyBranchFilter = (
   filterOption: string,
   isKioskMode: boolean
