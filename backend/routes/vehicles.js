@@ -865,8 +865,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
   console.log("BACKEND MONGO URI SUMMARY", describeMongoUri(process.env.MONGO_URI));
   console.log("BACKEND MONGOOSE DB NAME", mongoose.connection?.name);
   console.log("BACKEND VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
-  const d347 = await VehicleMetadata.findOne({ assetName: "D347" }).lean();
-  console.log("BACKEND CHECK D347", d347);
 
   console.log("Authenticated request from user:", req.user);
   const forceDebug =
