@@ -850,7 +850,6 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
-  console.log("BACKEND MONGO", process.env.MONGO_URI);
   console.log("Authenticated request from user:", req.user);
   const forceDebug =
     req.user?.role === "admin" &&
@@ -1455,7 +1454,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
       metadataMap.set(key, merged);
     }
 
-    console.log("METADATA SAMPLE VALUES", Array.from(metadataMap.entries()).slice(0, 5));
+    console.log("METADATA SAMPLE VALUES (NEW)", nightOutMetadata.slice(0, 5));
 
     // Merge data
     const mergedVehicles = await Promise.all(
