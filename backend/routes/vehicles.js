@@ -850,6 +850,7 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
+  console.log("BACKEND MONGO", process.env.MONGO_URI);
   console.log("Authenticated request from user:", req.user);
   const forceDebug =
     req.user?.role === "admin" &&
