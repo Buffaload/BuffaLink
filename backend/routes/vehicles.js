@@ -848,8 +848,26 @@ router.use((req, res, next) => {
   next();
 });
 
+const describeMongoUri = (uri) => {
+  try {
+    const u = new URL(uri);
+    return {
+      host: u.hostname,
+      dbFromUri: u.pathname.replace("/", "") || "(none)",
+    };
+  } catch {
+    return { host: "invalid", dbFromUri: "invalid" };
+  }
+};
+
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
+  console.log("BACKEND MONGO URI SUMMARY", describeMongoUri(process.env.MONGO_URI));
+  console.log("BACKEND MONGOOSE DB NAME", mongoose.connection?.name);
+  console.log("BACKEND VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
+  const d347 = await VehicleMetadata.findOne({ assetName: "D347" }).lean();
+  console.log("BACKEND CHECK D347", d347);
+
   console.log("Authenticated request from user:", req.user);
   const forceDebug =
     req.user?.role === "admin" &&

@@ -13,13 +13,6 @@ const normalizeId = (value) =>
 
 const DEBUG_ALL = false;      // true = print every processed row
 const DEBUG_LIMIT = 100;      // limit console spam when DEBUG_ALL = true
-const TARGETS = new Set([
-    "AV74VGD",
-    "AY19TZP",
-    "AY20TVA",
-    "BV72NVY",
-    "D347",
-]);
 
 const inputFile = process.argv[2];
 
@@ -61,33 +54,26 @@ const rows = lines.slice(1).map((line) => {
     };
 });
 
+const describeMongoUri = (uri) => {
+    try {
+        const u = new URL(uri);
+        return {
+            host: u.hostname,
+            dbFromUri: u.pathname.replace("/", "") || "(none)",
+        };
+    } catch {
+        return { host: "invalid", dbFromUri: "invalid" };
+    }
+};
+
 await mongoose.connect(process.env.MONGO_URI);
 console.log("Connected to MongoDB");
 console.log(`Loaded ${rows.length} rows from CSV`);
 
-// Preload all metadata docs once
-const existingDocs = await VehicleMetadata.find({}).lean();
-console.log(`Loaded ${existingDocs.length} existing VehicleMetadata docs`);
+console.log("SCRIPT MONGO URI SUMMARY", describeMongoUri(process.env.MONGO_URI));
+console.log("SCRIPT MONGOOSE DB NAME", mongoose.connection?.name);
+console.log("SCRIPT VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
 
-// Group existing docs by normalized assetName
-const existingByNormalizedKey = new Map();
-
-for (const doc of existingDocs) {
-    const key = normalizeId(doc.assetName);
-    if (!key) continue;
-
-    if (!existingByNormalizedKey.has(key)) {
-        existingByNormalizedKey.set(key, []);
-    }
-
-    existingByNormalizedKey.get(key).push(doc);
-}
-
-let processed = 0;
-let inserted = 0;
-let updated = 0;
-let deduped = 0;
-let skipped = 0;
 let debugPrinted = 0;
 
 // Optional: dedupe CSV rows first so the last non-null branch wins
@@ -101,7 +87,6 @@ for (const row of rows) {
             : null;
 
     if (!normalizedVehicleId || parsedBranchId == null || Number.isNaN(parsedBranchId)) {
-        skipped++;
         continue;
     }
 
@@ -113,7 +98,20 @@ for (const row of rows) {
 }
 
 for (const [vehicleId, csvEntry] of csvByNormalizedKey.entries()) {
-    const matchingDocs = existingByNormalizedKey.get(vehicleId) ?? [];
+    const matchingDocs = await VehicleMetadata.find({
+        $expr: {
+            $eq: [
+                {
+                    $replaceAll: {
+                        input: { $toUpper: "$assetName" },
+                        find: " ",
+                        replacement: ""
+                    }
+                },
+                vehicleId
+            ]
+        }
+    });
 
     const canonicalDoc =
         matchingDocs.find((d) => normalizeId(d.assetName) === d.assetName) ||
@@ -128,49 +126,23 @@ for (const [vehicleId, csvEntry] of csvByNormalizedKey.entries()) {
             matchingDocs.find((d) => d.lastEventType)?.lastEventType ?? null,
     };
 
-    const shouldLog =
-        TARGETS.has(vehicleId) ||
-        (DEBUG_ALL && debugPrinted < DEBUG_LIMIT);
-
-    if (shouldLog) {
-        console.log("🔍 IMPORT STEP", {
-            rawVehicleId: csvEntry.rawVehicleId,
-            normalizedVehicleId: vehicleId,
-            csvBranchId: csvEntry.branchId,
-                existingMatches: matchingDocs.map((d) => ({
-                    id: String(d._id),
-                    assetName: d.assetName,
-                    branchId: d.branchId ?? null,
-                    isNightOut: Boolean(d.isNightOut),
-                    lastEventType: d.lastEventType ?? null,
-            })),
-            merged,
-        });
-        debugPrinted++;
-    }
-
     if (!canonicalDoc) {
         await VehicleMetadata.create(merged);
-        inserted++;
     } else {
         await VehicleMetadata.updateOne(
-        { _id: canonicalDoc._id },
-        { $set: merged }
+            { _id: canonicalDoc._id },
+            { $set: merged }
         );
-        updated++;
     }
 
     // Delete all duplicates except the chosen canonical doc
     const duplicateIds = matchingDocs
-        .filter((d) => !canonicalDoc || String(d._id) !== String(canonicalDoc._id))
-        .map((d) => d._id);
+        .filter(d => String(d._id) !== String(canonicalDoc?._id))
+        .map(d => d._id);
 
     if (duplicateIds.length > 0) {
         await VehicleMetadata.deleteMany({ _id: { $in: duplicateIds } });
-        deduped += duplicateIds.length;
     }
-
-    processed++;
 }
 
 // Final validation snapshot
@@ -181,16 +153,8 @@ const finalDocs = await VehicleMetadata.find({
     .limit(20)
     .lean();
 
-console.log("IMPORT COMPLETE", {
-    processed,
-    inserted,
-    updated,
-    deduped,
-    skipped,
-});
-
-console.log("FINAL SAMPLE WITH BRANCH", finalDocs);
-console.log("SCRIPT MONGO", process.env.MONGO_URI);
+const d347After = await VehicleMetadata.findOne({ assetName: "D347" }).lean();
+console.log("SCRIPT CHECK D347 AFTER", d347After);
 
 await mongoose.disconnect();
 console.log("Disconnected from MongoDB");
