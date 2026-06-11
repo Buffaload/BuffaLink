@@ -25,6 +25,7 @@ const nominatimHttpsAgent = new https.Agent({
 const VOLVO_BASE_URLS = {
   vehicle: "https://api.volvotrucks.com/vehicle",
   tacho: "https://api.volvotrucks.com/tacho",
+  driver: "https://api.volvotrucks.com/driver",
 };
 
 const VOLVO_ACCEPT = {
@@ -48,6 +49,7 @@ const createVolvoAxios = (baseURL) => {
 const volvoClients = {
   vehicle: createVolvoAxios(VOLVO_BASE_URLS.vehicle),
   tacho: createVolvoAxios(VOLVO_BASE_URLS.tacho),
+  driver: createVolvoAxios(VOLVO_BASE_URLS.driver),
 };
 
 const makeRequestId = () => {
@@ -1204,7 +1206,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return mapped.filter(Boolean);
       };
 
-      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, volvoTachofilesResponse, nightOutMetadataResult] =
+      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, volvoDriversResponse, nightOutMetadataResult] =
         await Promise.allSettled([
           // Michelin with retry: prevents Volvo-only first loads when Michelin is flaky/cold
           withRetry(
@@ -1238,10 +1240,17 @@ router.get("/", auth, diagnostics, async (req, res) => {
             extractItems: (data) => data?.vehiclePositionResponse?.vehiclePositions,
             getNextPageParam: null,
           }),
-          // Fetch driver data from tachofiles
-          volvoClients.tacho.get("/tachofiles", {
-            params: { contentFilter: "DRIVERCARDFILE" },
-            timeout: 10000,
+          fetchVolvoPaged({
+            axiosInstance: volvoClients.driver,
+            path: "/drivers",
+            params: {
+              driverIdType: "Tacho", // Ensure IDs line up with vehiclepositions
+            },
+            accept: VOLVO_ACCEPT.drivers,
+            extractItems: (data) => data?.driverResponse?.drivers,
+            getNextPageParam: ({ items }) => ({
+              lastDriverId: items?.[items.length - 1]?.driverId,
+            }),
           }),
           VehicleMetadata.find({}),
       ]);
@@ -1288,40 +1297,41 @@ router.get("/", auth, diagnostics, async (req, res) => {
         console.log("[VOLVO /vehiclepositions] fulfilled", { count: volvoPositionsResponse.value?.length ?? 0 });
       }
 
-      // Build driver map from tachofiles
       let driverMap = new Map();
-      if (volvoTachofilesResponse.status === "fulfilled") {
-        const tachoData = volvoTachofilesResponse.value ?? [];
-        for (const file of tachoData) {
-          console.log("[VOLVO /tachofiles] response structure:", {
-            hasTachoFilesResponse: !!volvoTachofilesResponse.value.data?.tachoFilesResponse,
-            driverCardFilesCount: tachoData.length,
-            sampleDriverIds: tachoData.slice(0, 3).map(f => ({
-              driverId: f.driverId?.tachoDriverIdentification?.driverIdentification,
-              firstName: f.firstName,
-              lastName: f.lastName,
-            })),
-          });
-          const driverId = file.driverId?.tachoDriverIdentification?.driverIdentification;
-          if (driverId && file.firstName && file.lastName) {
-            driverMap.set(driverId, {
-              firstName: file.firstName,
-              lastName: file.lastName,
+
+      if (volvoDriversResponse.status === "fulfilled") {
+        const drivers = volvoDriversResponse.value ?? [];
+
+        console.log("[VOLVO /drivers] fetched", drivers.length);
+
+        for (const d of drivers) {
+          const id =
+            d?.driverId?.tachoDriverIdentification?.driverIdentification ??
+            d?.driverId ??
+            null;
+
+          const firstName = d?.firstName ?? d?.driverName?.givenName ?? null;
+          const lastName = d?.lastName ?? d?.driverName?.familyName ?? null;
+
+          if (id && (firstName || lastName)) {
+            const normalized = id.trim().toUpperCase();
+
+            driverMap.set(normalized, {
+              firstName: firstName ?? "",
+              lastName: lastName ?? "",
             });
-            console.log("[VOLVO Driver Map] Built map with", driverMap.size, "entries");
+
+            // store short version too (last 14 chars)
+            if (normalized.length > 14) {
+              driverMap.set(normalized.slice(-14), {
+                firstName: firstName ?? "",
+                lastName: lastName ?? "",
+              });
+            }
           }
         }
-      } else if (volvoTachofilesResponse.status === "rejected") {
-        console.warn("[VOLVO /tachofiles] failed:", {
-          message: volvoTachofilesResponse.reason?.message,
-          status: volvoTachofilesResponse.reason?.response?.status,
-          baseURL: volvoTachofilesResponse.reason?.config?.baseURL,
-          url: volvoTachofilesResponse.reason?.config?.url,
-          fullUrl: `${volvoTachofilesResponse.reason?.config?.baseURL ?? ""}${volvoTachofilesResponse.reason?.config?.url ?? ""}`,
-          params: volvoTachofilesResponse.reason?.config?.params,
-          accept: volvoTachofilesResponse.reason?.config?.headers?.Accept,
-          data: volvoTachofilesResponse.reason?.response?.data,
-        });
+
+        console.log("[VOLVO Driver Map]", driverMap.size);
       }
 
       let volvoMapped = [];
