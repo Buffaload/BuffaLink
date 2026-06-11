@@ -22,9 +22,6 @@ interface ProfileButtonProps {
 const getNumber = (key: string, fallback: number) =>
   Number(localStorage.getItem(key)) || fallback;
 
-const capitalize = (str: string) =>
-  str.charAt(0).toUpperCase() + str.slice(1);
-
 const getRoleFromToken = (): string | null => {
   const token = localStorage.getItem("token");
   if (!token) return null;
