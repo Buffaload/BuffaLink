@@ -1394,6 +1394,53 @@ router.get("/", auth, diagnostics, async (req, res) => {
         nightOutMetadata = isFresh(sourceCache.nightOut.ts) ? sourceCache.nightOut.data : [];
       } else {
         nightOutMetadata = nightOutMetadataResult.value;
+
+        // DEBUG: show duplicate VehicleMetadata docs that normalize to the same key
+        const groupedMetadata = new Map();
+
+        for (const item of nightOutMetadata) {
+          const key = normalizeId(item?.assetName);
+          if (!key) continue;
+
+          if (!groupedMetadata.has(key)) {
+            groupedMetadata.set(key, []);
+          }
+
+          groupedMetadata.get(key).push({
+            _id: String(item._id),
+            assetName: item.assetName,
+            branchId: item.branchId ?? null,
+            isNightOut: Boolean(item.isNightOut),
+            lastEventType: item.lastEventType ?? null,
+          });
+        }
+
+        // Only print duplicates (2+ docs for same normalized key)
+        const duplicateMetadataEntries = Array.from(groupedMetadata.entries())
+          .filter(([, docs]) => docs.length > 1);
+
+        // Print a few duplicates first
+        console.log(
+          "DUPLICATE METADATA GROUPS",
+          duplicateMetadataEntries.slice(0, 20).map(([key, docs]) => ({
+            normalizedKey: key,
+            docs,
+          }))
+        );
+
+        // Optional targeted check for known problem vehicles
+        const TARGET_KEYS = ["AY19TZP", "BV72NVY", "AV74VGD", "AY20TVA", "D347"];
+
+        for (const key of TARGET_KEYS) {
+          const docs = groupedMetadata.get(key);
+          if (docs) {
+            console.log("TARGET METADATA GROUP", {
+              normalizedKey: key,
+              docs,
+            });
+          }
+        }
+
         sourceCache.nightOut = { ts: Date.now(), data: nightOutMetadata };
       }
 
