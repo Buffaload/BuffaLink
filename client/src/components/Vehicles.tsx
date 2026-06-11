@@ -2254,13 +2254,24 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       <span className="vehicle-modal-detail-label">VEHICLE DEPOT</span>
                       <span className="vehicle-modal-detail-value">
                         {(() => {
-                          const depot = selectedVehicle.depotMatch;
+                          const branchIdToDepot: Record<string, string> = {
+                            "1": "Ellington",
+                            "2": "Crewe",
+                            "3": "Skelmersdale",
+                            "4": "Avonmouth",
+                            "10": "Coventry",
+                            "11": "Bellshill",
+                          };
 
-                          if (!depot || depot.trim() === "") {
-                            return "No assigned depot";
+                          const branchId = selectedVehicle.branchId != null
+                            ? String(selectedVehicle.branchId)
+                            : null;
+
+                          if (branchId && branchIdToDepot[branchId]) {
+                            return branchIdToDepot[branchId];
                           }
 
-                          return depot.toUpperCase();
+                          return "No assigned depot";
                         })()}
                       </span>
                     </div>
