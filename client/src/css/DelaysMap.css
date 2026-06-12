@@ -123,6 +123,32 @@
   cursor: pointer;
 }
 
+.figure-pill__label {
+  display: inline-block;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+@media screen and (orientation: portrait) {
+  .kiosk-figures--row {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .highlight-figures-kiosk .figure-pill,
+  .figure-pill--kiosk {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  .figure-pill__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 /* Progress bar inside active pill */
 .figure-pill-progress {
   position: absolute;

@@ -247,6 +247,24 @@ html {
   }
 }
 
+@media screen and (max-width: 1200px) {
+  .login-right {
+    display: none;
+  }
+
+  .login-left {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .login-container {
+    align-items: center;
+    min-height: 100vh;
+    justify-content: center;
+  }
+}
+
 /* Mobile */
 @media (max-width: 900px) {
   .login-root {

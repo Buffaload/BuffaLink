@@ -62,6 +62,28 @@ const formatRegistration = (value?: string) => {
   return reg;
 };
 
+const getIsPortraitViewport = () => {
+  if (typeof window === "undefined") return false;
+
+  const visualViewport = window.visualViewport;
+  const width =
+    visualViewport?.width ??
+    window.innerWidth ??
+    document.documentElement.clientWidth;
+
+  const height =
+    visualViewport?.height ??
+    window.innerHeight ??
+    document.documentElement.clientHeight;
+
+  return (
+    window.matchMedia("(orientation: portrait)").matches || height > width
+  );
+};
+
+const truncatePillLabel = (value: string, maxChars: number) =>
+  value.length > maxChars ? `${value.slice(0, maxChars).trimEnd()}…` : value;
+
 const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   // Refs to persist map and markers across re-renders
   const mapRef = useRef<L.Map | null>(null);
@@ -71,6 +93,9 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   // Default to "services" to match current map behaviour
   const [activeKioskPill, setActiveKioskPill] = useState<KioskPill>("services");
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const [isPortraitViewport, setIsPortraitViewport] = useState(() =>
+    getIsPortraitViewport()
+  );
 
   const activeKioskPillRef = useRef<KioskPill>("services");
   const isKioskModeRef = useRef<boolean>(isKioskMode);
@@ -268,6 +293,29 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateViewport = () => {
+      setIsPortraitViewport((prev) => {
+        const next = getIsPortraitViewport();
+        return prev === next ? prev : next;
+      });
+    };
+
+    updateViewport();
+
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
     // keep refs in sync with latest React state
     activeKioskPillRef.current = activeKioskPill;
     isKioskModeRef.current = isKioskMode;
@@ -408,6 +456,29 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     setPillProgressKey((k) => k + 1);
   }, [activeKioskPill, isCarouselPaused]);
   
+  const totalLabel =
+    kioskCounts.total === 1 ? "Vehicle" : "Vehicles";
+
+  const servicesLabel = isPortraitViewport
+    ? truncatePillLabel("Services/Truckstops/Unknown", 8)
+    : "Services/Truckstops/Unknown";
+
+  const nightOutLabel = isPortraitViewport
+    ? truncatePillLabel("Night-Out", 16)
+    : "Night-Out";
+
+  const depotsLabel = isPortraitViewport
+    ? truncatePillLabel("Depots", 16)
+    : "Depots";
+
+  const maintenanceLabel = isPortraitViewport
+    ? truncatePillLabel("Maintenance", 16)
+    : "Maintenance";
+
+  const totalDisplayLabel = isPortraitViewport
+    ? truncatePillLabel(totalLabel, 10)
+    : totalLabel;
+
   // Loading state
   if (isLoading) return (
     <div className="map-loading">
@@ -438,7 +509,12 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
           )}
           <span className="figure-dot figure-dot--grey" aria-hidden="true" />
           {kioskCounts.total}{" "}
-          {kioskCounts.total === 1 ? "Vehicle" : "Vehicles"}
+          <span
+            className="figure-pill__label"
+            title={totalLabel}
+          >
+            {totalDisplayLabel}
+          </span>
         </span>
         <span className={`${getPillClass("services")} figure-pill--red`}
           onClick={() => handlePillClick("services")}
@@ -454,7 +530,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
             />
           )}
           <span className="figure-dot figure-dot--red" aria-hidden="true" />
-          {kioskCounts.services}{" "} Services/Truckstops/Unknown {" "}
+          {kioskCounts.services}{" "}
+          <span
+            className="figure-pill__label"
+            title="Services/Truckstops/Unknown"
+          >
+            {servicesLabel}
+          </span>
         </span>
         <span className={`${getPillClass("nightOut")} figure-pill--blue`}
           onClick={() => handlePillClick("nightOut")}
@@ -470,7 +552,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
             />
           )}
           <span className="figure-dot figure-dot--blue" aria-hidden="true" />
-          {kioskCounts.nightOut}{" "} Night-Out {" "}
+          {kioskCounts.nightOut}{" "}
+          <span
+            className="figure-pill__label"
+            title="Night-Out"
+          >
+            {nightOutLabel}
+          </span>
         </span>
         <span className={`${getPillClass("depots")} figure-pill--green`}
           onClick={() => handlePillClick("depots")}
@@ -486,7 +574,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
             />
           )}
           <span className="figure-dot figure-dot--green" aria-hidden="true" />
-          {kioskCounts.depots}{" "} Depots {" "}
+          {kioskCounts.depots}{" "}
+          <span
+            className="figure-pill__label"
+            title="Depots"
+          >
+            {depotsLabel}
+          </span>
         </span>
         <span className={`${getPillClass("maintenance")} figure-pill--orange`}
           onClick={() => handlePillClick("maintenance")}
@@ -502,7 +596,13 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
             />
           )}
           <span className="figure-dot figure-dot--orange" aria-hidden="true" />
-          {kioskCounts.maintenance}{" "} Maintenance {" "}
+          {kioskCounts.maintenance}{" "}
+          <span
+            className="figure-pill__label"
+            title="Maintenance"
+          >
+            {maintenanceLabel}
+          </span>
         </span>
       </div>
 

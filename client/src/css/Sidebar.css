@@ -118,6 +118,15 @@
     left var(--sidebar-motion-duration) var(--sidebar-motion-ease);
 }
 
+/* Portrait kiosk */
+.buffalink-portrait-kiosk .sidebar-collapse-toggle {
+  left: 0 !important;
+  bottom: 12px;
+  margin-left: 0;
+  border-radius: 16px;
+  transform: translateX(0);
+}
+
 .sidebar-collapse-toggle:hover {
   background: rgba(12, 32, 48, 1);
 }
@@ -156,6 +165,19 @@
 
 .sidebar.closed {
   transform: translateX(-100%);
+}
+
+/* FULL HIDE: Portrait kiosk mode */
+.sidebar--portrait-kiosk-hidden {
+  width: 0 !important;
+  transform: translateX(-100%) !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.sidebar--portrait-kiosk-hidden::before,
+.sidebar--portrait-kiosk-hidden::after {
+  opacity: 0;
 }
 
 /* Sidebar Header */

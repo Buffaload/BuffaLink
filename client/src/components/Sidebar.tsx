@@ -140,6 +140,34 @@ const normalizeDepotText = (value: string | null | undefined) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const getViewportSnapshot = () => {
+  if (typeof window === "undefined") {
+    return { width: 1920, height: 1080, isPortrait: false };
+  }
+
+  const visualViewport = window.visualViewport;
+
+  const width =
+    visualViewport?.width ??
+    window.innerWidth ??
+    document.documentElement.clientWidth;
+
+  const height =
+    visualViewport?.height ??
+    window.innerHeight ??
+    document.documentElement.clientHeight;
+
+  const isPortrait =
+    window.matchMedia("(orientation: portrait)").matches ||
+    height > width;
+
+  return {
+    width: Math.round(width),
+    height: Math.round(height),
+    isPortrait,
+  };
+};
+
 type DepotLabel =
   | "Ellington"
   | "Crewe"
@@ -223,6 +251,12 @@ const Sidebar: React.FC<{
   const SIDEBAR_WIDTH_EXPANDED = 260;
   const SIDEBAR_WIDTH_COLLAPSED = 130;
   const [isHoverExpanded, setIsHoverExpanded] = useState(false);
+  const [viewportInfo, setViewportInfo] = useState(() =>
+    getViewportSnapshot()
+  );
+
+  const isPortraitViewport = viewportInfo.isPortrait;
+  const isPortraitKiosk = isKioskMode && isPortraitViewport;
 
   // Collapsed unless user is hovering (hover temporarily expands)
   const effectiveCollapsed = (isKioskMode ? true : isCollapsed) && !isHoverExpanded;
@@ -235,13 +269,64 @@ const Sidebar: React.FC<{
   const effectiveCollapsedDesktop = isDesktop ? effectiveCollapsed : false;
 
   useEffect(() => {
+    const updateViewport = () => {
+      setViewportInfo((prev) => {
+        const next = getViewportSnapshot();
+
+        if (
+          prev.width === next.width &&
+          prev.height === next.height &&
+          prev.isPortrait === next.isPortrait
+        ) {
+          return prev;
+        }
+
+        return next;
+      });
+    };
+
+    updateViewport();
+
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
   }, [isCollapsed]);
 
   useEffect(() => {
-    const widthPx = effectiveCollapsedDesktop ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
-    document.documentElement.style.setProperty("--sidebar-current-width", `${widthPx}px`);
-  }, [effectiveCollapsedDesktop]);
+    const root = document.documentElement;
+
+    const widthPx = isPortraitKiosk
+      ? 0
+      : effectiveCollapsedDesktop
+      ? SIDEBAR_WIDTH_COLLAPSED
+      : SIDEBAR_WIDTH_EXPANDED;
+
+    root.style.setProperty("--sidebar-current-width", `${widthPx}px`);
+
+    root.classList.toggle(
+      "buffalink-portrait-viewport",
+      isPortraitViewport
+    );
+    root.classList.toggle(
+      "buffalink-portrait-kiosk",
+      isPortraitKiosk
+    );
+
+    return () => {
+      root.classList.remove("buffalink-portrait-viewport");
+      root.classList.remove("buffalink-portrait-kiosk");
+    };
+  }, [effectiveCollapsedDesktop, isPortraitViewport, isPortraitKiosk]);
 
   const handleSidebarMouseEnter = () => {
     if (!isDesktop || isKioskMode) return;
@@ -563,14 +648,14 @@ const Sidebar: React.FC<{
     });
   };
 
-
   return (
     <>
       <div 
-        className={`sidebar 
-          ${isMobileOpen ? "open" : ""} 
-          ${effectiveCollapsedDesktop ? "is-collapsed" : ""}
-          ${isKioskMode ? "sidebar--kiosk" : ""}
+        className={`sidebar   
+          ${isMobileOpen ? "open" : ""}   
+          ${effectiveCollapsedDesktop ? "is-collapsed" : ""}  
+          ${isKioskMode ? "sidebar--kiosk" : ""}  
+          ${isPortraitKiosk ? "sidebar--portrait-kiosk-hidden" : ""}
         `}
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
