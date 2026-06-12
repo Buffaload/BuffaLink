@@ -248,6 +248,10 @@ html {
 }
 
 @media screen and (max-width: 1200px) {
+  .login-root {
+    background: #0f0f0f;
+  }
+  
   .login-right {
     display: none;
   }
