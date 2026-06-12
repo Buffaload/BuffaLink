@@ -573,6 +573,40 @@ const getKioskSeverityClass = (sinceMs?: number): string => {
   return "pastel-green";
 };
 
+const getViewportSnapshot = () => {
+  if (typeof window === "undefined") {
+    return {
+      width: 1920,
+      height: 1080,
+      isPortrait: false,
+    };
+  }
+
+  const visualViewport = window.visualViewport;
+
+  const width = Math.round(
+    visualViewport?.width ??
+      window.innerWidth ??
+      document.documentElement.clientWidth
+  );
+
+  const height = Math.round(
+    visualViewport?.height ??
+      window.innerHeight ??
+      document.documentElement.clientHeight
+  );
+
+  return {
+    width,
+    height,
+    isPortrait:
+      window.matchMedia("(orientation: portrait)").matches || height > width,
+  };
+};
+
+const DEFAULT_KIOSK_MIN_WIDTH = 1300;
+const PORTRAIT_KIOSK_MIN_WIDTH = 900;
+
 const renderStatusIcon = (rawType?: string) => {
   const type = (rawType ?? "unknown").toLowerCase();
 
@@ -934,6 +968,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isVehicleModalClosing, setIsVehicleModalClosing] = useState(false);
   const [maxRows, setMaxRows] = useState<number>(100);
+  const [viewportInfo, setViewportInfo] = useState(() => getViewportSnapshot());
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
   const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -1036,6 +1071,38 @@ const Vehicles: React.FC<VehiclesProps> = ({
       if (raf) cancelAnimationFrame(raf);
     };
   }, [isKioskMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateViewport = () => {
+      setViewportInfo((prev) => {
+        const next = getViewportSnapshot();
+
+        if (
+          prev.width === next.width &&
+          prev.height === next.height &&
+          prev.isPortrait === next.isPortrait
+        ) {
+          return prev;
+        }
+
+        return next;
+      });
+    };
+
+    updateViewport();
+
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
+  }, []);
 
   const openVehicleModal = (vehicle: VehicleWithSince) => {
     lastActiveElementRef.current = document.activeElement as HTMLElement | null;
@@ -1462,8 +1529,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
     locationTick,
   ]);
 
+  const canRenderKioskLeaderboard =
+    viewportInfo.width >= DEFAULT_KIOSK_MIN_WIDTH ||
+    (viewportInfo.isPortrait &&
+    viewportInfo.width >= PORTRAIT_KIOSK_MIN_WIDTH);
+
   useEffect(() => {
-    if (!isKioskMode || !onKioskStatsChange) return;
+    if (!isKioskMode || !canRenderKioskLeaderboard  || !onKioskStatsChange) return;
 
     const now = Date.now();
 
@@ -1691,7 +1763,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
   }
 
-  if (isKioskMode) {
+  if (isKioskMode && canRenderKioskLeaderboard) {
     const list = displayVehicles;
     const mid = Math.ceil(list.length / 2);
     const left = list.slice(0, mid);
@@ -2198,6 +2270,32 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                   <div className="vehicle-modal-details">
                     <div className="vehicle-modal-detail-row">
+                      <span className="vehicle-modal-detail-label">VEHICLE DEPOT</span>
+                      <span className="vehicle-modal-detail-value">
+                        {(() => {
+                          const branchIdToDepot: Record<string, string> = {
+                            "1": "Ellington",
+                            "2": "Crewe",
+                            "3": "Skelmersdale",
+                            "4": "Avonmouth",
+                            "10": "Coventry",
+                            "11": "Bellshill",
+                          };
+
+                          const branchId = selectedVehicle.branchId != null
+                            ? String(selectedVehicle.branchId)
+                            : null;
+
+                          if (branchId && branchIdToDepot[branchId]) {
+                            return branchIdToDepot[branchId];
+                          }
+
+                          return "No assigned depot";
+                        })()}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-modal-detail-row">
                       <span className="vehicle-modal-detail-label">VIN</span>
                       <span className="vehicle-modal-detail-value">
                         {displayText((selectedVehicle as any).assetVin, "Not available")}
@@ -2249,32 +2347,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         </span>
                       </div>
                     )}
-
-                    <div className="vehicle-modal-detail-row">
-                      <span className="vehicle-modal-detail-label">VEHICLE DEPOT</span>
-                      <span className="vehicle-modal-detail-value">
-                        {(() => {
-                          const branchIdToDepot: Record<string, string> = {
-                            "1": "Ellington",
-                            "2": "Crewe",
-                            "3": "Skelmersdale",
-                            "4": "Avonmouth",
-                            "10": "Coventry",
-                            "11": "Bellshill",
-                          };
-
-                          const branchId = selectedVehicle.branchId != null
-                            ? String(selectedVehicle.branchId)
-                            : null;
-
-                          if (branchId && branchIdToDepot[branchId]) {
-                            return branchIdToDepot[branchId];
-                          }
-
-                          return "No assigned depot";
-                        })()}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
