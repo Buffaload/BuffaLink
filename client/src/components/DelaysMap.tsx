@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
-import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS, matchesDepot } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import InlineLoader from "./InlineLoader";

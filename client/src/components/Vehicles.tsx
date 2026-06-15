@@ -742,13 +742,6 @@ const getAllowedBranchIds = (): Set<string> | null => {
   }
 };
 
-type DepotMatchableVehicle = {
-  locationName?: string | null;
-  formattedAddress?: string | null;
-  locationGroupName?: string | null;
-  depotMatch?: string | null;
-};
-
 const normalizeDepotText = (value: string | null | undefined) =>
   (value ?? "")
     .toUpperCase()
@@ -1492,10 +1485,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
     locationTick,
   ]);
 
-  const canRenderKioskLeaderboard =
-    viewportInfo.width >= DEFAULT_KIOSK_MIN_WIDTH ||
-    (viewportInfo.isPortrait &&
-    viewportInfo.width >= PORTRAIT_KIOSK_MIN_WIDTH);
+  const canRenderKioskLeaderboard = useMemo(() => {
+    return (
+      viewportInfo.width >= DEFAULT_KIOSK_MIN_WIDTH ||
+      (viewportInfo.isPortrait &&
+        viewportInfo.width >= PORTRAIT_KIOSK_MIN_WIDTH)
+    );
+  }, [viewportInfo.width, viewportInfo.isPortrait]);
 
   useEffect(() => {
     if (!isKioskMode || !canRenderKioskLeaderboard  || !onKioskStatsChange) return;
