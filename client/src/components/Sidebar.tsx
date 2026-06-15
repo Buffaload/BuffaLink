@@ -1,6 +1,6 @@
 import API_BASE_URL from "../config";
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { filterVehicles, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import { adjustedMs, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
@@ -46,6 +46,15 @@ interface Vehicle {
   NextMaintenanceType?: string;
   NextMaintenanceDueDate?: string;
 }
+
+type VehicleWithSince = Vehicle & {
+  statusSinceMs?: number;
+};
+
+type StatusSince = {
+  eventType: string;
+  sinceMs: number;
+};
 
 type CriticalArrivalItem = {
   signature: string;
@@ -247,6 +256,7 @@ const Sidebar: React.FC<{
   const showDepotSubTabs = filterOption === "Depots";
   const queryClient = useQueryClient();
   const tooltipAnchorRef = React.useRef<HTMLButtonElement | null>(null);
+  const statusSinceRef = React.useRef<Map<string, StatusSince>>(new Map());
   const [arrivalTooltipPos, setArrivalTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const SIDEBAR_COLLAPSED_KEY = "buffalink:sidebarCollapsed";
   const SIDEBAR_WIDTH_EXPANDED = 260;
@@ -586,25 +596,53 @@ const Sidebar: React.FC<{
   const renderSidebarValue = (value: number) =>
     shouldShowInitialLoader  ? <InlineLoader size={14} color="#ffffff" /> : value;
 
+  const vehiclesWithSince = useMemo<VehicleWithSince[]>(() => {
+    const now = Date.now();
+    const currentKeys = new Set<string>();
+
+    const enriched = vehicles.map((v) => {
+      const key = (v.assetName ?? v.assetRegistration ?? "").trim();
+      currentKeys.add(key);
+
+      const currentType = (v.eventType ?? "unknown").toLowerCase();
+      const incomingMs = v.date ? adjustedMs(v.date) : NaN;
+      const incomingSafeMs = Number.isNaN(incomingMs) ? now : incomingMs;
+
+      const prev = statusSinceRef.current.get(key);
+      const sinceMs =
+        !prev || prev.eventType !== currentType
+          ? incomingSafeMs
+          : prev.sinceMs;
+
+      statusSinceRef.current.set(key, {
+        eventType: currentType,
+        sinceMs,
+      });
+
+      return { ...v, statusSinceMs: sinceMs };
+    });
+
+    Array.from(statusSinceRef.current.keys()).forEach((k) => {
+      if (!currentKeys.has(k)) {
+        statusSinceRef.current.delete(k);
+      }
+    });
+
+    return enriched;
+  }, [vehicles]);
+
   // Calculate counts for badges
   const counts = useMemo(() => {
     const now = Date.now();
-    const hgvsVehicles = filterVehicles(vehicles, "HGVs", [], now);
-    const maintenanceVehicles = filterVehicles(vehicles, "Maintenance", [], now);
-    const tippersVehicles = filterVehicles(vehicles, "Tippers", [], now);
-    const criticalVehicles = vehicles.filter(isCriticalAlert);
-    const criticalArrivalVehicles = vehicles.filter(
-      (v) => !!getCriticalDepotLabel(v) && isCriticalArrival(v)
-    );
 
     return {
-      hgvsCount: hgvsVehicles.length,
-      maintenanceCount: maintenanceVehicles.length,
-      criticalCount: criticalVehicles.length,
-      arrivalsCount: criticalArrivalVehicles.length,
-      tippersCount: tippersVehicles.length,
+      hgvsCount: countFor(vehiclesWithSince, "HGVs", [], now),
+      maintenanceCount: countFor(vehiclesWithSince, "Maintenance", [], now),
+      criticalCount: vehiclesWithSince.filter(isCriticalAlert).length,
+      arrivalsCount: vehiclesWithSince.filter(isCriticalArrival).length,
+      tippersCount: countFor(vehiclesWithSince, "Tippers", [], now),
     };
-  }, [vehicles]);
+  }, [vehiclesWithSince]);
 
   // function for Night-out subtab
   const handleButtonClick = (filter: string) => {

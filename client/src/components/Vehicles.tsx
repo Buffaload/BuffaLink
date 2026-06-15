@@ -1191,12 +1191,32 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }, [isLoading, filterOption]);
 
   // Tracks when each vehicle entered its current eventType (state)
+  type VehicleWithSince = Vehicle & {
+    statusSinceMs?: number;
+  };
+
   type StatusSince = {
-    eventType: string; // normalized lowercase
+    eventType: string;
     sinceMs: number;
   };
 
-  const statusSinceRef = useRef<Map<string, StatusSince>>(new Map());
+  const STATUS_SINCE_STORAGE_KEY = "buffalink:statusSinceMap";
+
+  const statusSinceRef = useRef<Map<string, StatusSince>>(
+    new Map(
+      typeof window !== "undefined"
+        ? (() => {
+            try {
+              const raw = localStorage.getItem(STATUS_SINCE_STORAGE_KEY);
+              const parsed = raw ? JSON.parse(raw) : [];
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return [];
+            }
+          })()
+        : []
+    )
+  );
 
   // Depot matching helpers (geofence + text/address fallback)
   const { categoryVehicles, displayVehicles, highlightFigures } = useMemo<VehiclesMemoResult>(() => {
@@ -1393,6 +1413,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
     maxRows,
     locationTick,
   ]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STATUS_SINCE_STORAGE_KEY,
+        JSON.stringify(Array.from(statusSinceRef.current.entries()))
+      );
+    } catch {
+      // Ignore storage failures silently
+    }
+  }, [vehicles]);
 
   const dedupedDisplayVehicles = useMemo(() => {
     const map = new Map<string, VehicleWithSince>();
