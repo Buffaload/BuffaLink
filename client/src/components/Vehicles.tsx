@@ -227,13 +227,6 @@ function getDueISOInfo(dateString?: string): { weekDiff: number; isOverdue: bool
   };
 }
 
-function isDueThisISOWeekOrOverdue(dateString?: string): boolean {
-  const info = getDueISOInfo(dateString);
-  if (!info) return false;
-  // "due this week" + include overdue as still critical
-  return info.isOverdue || info.weekDiff === 0;
-}
-
 // Helper function to format date from BlueCrystal data
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -783,29 +776,6 @@ const CRITICAL_DEPOT_MATCHERS: Array<{
   { label: "Avonmouth", allOf: ["CO-OP", "AVONMOUTH"] },
   { label: "Avonmouth", allOf: ["COOP", "AVONMOUTH"] },
 ];
-
-const getCriticalDepotLabel = (v: {
-  locationGroupName?: string | null;
-  formattedAddress?: string | null;
-  locationName?: string | null;
-}): DepotLabel | null => {
-  // Must be in "Buffaload" group first (keeps behaviour aligned with existing app)
-  if ((v.locationGroupName ?? "") !== "Buffaload") return null;
-
-  // Prefer formattedAddress (BlueCrystal accuracy), then fallback to locationName
-  const addr = normalizeDepotText(v.formattedAddress);
-  const loc = normalizeDepotText(v.locationName);
-
-  const tryMatch = (hay: string) => {
-    if (!hay) return null;
-    for (const m of CRITICAL_DEPOT_MATCHERS) {
-      if (m.allOf.every((t) => hay.includes(normalizeDepotText(t)))) return m.label;
-    }
-    return null;
-  };
-
-  return tryMatch(addr) ?? tryMatch(loc);
-};
 
 const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "service" | "standard" }> = [
   { key: "ServiceDueDate", label: "Service", kind: "service" },
