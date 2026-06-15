@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
-import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getDisplayLocation } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getDisplayLocation, getMatchedDepotLabel } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -1729,7 +1729,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     const right = list.slice(mid);
 
     const renderRow = (vehicle: VehicleWithSince, position: number) => {
-      const rawLocation = getDisplayLocation(vehicle);
+      const rawLocation = vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
       const fullLocation = cleanLocationLabel(rawLocation);
       const truncatedLocation = truncate(fullLocation, 40);
       const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
@@ -1930,8 +1930,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
 
-                const rawLocation =
-                    vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
+                const depotMatch = getMatchedDepotLabel(vehicle);
+                const displayLocation = depotMatch
+                  ? `BUFFALOAD ${depotMatch}`
+                  : (vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION");
 
                 // Trailer display logic
                 const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
@@ -2106,9 +2108,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       <span className="vehicle-card__footer-label">Location</span>
                       <span 
                         className="vehicle-location"
-                        title={cleanLocationLabel(rawLocation)}
+                        title={cleanLocationLabel(displayLocation)}
                       >
-                        {cleanLocationLabel(rawLocation)}
+                        {cleanLocationLabel(displayLocation)}
                       </span>
                     </footer>
                   </li>
