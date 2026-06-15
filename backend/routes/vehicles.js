@@ -781,6 +781,13 @@ const SOURCE_CACHE_TTL_MS = Number(process.env.SOURCE_CACHE_TTL_MS ?? 120000);
 const MICHELIN_RETRY_ATTEMPTS = Number(process.env.MICHELIN_RETRY_ATTEMPTS ?? 1); // 1 retry => 2 total tries
 const BLUE_RETRY_ATTEMPTS = Number(process.env.BLUE_RETRY_ATTEMPTS ?? 0);
 const REQUIRE_MICHELIN_COMPLETE = String(process.env.REQUIRE_MICHELIN_COMPLETE ?? "1") === "1";
+const REQUIRE_BLUECRYSTAL_COMPLETE = String(process.env.REQUIRE_BLUECRYSTAL_COMPLETE ?? "1") === "1";
+const BLUECRYSTAL_MIN_EXPECTED = Number(
+  process.env.BLUECRYSTAL_MIN_EXPECTED ?? 200
+);
+const BLUECRYSTAL_MIN_COMPLETE_RATIO = Number(
+  process.env.BLUECRYSTAL_MIN_COMPLETE_RATIO ?? 0.85
+);
 
 const sourceCache = {
   michelin: { ts: 0, data: [] },
@@ -824,6 +831,65 @@ const cacheIfNonEmpty = (key, arr) => {
 };
 
 const isFresh = (ts) => Date.now() - ts <= SOURCE_CACHE_TTL_MS;
+
+const filterBlueCrystalRows = (rows) => {
+  return (Array.isArray(rows) ? rows : []).filter(
+    (m) =>
+      typeof m?.VehicleId === "string" &&
+      !m.Category?.toLowerCase().includes("equipment")
+  );
+};
+
+const isBlueCrystalPayloadComplete = (rows) => {
+  const filtered = filterBlueCrystalRows(rows);
+  if (!REQUIRE_BLUECRYSTAL_COMPLETE) {
+    return {
+      ok: true,
+      filtered,
+      reason: "completeness-check-disabled",
+      currentCount: filtered.length,
+      cachedCount: Array.isArray(sourceCache.blueCrystal.data)
+        ? sourceCache.blueCrystal.data.length
+        : 0,
+      minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
+      minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
+    };
+  }
+
+  const currentCount = filtered.length;
+  const cachedCount = Array.isArray(sourceCache.blueCrystal.data)
+    ? sourceCache.blueCrystal.data.length
+    : 0;
+
+  const meetsFloor = currentCount >= BLUECRYSTAL_MIN_EXPECTED;
+
+  // If there is no good cache yet, use the absolute floor only.
+  const meetsRatio =
+    cachedCount === 0
+      ? true
+      : currentCount >= Math.floor(cachedCount * BLUECRYSTAL_MIN_COMPLETE_RATIO);
+
+  const ok = currentCount > 0 && meetsFloor && meetsRatio;
+
+  let reason = "ok";
+  if (currentCount === 0) {
+    reason = "empty-after-filter";
+  } else if (!meetsFloor) {
+    reason = "below-min-expected";
+  } else if (!meetsRatio) {
+    reason = "below-cached-ratio";
+  }
+
+  return {
+    ok,
+    filtered,
+    reason,
+    currentCount,
+    cachedCount,
+    minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
+    minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
+  };
+};
 
 const router = express.Router();
 
@@ -1354,16 +1420,56 @@ router.get("/", auth, diagnostics, async (req, res) => {
         __source: "michelin"
       }));
 
-      if (blueCrystalResponse.status === "fulfilled") {
-        const arr = normaliseToArray(blueCrystalResponse.value.data);
-        maintenanceDetails = cacheIfNonEmpty("blueCrystal", arr);      
-        maintenanceDetails = maintenanceDetails.filter(
-          (m) =>
-            typeof m.VehicleId === "string" &&
-            !m.Category?.toLowerCase().includes("equipment")
-        );
+      let blueCrystalIntegrity = {
+        ok: false,
+        reason: "not-requested",
+        currentCount: 0,
+        cachedCount: Array.isArray(sourceCache.blueCrystal.data)
+          ? sourceCache.blueCrystal.data.length
+          : 0,
+        minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
+        minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
+        servedFrom: "none",
+      };
 
-        // Build O(1) lookup by VehicleId
+      if (blueCrystalResponse.status === "fulfilled") {
+        const arr = normaliseToArray(blueCrystalResponse.value.data) ?? [];
+
+        const assessed = isBlueCrystalPayloadComplete(arr);
+        blueCrystalIntegrity = {
+          ...assessed,
+          servedFrom: assessed.ok ? "fresh-bluecrystal" : "bluecrystal-cache-or-fresh-partial",
+        };
+
+        if (assessed.ok) {
+          // Only cache BlueCrystal when it looks complete enough
+          maintenanceDetails = assessed.filtered;
+          sourceCache.blueCrystal = {
+            ts: Date.now(),
+            data: assessed.filtered,
+          };
+        } else {
+          console.warn("[BlueCrystal] Partial/incomplete payload detected — refusing to overwrite cache", {
+            reason: assessed.reason,
+            currentCount: assessed.currentCount,
+            cachedCount: assessed.cachedCount,
+            minimumExpected: assessed.minimumExpected,
+            minimumRatio: assessed.minimumRatio,
+          });
+
+          // Prefer last known good BlueCrystal cache
+          if (isFresh(sourceCache.blueCrystal.ts) && sourceCache.blueCrystal.data.length > 0) {
+            maintenanceDetails = sourceCache.blueCrystal.data;
+            blueCrystalIntegrity.servedFrom = "bluecrystal-cache";
+          } else {
+            // No cache available — fall back to current filtered response
+            // so the endpoint still works, but do NOT treat it as "complete"
+            maintenanceDetails = assessed.filtered;
+            blueCrystalIntegrity.servedFrom = "fresh-bluecrystal-partial";
+          }
+        }
+
+        // Build O(1) lookup by VehicleId from whichever maintenanceDetails we decided to trust
         maintenanceByVehicleId.clear();
         for (const m of maintenanceDetails) {
           const key = normalizeId(m?.VehicleId);
@@ -1371,9 +1477,36 @@ router.get("/", auth, diagnostics, async (req, res) => {
         }
       } else {
         console.warn("BlueCrystal API failed — continuing");
-        maintenanceDetails = isFresh(sourceCache.blueCrystal.ts)
-          ? sourceCache.blueCrystal.data
-          : [];
+
+        if (isFresh(sourceCache.blueCrystal.ts) && sourceCache.blueCrystal.data.length > 0) {
+          maintenanceDetails = sourceCache.blueCrystal.data;
+          blueCrystalIntegrity = {
+            ok: false,
+            reason: "request-failed-using-cache",
+            currentCount: 0,
+            cachedCount: sourceCache.blueCrystal.data.length,
+            minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
+            minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
+            servedFrom: "bluecrystal-cache",
+          };
+        } else {
+          maintenanceDetails = [];
+          blueCrystalIntegrity = {
+            ok: false,
+            reason: "request-failed-no-cache",
+            currentCount: 0,
+            cachedCount: 0,
+            minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
+            minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
+            servedFrom: "none",
+          };
+        }
+
+        maintenanceByVehicleId.clear();
+        for (const m of maintenanceDetails) {
+          const key = normalizeId(m?.VehicleId);
+          if (key) maintenanceByVehicleId.set(key, m);
+        }
       }
       if (volvoVehiclesOk && volvoPositionsOk) {
         volvoVehicles = volvoVehiclesResponse.value;
@@ -1486,9 +1619,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
+        const lastKnownMaintenance = lastKnownMap.get(vehicleId);
         const maintenance = 
           maintenanceByVehicleId.get(normalisedReg) ||
           maintenanceByVehicleId.get(normalisedAssetName) ||
+          lastKnownMaintenance ||
           null;
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
@@ -1618,33 +1753,55 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     const dedupedVehicles = Array.from(dedupedMap.values());
     const hasMichelin = existingVehicles.length > 0;
-    const isComplete = !REQUIRE_MICHELIN_COMPLETE || hasMichelin;
+    const michelinComplete = !REQUIRE_MICHELIN_COMPLETE || hasMichelin;
+    const blueCrystalComplete =
+      !REQUIRE_BLUECRYSTAL_COMPLETE || blueCrystalIntegrity.ok;
 
-    
+    const isComplete = michelinComplete && blueCrystalComplete;
+
     if (forceDebug) {
       res.set("X-Debug-Info", JSON.stringify(volvoDebug));
-      res.set("X-Source-Debug", JSON.stringify({
-        ...sourceDebug,
-        counts: {
-          michelin: existingVehicles.length,
-          volvoMapped: (Array.isArray(sourceCache.volvoMapped.data) ? sourceCache.volvoMapped.data.length : 0),
-          blueCrystal: maintenanceDetails.length,
-          returned: dedupedVehicles.length
-        },
-        requireMichelinComplete: REQUIRE_MICHELIN_COMPLETE
-      }));
+      res.set(
+        "X-Source-Debug",
+        JSON.stringify({
+          ...sourceDebug,
+          counts: {
+            michelin: existingVehicles.length,
+            volvoMapped: Array.isArray(sourceCache.volvoMapped.data)
+              ? sourceCache.volvoMapped.data.length
+              : 0,
+            blueCrystal: maintenanceDetails.length,
+            returned: dedupedVehicles.length,
+          },
+          requireMichelinComplete: REQUIRE_MICHELIN_COMPLETE,
+          requireBlueCrystalComplete: REQUIRE_BLUECRYSTAL_COMPLETE,
+          blueCrystalIntegrity,
+          overallComplete: isComplete,
+        })
+      );
     }
 
-    // Only let a COMPLETE response update the "combined" cache
+    // Only allow fully complete responses to refresh the combined cache
     if (dedupedVehicles.length > 0 && isComplete) {
-      sourceCache.combined = { ts: Date.now(), data: dedupedVehicles };
+      sourceCache.combined = {
+        ts: Date.now(),
+        data: dedupedVehicles,
+      };
     }
 
-    // If Michelin is missing (incomplete) but we have a recent complete cache, serve that instead
+    // If the current response is incomplete, prefer the last known complete combined cache
     if (!isComplete && isFresh(sourceCache.combined?.ts) && sourceCache.combined.data?.length) {
       res.set("X-Partial-Data", "1");
       res.set("X-Served-From", "combined-cache");
+      res.set("X-BlueCrystal-Integrity", JSON.stringify(blueCrystalIntegrity));
       return res.json(sourceCache.combined.data);
+    }
+
+    // If no combined cache exists, still return current data, but flag it as partial
+    if (!isComplete) {
+      res.set("X-Partial-Data", "1");
+      res.set("X-Served-From", blueCrystalIntegrity.servedFrom || "live-partial");
+      res.set("X-BlueCrystal-Integrity", JSON.stringify(blueCrystalIntegrity));
     }
 
     res.json(dedupedVehicles);
