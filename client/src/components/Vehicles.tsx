@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
-import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getDisplayLocation } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -1729,8 +1729,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     const right = list.slice(mid);
 
     const renderRow = (vehicle: VehicleWithSince, position: number) => {
-      const rawLocation =
-        vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
+      const rawLocation = getDisplayLocation(vehicle);
       const fullLocation = cleanLocationLabel(rawLocation);
       const truncatedLocation = truncate(fullLocation, 40);
       const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";

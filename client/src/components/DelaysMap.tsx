@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
-import { ALL_DEPOT_LABELS, matchesDepot } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS, matchesDepot, getDisplayLocation } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import InlineLoader from "./InlineLoader";
@@ -390,7 +390,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         circleMarker.bindPopup(`
           <div class="leaflet-popup-app">
             <h4 style="margin: 0 0 8px 0; color: #333;">${reg}</h4>
-            <p style="margin: 4px 0;"><strong>Location:</strong> ${vehicle.locationName || vehicle.formattedAddress || "Unknown"}</p>
+            <p style="margin: 4px 0;"><strong>Location:</strong> ${getDisplayLocation(vehicle)}</p>
             <p style="margin: 4px 0;"><strong>Temperature:</strong> ${vehicle.temperature}°C</p>
             <p style="margin: 4px 0;"><strong>Stopped:</strong> ${hours > 0 ? `${hours}h ` : ''}${minutes}m</p>
             <p style="margin: 4px 0;"><strong>Timestamp:</strong> ${vehicle.date ? toDate(vehicle.date) : NaN}</p>
