@@ -1619,11 +1619,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const normalisedReg = normalizeId(vehicle.assetRegistration);
 
         // Match BlueCrystal data
-        const lastKnownMaintenance = lastKnownMap.get(vehicleId);
         const maintenance = 
           maintenanceByVehicleId.get(normalisedReg) ||
           maintenanceByVehicleId.get(normalisedAssetName) ||
-          lastKnownMaintenance ||
           null;
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
