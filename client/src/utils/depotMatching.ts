@@ -11,6 +11,18 @@ const normalizeDepotText = (value: string | null | undefined) =>
         .replace(/\s+/g, " ")
         .trim();
 
+export function getDisplayLocation(
+    v: DepotMatchableVehicle
+): string {
+    const match = getMatchedDepotLabel(v);
+
+    if (match) {
+        return match.charAt(0) + match.slice(1).toLowerCase(); // "CREWE" → "Crewe"
+    }
+
+    return v.locationName ?? "Unknown location";
+    }
+
 export const DEPOT_DEFINITIONS: Record<
     string,
     { mode: "strict" | "alias"; patterns: string[] }
