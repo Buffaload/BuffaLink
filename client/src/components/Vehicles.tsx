@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
+import { filterVehicles, adjustedMs, isCriticalArrival } from "../utils/vehicleRules";
 import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getMatchedDepotLabel } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1363,14 +1363,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
     let categoryVehicles: VehicleWithSince[] = [];
 
     if (filterOption === "Critical-Arrivals") {
-      categoryVehicles = vehiclesWithSince.filter((v) => {
-        const dueService = isDueThisISOWeekOrOverdue(v.ServiceDueDate);
-        const dueNextMaintenance = isDueThisISOWeekOrOverdue(v.NextMaintenanceDueDate);
-        const depotLabel = getCriticalDepotLabel(v);
-        const inDepot = !!depotLabel;
-
-        return (dueService || dueNextMaintenance) && inDepot;
-      });
+      categoryVehicles = vehiclesWithSince.filter((v) =>
+        isCriticalArrival(v)
+      );
     } else {
       categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, [], now) as VehicleWithSince[];
       if (filterOption === "Depots") {
