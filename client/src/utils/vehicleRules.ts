@@ -188,6 +188,7 @@ export const matchesFilter = (
         case "HGVs":
             return (
                 v.assetType === "HGV" &&
+                v.eventType?.toLowerCase() === "stopped" &&
                 // "Known location" rule stays consistent with current dashboard:
                 // Volvo fix makes locationName non-null; Michelin already sets it when known.
                 !!v.locationName &&
