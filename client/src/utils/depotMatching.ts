@@ -68,7 +68,11 @@ export function matchesDepot(v: DepotMatchableVehicle, depotLabel: string): bool
 }
 
 export function isInAnyDepot(v: DepotMatchableVehicle): boolean {
-    return getMatchedDepotLabel(v) !== null;
+    if ((v.locationGroupName ?? "") !== "Buffaload") return false;
+    // Authoritative backend flag
+    if (v.depotMatch) return true;
+    // Fallback only if needed
+    return ALL_DEPOT_LABELS.some(d => matchesDepot(v, d));
 }
 
 export function matchedDepots(v: DepotMatchableVehicle): string[] {

@@ -1485,6 +1485,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
     locationTick,
   ]);
 
+  const dedupedDisplayVehicles = useMemo(() => {
+    const map = new Map<string, VehicleWithSince>();
+
+    displayVehicles.forEach((v) => {
+      const key = `${v.assetRegistration ?? "NO_REG"}-${v.assetName}`;
+      map.set(key, v);
+    });
+
+    return Array.from(map.values());
+  }, [displayVehicles]);
+
   const canRenderKioskLeaderboard = useMemo(() => {
     return (
       viewportInfo.width >= DEFAULT_KIOSK_MIN_WIDTH ||
@@ -1723,7 +1734,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }
 
   if (isKioskMode && canRenderKioskLeaderboard) {
-    const list = displayVehicles;
+    const list = dedupedDisplayVehicles;
     const mid = Math.ceil(list.length / 2);
     const left = list.slice(0, mid);
     const right = list.slice(mid);
@@ -1738,7 +1749,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : (vehicle.assetRegistration ?? vehicle.assetName ?? "");
 
       return (
-        <div className={`kiosk-leaderboard-row ${getKioskSeverityClass(vehicle.statusSinceMs!)}`} key={`${vehicle.assetName}-${position}`}>
+        <div className={`kiosk-leaderboard-row ${getKioskSeverityClass(vehicle.statusSinceMs!)}`} key={`${vehicle.assetRegistration ?? "NO_REG"}-${vehicle.assetName}`}>
           <div className="kiosk-leaderboard-left">
             <span className="kiosk-leaderboard-pos">{position}</span>
             <span className="kiosk-leaderboard-reg">
@@ -1915,7 +1926,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           {/* Check if there are filtered vehicles */}
           {isLoading ? (
             renderVehicleSkeletons()
-          ) : displayVehicles.length === 0 ? (       
+          ) : dedupedDisplayVehicles.length === 0 ? (       
             <div className="vehicle-empty-state">
               <TriangleAlert className="vehicle-empty-icon" aria-hidden />
               <p className="vehicle-empty-text">
@@ -1926,7 +1937,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
             </div>
           ) : (
             <ul className={`vehicle-list ${filterOption === "Depots" ? "vehicle-list--depots" : ""} ${filterOption === "Critical" || filterOption === "Critical-Arrivals" ? "vehicle-list--critical" : ""}`}>
-              {displayVehicles.map((vehicle) => {
+              {dedupedDisplayVehicles.map((vehicle) => {
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
 
@@ -1966,7 +1977,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 return (
                   // Display Dashboard wizard on all pages other than Map/Kiosk mode
                   <li
-                    key={vehicle.assetName}
+                    key={`${vehicle.assetRegistration ?? "NO_REG"}-${vehicle.assetName}`}
                     data-vor={isVor ? "true" : "false"}
                     data-nightout={vehicle.isNightOut ? "true" : "false"}
                     className={`vehicle-card vehicle-card--clickable ${vorSkin} ${

@@ -592,6 +592,7 @@ const DEPOT_TEXT_MATCHERS = [
     depot: "Coventry", 
     patterns: [/CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i] 
   },
+  { depot: "Bellshill", patterns: [/BELLSHILL/i] },
   {
     depot: "Avonmouth",
     patterns: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i,]
@@ -1645,16 +1646,21 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         const site = matchGeofenceSite(vehicle.latitude, vehicle.longitude);
         const maintenanceByText = matchesMaintenanceByText(vehicle);
-
+        const depotByGeo =
+          site?.group === "Buffaload"
+            ? site.key // e.g. "BELLSHILL"
+            : null;
         const depotByText =
           maintenanceByText ||
             site?.group === "Maintenance"
               ? null
               : matchDepotByText(vehicle);
+        const resolvedDepot = depotByGeo ?? depotByText ?? null;
+        
 
         return {
           ...vehicle,
-          depotMatch: depotByText ?? null,
+          depotMatch: resolvedDepot,
           locationGroupName: maintenanceByText
             ? "Maintenance"
             : depotByText
