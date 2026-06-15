@@ -922,6 +922,17 @@ router.get("/", auth, diagnostics, async (req, res) => {
   // console.log("BACKEND VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
 
   console.log("Authenticated request from user:", req.user);
+
+  let blueCrystalIntegrity = {
+    ok: false,
+    reason: "initial",
+    currentCount: 0,
+    cachedCount: 0,
+    minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
+    minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
+    servedFrom: "none",
+  };
+
   const forceDebug =
     req.user?.role === "admin" &&
     String(req.query.forceDebug ?? "") === "1";
@@ -1420,18 +1431,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
         __source: "michelin"
       }));
 
-      let blueCrystalIntegrity = {
-        ok: false,
-        reason: "not-requested",
-        currentCount: 0,
-        cachedCount: Array.isArray(sourceCache.blueCrystal.data)
-          ? sourceCache.blueCrystal.data.length
-          : 0,
-        minimumExpected: BLUECRYSTAL_MIN_EXPECTED,
-        minimumRatio: BLUECRYSTAL_MIN_COMPLETE_RATIO,
-        servedFrom: "none",
-      };
-
       if (blueCrystalResponse.status === "fulfilled") {
         const arr = normaliseToArray(blueCrystalResponse.value.data) ?? [];
 
@@ -1788,18 +1787,16 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     // If the current response is incomplete, prefer the last known complete combined cache
-    if (!isComplete && isFresh(sourceCache.combined?.ts) && sourceCache.combined.data?.length) {
+    if (!isComplete && isFresh(sourceCache.combined?.ts)) {
       res.set("X-Partial-Data", "1");
       res.set("X-Served-From", "combined-cache");
-      res.set("X-BlueCrystal-Integrity", JSON.stringify(blueCrystalIntegrity));
       return res.json(sourceCache.combined.data);
     }
 
     // If no combined cache exists, still return current data, but flag it as partial
     if (!isComplete) {
       res.set("X-Partial-Data", "1");
-      res.set("X-Served-From", blueCrystalIntegrity.servedFrom || "live-partial");
-      res.set("X-BlueCrystal-Integrity", JSON.stringify(blueCrystalIntegrity));
+      res.set("X-Served-From", blueCrystalIntegrity.servedFrom);
     }
 
     res.json(dedupedVehicles);
