@@ -1525,7 +1525,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       yellow,
       green,
     });
-  }, [isKioskMode, onKioskStatsChange, displayVehicles]);
+  }, [isKioskMode, canRenderKioskLeaderboard, onKioskStatsChange, displayVehicles]);
 
   const getTipperAlertClass = (
     vehicle: {
