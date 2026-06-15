@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
-import { isInAnyDepot } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import InlineLoader from "./InlineLoader";
@@ -142,8 +142,9 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
 
     const services = filterVehicles(vehicles, "Services", [], now);
     const nightOut = filterVehicles(vehicles, "Night-Out", [], now);
-    const depotsRaw = filterVehicles(vehicles, "Depots", [], now);
-    const depots = depotsRaw.filter(isInAnyDepot);
+    const depots = vehicles.filter(v =>
+      ALL_DEPOT_LABELS.some(d => matchesDepot(v, d))
+    );
     const maintenance = filterVehicles(vehicles, "Maintenance", [], now);
 
     // TOTAL = union of pill buckets (deduped)

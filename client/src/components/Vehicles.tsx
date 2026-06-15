@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs } from "../utils/vehicleRules";
-import { ALL_DEPOT_LABELS } from "../utils/depotMatching";
+import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot } from "../utils/depotMatching";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -343,13 +343,6 @@ const isMaintenanceSite = (v: { locationGroupName?: string | null; locationName?
   const g = String(v.locationGroupName ?? "").toLowerCase();
   const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`.toLowerCase();
   return g.includes("maintenance") || g.includes("workshop") || hay.includes("maintenance");
-};
-
-const isInAnyDepot = (v: DepotMatchableVehicle) => {
-  // Strong signals:
-  if ((v.locationGroupName ?? "") === "Buffaload") return true;
-  // Fall back to matcher:
-  return ALL_DEPOT_LABELS.some((d) => matchesSelectedDepot(v, d));
 };
 
 const isTipper = (v: { assetGroupName?: string | null }) =>
@@ -761,36 +754,6 @@ const normalizeDepotText = (value: string | null | undefined) =>
     .toUpperCase()
     .replace(/\s+/g, " ")
     .trim();
-
-const DEPOT_DEFINITIONS: Record<
-  string,
-  { mode: "strict" | "alias"; patterns: string[] }
-> = {
-  ELLINGTON: { mode: "alias", patterns: ["ELLINGTON"] },
-  CREWE: { mode: "alias", patterns: ["CREWE"] },
-  SKELMERSDALE: { mode: "alias", patterns: ["SKELMERSDALE", "SKELMERSDALE DEPOT"] },
-  COVENTRY: { mode: "alias", patterns: ["CO-OP COVENTRY", "COOP COVENTRY", "COVENTRY"] },
-  // Strict depots: must match specific depot naming (but allow hyphenless “COOP”)
-  AVONMOUTH: { mode: "strict", patterns: ["CO-OP AVONMOUTH", "COOP AVONMOUTH"] },
-  BELLSHILL: { mode: "strict", patterns: ["BUFFALOAD BELLSHILL"] },
-};
-
-const matchesSelectedDepot = (
-  v: DepotMatchableVehicle,
-  depotLabel: string
-) => {
-  const key = normalizeDepotText(depotLabel);
-  // Geofence is mandatory
-  if (v.locationGroupName !== "Buffaload") return false;
-  // Backend depotMatch is most reliable
-  const dm = normalizeDepotText(v.depotMatch);
-  if (dm && dm === key) return true;
-  // Fallback
-  const hay = normalizeDepotText(`${v.locationName ?? ""} ${v.formattedAddress ?? ""}`);
-  const def = DEPOT_DEFINITIONS[key] ?? { mode: "alias" as const, patterns: [key] };
-
-  return def.patterns.some((p) => hay.includes(normalizeDepotText(p)));
-};
 
 type DepotLabel =
   | "Ellington"
@@ -1421,7 +1384,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         const effectiveDepots =
             selectedDepots.length > 0 ? selectedDepots : ALL_DEPOT_LABELS;
         categoryVehicles = categoryVehicles.filter((v) =>
-          effectiveDepots.some((d) => matchesSelectedDepot(v, d))
+          effectiveDepots.some((d) => matchesDepot(v, d))
         );
       }
     }
@@ -1429,7 +1392,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     const depotFilteredVehicles =
       filterOption === "Depots" && selectedDepots.length > 0
         ? categoryVehicles.filter(v =>
-            selectedDepots.some(d => matchesSelectedDepot(v, d))
+            selectedDepots.some(d => matchesDepot(v, d))
           )
         : categoryVehicles;
 

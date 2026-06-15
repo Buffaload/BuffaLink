@@ -1,10 +1,10 @@
-// src/utils/depotMatching.ts
 export type DepotMatchableVehicle = {
     locationName?: string | null;
+    formattedAddress?: string | null;
     locationGroupName?: string | null;
+    depotMatch?: string | null;
 };
 
-// Depot definitions: - "strict": only allow known-safe strings (prevents nearby false positives) - "alias": allow controlled variations
 const normalizeDepotText = (value: string | null | undefined) =>
     (value ?? "")
         .toUpperCase()
@@ -18,41 +18,48 @@ export const DEPOT_DEFINITIONS: Record<
     ELLINGTON: { mode: "alias", patterns: ["ELLINGTON"] },
     CREWE: { mode: "alias", patterns: ["CREWE"] },
     SKELMERSDALE: { mode: "alias", patterns: ["SKELMERSDALE", "SKELMERSDALE DEPOT"] },
-
-    // If these exist in your UI, keep them here too:
     COVENTRY: { mode: "alias", patterns: ["CO-OP COVENTRY", "COOP COVENTRY", "COVENTRY"] },
-
-    // Strict depots (geofence + safe name patterns)
     BELLSHILL: { mode: "strict", patterns: ["BUFFALOAD BELLSHILL"] },
     AVONMOUTH: { mode: "strict", patterns: ["CO-OP AVONMOUTH", "COOP AVONMOUTH"] },
 };
 
 export const ALL_DEPOT_LABELS = Object.keys(DEPOT_DEFINITIONS);
 
+export function getMatchedDepotLabel(v: DepotMatchableVehicle): string | null {
+    if ((v.locationGroupName ?? "") !== "Buffaload") return null;
 
-// Returns true if the vehicle is within Buffaload geofence AND matches depot label patterns.
-export function matchesDepot(
-    v: DepotMatchableVehicle,
-    depotLabel: string
-): boolean {
-  // Geofence is mandatory (this matches your dashboard intent)
-    if ((v.locationGroupName ?? "") !== "Buffaload") return false;
+    const backendDepot = normalizeDepotText(v.depotMatch);
+    if (backendDepot && ALL_DEPOT_LABELS.includes(backendDepot)) {
+        return backendDepot;
+    }
 
-    const key = normalizeDepotText(depotLabel);
-    const locName = normalizeDepotText(v.locationName);
+    const haystack = normalizeDepotText(
+        `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`
+    );
 
-    const def = DEPOT_DEFINITIONS[key] ?? { mode: "alias" as const, patterns: [key] };
-    return def.patterns.some((p) => locName.includes(normalizeDepotText(p)));
+    for (const depot of ALL_DEPOT_LABELS) {
+        const def = DEPOT_DEFINITIONS[depot] ?? {
+        mode: "alias" as const,
+        patterns: [depot],
+        };
+
+        if (def.patterns.some((p) => haystack.includes(normalizeDepotText(p)))) {
+        return depot;
+        }
+    }
+
+    return null;
 }
 
+export function matchesDepot(v: DepotMatchableVehicle, depotLabel: string): boolean {
+    return getMatchedDepotLabel(v) === normalizeDepotText(depotLabel);
+}
 
-// True if vehicle is in ANY defined depot (geofence + name patterns).
 export function isInAnyDepot(v: DepotMatchableVehicle): boolean {
-    if ((v.locationGroupName ?? "") !== "Buffaload") return false;
-    return ALL_DEPOT_LABELS.some((d) => matchesDepot(v, d));
+    return getMatchedDepotLabel(v) !== null;
 }
 
 export function matchedDepots(v: DepotMatchableVehicle): string[] {
-    if ((v.locationGroupName ?? "") !== "Buffaload") return [];
-    return ALL_DEPOT_LABELS.filter((d) => matchesDepot(v, d));
+    const match = getMatchedDepotLabel(v);
+    return match ? [match] : [];
 }
