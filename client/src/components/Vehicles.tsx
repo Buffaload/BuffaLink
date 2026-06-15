@@ -213,20 +213,6 @@ function formatDueISOWeekWithYear(info: ServiceDueISOInfo): string {
     : `ISO week ${info.dueWeek}`;
 }
 
-// Critical Arrivals helpers
-function getDueISOInfo(dateString?: string): { weekDiff: number; isOverdue: boolean } | null {
-  const dueDate = parseDateSafe(dateString);
-  if (!dueDate) return null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return {
-    weekDiff: getISOWeekDiffFromToday(dueDate),
-    isOverdue: dueDate.getTime() < today.getTime(),
-  };
-}
-
 // Helper function to format date from BlueCrystal data
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -734,48 +720,6 @@ const getAllowedBranchIds = (): Set<string> | null => {
     return null;
   }
 };
-
-const normalizeDepotText = (value: string | null | undefined) =>
-  (value ?? "")
-    .toUpperCase()
-    .replace(/\s+/g, " ")
-    .trim();
-
-type DepotLabel =
-  | "Ellington"
-  | "Crewe"
-  | "Skelmersdale"
-  | "Coventry"
-  | "Bellshill"
-  | "Avonmouth";
-
-const CRITICAL_DEPOT_MATCHERS: Array<{
-  label: DepotLabel;
-  // tokens that must all be present in the same string (prevents city-only matches)
-  allOf: string[];
-}> = [
-  { label: "Ellington", allOf: ["GROVE LANE", "PE28 0DA"] },
-  { label: "Ellington", allOf: ["BUFFALOAD", "ELLINGTON"] },
-
-  { label: "Crewe", allOf: ["14 GATEWAY", "CW1 6YY"] },
-  { label: "Crewe", allOf: ["BUFFALOAD", "CREWE"] },
-
-  { label: "Skelmersdale", allOf: ["GILLIBRAND", "WN8 9TA"] },
-  { label: "Skelmersdale", allOf: ["EAST GILLIBRAND", "INDUSTRIAL"] },
-  { label: "Skelmersdale", allOf: ["BUFFALOAD", "SKELMERSDALE"] },
-
-  { label: "Coventry", allOf: ["CENTRAL BLVD", "CV6 4BX"] },
-  { label: "Coventry", allOf: ["CO-OP", "COVENTRY"] },
-  { label: "Coventry", allOf: ["COOP", "COVENTRY"] },
-
-  { label: "Bellshill", allOf: ["SHOLTO", "ML4 3LX"] },
-  { label: "Bellshill", allOf: ["RIGHEAD", "INDUSTRIAL"] },
-  { label: "Bellshill", allOf: ["BUFFALOAD", "BELLSHILL"] },
-
-  { label: "Avonmouth", allOf: ["POPLAR WAY", "BS11 0YW"] },
-  { label: "Avonmouth", allOf: ["CO-OP", "AVONMOUTH"] },
-  { label: "Avonmouth", allOf: ["COOP", "AVONMOUTH"] },
-];
 
 const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "service" | "standard" }> = [
   { key: "ServiceDueDate", label: "Service", kind: "service" },

@@ -585,32 +585,68 @@ const matchesMaintenanceByText = (vehicle) => {
 };
 
 const DEPOT_TEXT_MATCHERS = [
-  { depot: "Ellington", patterns: [/ELLINGTON/i] },
-  { depot: "Crewe", patterns: [/CREWE/i] },
-  { depot: "Skelmersdale", patterns: [/SKELMERSDALE/i] },
+  { 
+    depot: "Ellington", 
+    patterns: [
+      [/GROVE LANE/i, /PE28\s?0DA/i], 
+      [/BUFFALOAD/i, /ELLINGTON/i],
+    ],
+  },
+  { 
+    depot: "Crewe", 
+    patterns: [
+      [/14\s*GATEWAY/i, /CW1\s?6YY/i],
+      [/BUFFALOAD/i, /CREWE/i],
+    ],
+  },
+  { 
+    depot: "Skelmersdale", 
+    patterns: [
+      [/GILLIBRAND/i, /WN8\s?9TA/i],
+      [/EAST\s+GILLIBRAND/i, /INDUSTRIAL/i],
+      [/BUFFALOAD/i, /SKELMERSDALE/i],
+    ],
+  },
   { 
     depot: "Coventry", 
-    patterns: [/CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i] 
+    patterns: [
+      [/CENTRAL\s*BLVD/i, /CV6\s?4BX/i],
+      [/CO-OP/i, /COVENTRY/i],
+      [/COOP/i, /COVENTRY/i],
+    ],
   },
-  { depot: "Bellshill", patterns: [/BELLSHILL/i] },
+  { 
+    depot: "Bellshill", 
+    patterns: 
+    [
+      [/SHOLTO/i, /ML4\s?3LX/i],
+      [/RIGHEAD/i, /INDUSTRIAL/i],
+      [/BUFFALOAD/i, /BELLSHILL/i],
+    ],
+  },
   {
     depot: "Avonmouth",
-    patterns: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i,]
+    patterns: [
+      [/POPLAR\s*WAY/i, /BS11\s?0YW/i],
+      [/CO-OP/i, /AVONMOUTH/i],
+      [/COOP/i, /AVONMOUTH/i],
+    ],
   },
 ];
 
 const matchDepotByText = (vehicle) => {
   const hay = normalizeText(
-    [
-      vehicle?.locationName,
-      vehicle?.formattedAddress,
-      vehicle?.locationGroupName,
-    ].filter(Boolean).join(" | ")
+    `${vehicle.locationName ?? ""} ${vehicle.formattedAddress ?? ""}`
   );
 
   for (const entry of DEPOT_TEXT_MATCHERS) {
-    if (entry.patterns.some((re) => re.test(hay))) return entry.depot;
+    const matches = entry.patterns.some(patternSet =>
+      patternSet.every(re => re.test(hay))
+    );
+
+    if (matches) return entry.depot;
   }
+
   return null;
 };
 
