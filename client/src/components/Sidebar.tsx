@@ -1,8 +1,8 @@
 import API_BASE_URL from "../config";
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import { filterVehicles, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import {
   Truck,
@@ -245,6 +245,7 @@ const Sidebar: React.FC<{
   const [arrivalTooltipItems, setArrivalTooltipItems] = useState<CriticalArrivalItem[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Loader icons
   const showDepotSubTabs = filterOption === "Depots";
+  const queryClient = useQueryClient();
   const tooltipAnchorRef = React.useRef<HTMLButtonElement | null>(null);
   const [arrivalTooltipPos, setArrivalTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const SIDEBAR_COLLAPSED_KEY = "buffalink:sidebarCollapsed";
@@ -384,27 +385,36 @@ const Sidebar: React.FC<{
   // Fetch vehicles data
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       throw new Error("No token found. Please log in.");
     }
+
     const response = await axios.get(`${API_BASE_URL}/vehicles`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+
     if (response.status === 200) {
       const data = response.data;
-      
-      if (Array.isArray(data)) {
-        return data;
+      const arr = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.vehicles)
+        ? data.vehicles
+        : [];
+
+      // Protect sidebar counts against empty/incomplete payloads
+      if (arr.length === 0) {
+        const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
+        if (previous?.length) {
+          return previous;
+        }
       }
 
-      if (Array.isArray(data?.vehicles)) {
-        return data.vehicles;
-      }
-
-      return [];
+      return arr;
     }
+
     throw new Error("Failed to fetch vehicles");
   };
 
@@ -579,13 +589,20 @@ const Sidebar: React.FC<{
   // Calculate counts for badges
   const counts = useMemo(() => {
     const now = Date.now();
+    const hgvsVehicles = filterVehicles(vehicles, "HGVs", [], now);
+    const maintenanceVehicles = filterVehicles(vehicles, "Maintenance", [], now);
+    const tippersVehicles = filterVehicles(vehicles, "Tippers", [], now);
+    const criticalVehicles = vehicles.filter(isCriticalAlert);
+    const criticalArrivalVehicles = vehicles.filter(
+      (v) => !!getCriticalDepotLabel(v) && isCriticalArrival(v)
+    );
 
     return {
-      hgvsCount: countFor(vehicles, "HGVs", [], now),
-      maintenanceCount: countFor(vehicles, "Maintenance", [], now),
-      criticalCount: vehicles.filter(isCriticalAlert).length,
-      arrivalsCount: vehicles.filter((v) => !!getCriticalDepotLabel(v) && isCriticalArrival(v)).length,
-      tippersCount: countFor(vehicles, "Tippers", [], now),
+      hgvsCount: hgvsVehicles.length,
+      maintenanceCount: maintenanceVehicles.length,
+      criticalCount: criticalVehicles.length,
+      arrivalsCount: criticalArrivalVehicles.length,
+      tippersCount: tippersVehicles.length,
     };
   }, [vehicles]);
 
