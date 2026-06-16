@@ -2276,14 +2276,14 @@
 
 /* Track */
 .kiosk-carousel-track {
-  --kiosk-carousel-duration: 90s;
+  --kiosk-carousel-duration: 180s;
 }
 
 .kiosk-carousel-track--vertical {
   display: flex;
   flex-direction: column;
   gap: var(--kiosk-carousel-gap);
-  animation: kioskCarouselScrollVertical var(--kiosk-carousel-duration) linear infinite;
+  animation: kioskCarouselScrollVertical 210s linear infinite;
   will-change: transform;
 }
 
@@ -2369,9 +2369,9 @@
 }
 
 .kiosk-carousel-panel--bottom .kiosk-carousel-card {
-  width: 340px;
-  min-width: 340px;
-  flex: 0 0 340px;
+  width: 320px;
+  min-width: 320px;
+  flex: 0 0 320px;
 }
 
 /* Header */
@@ -2442,6 +2442,21 @@
   padding: 16px;
   text-align: center;
   background: linear-gradient(180deg, rgba(249, 250, 251, 0.9), #ffffff);
+}
+
+.kiosk-carousel-card__map,
+.kiosk-carousel-card__map-frame,
+.kiosk-carousel-card__map-frame .leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.kiosk-carousel-card__map-frame {
+  background: #f3f4f6;
+}
+
+.kiosk-leaderboard-container--with-carousel {
+  overflow: hidden;
 }
 
 /* Caption */

@@ -562,6 +562,8 @@ const getViewportSnapshot = () => {
 };
 
 const KIOSK_CAROUSEL_SIDE_BREAKPOINT = 1660;
+const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT = 340;
+const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL = 300;
 const DEFAULT_KIOSK_MIN_WIDTH = 1300;
 const PORTRAIT_KIOSK_MIN_WIDTH = 900;
 
@@ -819,21 +821,17 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
   useEffect(() => {
     const lat = vehicle.latitude;
     const lon = vehicle.longitude;
+    const container = containerRef.current;
 
-    // Safety checks
-    if (
-      !containerRef.current ||
-      !Number.isFinite(lat) ||
-      !Number.isFinite(lon)
-    ) {
+    if (!container || !Number.isFinite(lat) || !Number.isFinite(lon)) {
       return;
     }
 
-    // Prevent duplicate map creation
-    if (mapInstanceRef.current) return;
+    if (mapInstanceRef.current) {
+      return;
+    }
 
-    // Create map
-    const map = L.map(containerRef.current, {
+    const map = L.map(container, {
       zoomControl: false,
       attributionControl: false,
       dragging: false,
@@ -842,18 +840,21 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       boxZoom: false,
       touchZoom: false,
       keyboard: false,
+      fadeAnimation: false,
+      zoomAnimation: false,
+      markerZoomAnimation: false,
     }).setView([lat!, lon!], 13);
 
     mapInstanceRef.current = map;
 
-    // Tile layer
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    const tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 2,
     }).addTo(map);
 
-    // Marker label (reuse your helper)
-    const displayReg =
-      vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
+    const displayReg = vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
 
     const marker = L.circleMarker([lat!, lon!], {
       radius: 20,
@@ -869,14 +870,60 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       className: "vehicle-reg-tooltip",
     });
 
-    // Cleanup on unmount
+    const invalidate = () => {
+      if (!mapInstanceRef.current) return;
+      mapInstanceRef.current.invalidateSize({
+        pan: false,
+        animate: false,
+      });
+    };
+
+    // Run multiple times because carousel/sticky layout can settle over a few frames
+    const raf1 = requestAnimationFrame(() => {
+      invalidate();
+    });
+
+    const raf2 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        invalidate();
+      });
+    });
+
+    const timeout1 = window.setTimeout(invalidate, 120);
+    const timeout2 = window.setTimeout(invalidate, 300);
+
+    const onTileLoad = () => {
+      invalidate();
+    };
+
+    tileLayer.on("load", onTileLoad);
+
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        invalidate();
+      });
+      resizeObserver.observe(container);
+    }
+
     return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(timeout1);
+      window.clearTimeout(timeout2);
+      tileLayer.off("load", onTileLoad);
+      resizeObserver?.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [vehicle]);
+  }, [
+    vehicle.latitude,
+    vehicle.longitude,
+    vehicle.assetRegistration,
+    vehicle.assetName,
+  ]);
 
-  // Empty state
   if (
     !Number.isFinite(vehicle.latitude) ||
     !Number.isFinite(vehicle.longitude)
@@ -896,19 +943,12 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
     );
   }
 
-  // Map render
   return (
-    <div
-      className="kiosk-carousel-card__map"
-      style={{ height }}
-    >
+    <div className="kiosk-carousel-card__map" style={{ height }}>
       <div
         ref={containerRef}
         className="kiosk-carousel-card__map-frame"
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
+        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );
@@ -985,9 +1025,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   useEffect(() => {
     if (!isKioskMode || !scrollRef.current) return;
+
     const BOTTOM_BUFFER = 12;
-    const TWO_COL_BREAKPOINT = 980; // Matches CSS breakpoint where grid becomes 1 column
-    
+    const TWO_COL_BREAKPOINT = 980;
+
     let raf = 0;
 
     const recalc = () => {
@@ -998,20 +1039,18 @@ const Vehicles: React.FC<VehiclesProps> = ({
         container.querySelectorAll(".kiosk-leaderboard-row")
       ) as HTMLElement[];
 
-      // If rows aren't rendered yet (loading / first paint), try again next frame
       if (rows.length === 0) {
         raf = requestAnimationFrame(recalc);
         return;
       }
 
-      // Determine the "step" between rows (height + gap)
-      let rowStep = 52; // fallback
+      let rowStep = 52;
+
       if (rows.length >= 2) {
         const r1 = rows[0].getBoundingClientRect();
         const r2 = rows[1].getBoundingClientRect();
         rowStep = Math.max(1, Math.round(r2.top - r1.top));
       } else {
-        // Fallback: single row rendered, approximate row step from height + CSS gap
         const r1 = rows[0].getBoundingClientRect();
         const col = container.querySelector(".kiosk-leaderboard-col") as HTMLElement | null;
         const gapStr =
@@ -1020,9 +1059,21 @@ const Vehicles: React.FC<VehiclesProps> = ({
         rowStep = Math.max(1, Math.round(r1.height + gap));
       }
 
-      const availableHeight = window.innerHeight - rect.top - BOTTOM_BUFFER;
-      const rowsPerColumn = Math.max(1, Math.floor(availableHeight / rowStep));
+      const isBottomCarousel =
+        window.innerWidth <= KIOSK_CAROUSEL_SIDE_BREAKPOINT;
 
+      const reservedCarouselHeight = isBottomCarousel
+        ? window.innerWidth <= TWO_COL_BREAKPOINT
+          ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL
+          : KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT
+        : 0;
+
+      const availableHeight = Math.max(
+        120,
+        window.innerHeight - rect.top - BOTTOM_BUFFER - reservedCarouselHeight
+      );
+
+      const rowsPerColumn = Math.max(1, Math.floor(availableHeight / rowStep));
       const isTwoCol = window.innerWidth > TWO_COL_BREAKPOINT;
       const columns = isTwoCol ? 2 : 1;
 
@@ -1030,13 +1081,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
     };
 
     recalc();
+
     window.addEventListener("resize", recalc);
 
     return () => {
       window.removeEventListener("resize", recalc);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [isKioskMode]);
+  }, [isKioskMode, viewportInfo.width]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1765,7 +1817,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         <div className="kiosk-carousel-card__body">
           <VehicleMiniMap
             vehicle={vehicle}
-            height={useSideKioskCarousel ? 190 : 170}
+            height={useSideKioskCarousel ? 180 : 145}
           />
         </div>
 
