@@ -561,6 +561,7 @@ const getViewportSnapshot = () => {
   };
 };
 
+const KIOSK_CAROUSEL_SIDE_BREAKPOINT = 1660;
 const DEFAULT_KIOSK_MIN_WIDTH = 1300;
 const PORTRAIT_KIOSK_MIN_WIDTH = 900;
 
@@ -802,6 +803,116 @@ function getStreetViewLatLon(vehicle: {
   // Nothing usable
   return null;
 }
+
+type VehicleMiniMapProps = {
+  vehicle: VehicleWithSince;
+  height?: number;
+};
+
+const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
+  vehicle,
+  height = 180,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    const lat = vehicle.latitude;
+    const lon = vehicle.longitude;
+
+    // Safety checks
+    if (
+      !containerRef.current ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon)
+    ) {
+      return;
+    }
+
+    // Prevent duplicate map creation
+    if (mapInstanceRef.current) return;
+
+    // Create map
+    const map = L.map(containerRef.current, {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      touchZoom: false,
+      keyboard: false,
+    }).setView([lat!, lon!], 13);
+
+    mapInstanceRef.current = map;
+
+    // Tile layer
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Marker label (reuse your helper)
+    const displayReg =
+      vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
+
+    const marker = L.circleMarker([lat!, lon!], {
+      radius: 20,
+      fillColor: "#6b7280",
+      fillOpacity: 0.85,
+      color: "#ffffff",
+      weight: 2,
+    }).addTo(map);
+
+    marker.bindTooltip(formatRegForMarkerLabel(displayReg), {
+      permanent: true,
+      direction: "center",
+      className: "vehicle-reg-tooltip",
+    });
+
+    // Cleanup on unmount
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, [vehicle]);
+
+  // Empty state
+  if (
+    !Number.isFinite(vehicle.latitude) ||
+    !Number.isFinite(vehicle.longitude)
+  ) {
+    return (
+      <div
+        className="kiosk-carousel-card__map kiosk-carousel-card__map--empty"
+        style={{ height }}
+      >
+        <div className="vehicle-modal-placeholder-title">
+          No GPS location available
+        </div>
+        <div className="vehicle-modal-placeholder-sub">
+          This vehicle has no latitude/longitude in the feed.
+        </div>
+      </div>
+    );
+  }
+
+  // Map render
+  return (
+    <div
+      className="kiosk-carousel-card__map"
+      style={{ height }}
+    >
+      <div
+        ref={containerRef}
+        className="kiosk-carousel-card__map-frame"
+        style={{
+          width: "100%",
+          height: "100%",
+        }}
+      />
+    </div>
+  );
+};
 
 const Vehicles: React.FC<VehiclesProps> = ({
   filterOption,
@@ -1364,6 +1475,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return Array.from(map.values());
   }, [displayVehicles]);
 
+  const useSideKioskCarousel = viewportInfo.width > KIOSK_CAROUSEL_SIDE_BREAKPOINT;
+  const topCarouselVehicles = useMemo(() => {
+    if (!isKioskMode) return [];
+    return dedupedDisplayVehicles.slice(0, 10);
+  }, [isKioskMode, dedupedDisplayVehicles]);
+
   const canRenderKioskLeaderboard = useMemo(() => {
     return (
       viewportInfo.width >= DEFAULT_KIOSK_MIN_WIDTH ||
@@ -1601,6 +1718,64 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
   }
 
+  const renderKioskCarouselCard = (
+    vehicle: VehicleWithSince,
+    leaderboardPosition: number
+  ) => {
+    const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
+
+    const displayId = isTrailer
+      ? (vehicle.assetName ?? vehicle.assetRegistration ?? "")
+      : (vehicle.assetRegistration ?? vehicle.assetName ?? "");
+
+    const writtenAddress = displayText(
+      vehicle.formattedAddress ?? vehicle.locationName,
+      "Unknown location"
+    );
+
+    return (
+      <article
+        className={`kiosk-carousel-card ${getKioskSeverityClass(vehicle.statusSinceMs)}`}
+        key={`kiosk-carousel-${vehicle.assetRegistration ?? "NO_REG"}-${vehicle.assetName}-${leaderboardPosition}`}
+      >
+        <header className="kiosk-carousel-card__header">
+          <div className="kiosk-carousel-card__header-top">
+            <span className="kiosk-carousel-card__rank">#{leaderboardPosition}</span>
+            <span className="kiosk-carousel-card__reg">
+              {isTrailer ? displayId : formatRegistration(displayId)}
+            </span>
+          </div>
+
+          <div className="kiosk-carousel-card__header-bottom">
+            <span className="status-pill status-pill--stopped">
+              <span className="status-pill__icon">{renderStatusIcon("stopped")}</span>
+              <span className="status-pill__text">STOPPED</span>
+            </span>
+
+            <span className="kiosk-carousel-card__time">
+              {typeof vehicle.statusSinceMs === "number"
+                ? formatTimeInState(vehicle.statusSinceMs)
+                : vehicle.date
+                ? formatTimeInState(adjustedMs(vehicle.date))
+                : "--- : --- : ---"}
+            </span>
+          </div>
+        </header>
+
+        <div className="kiosk-carousel-card__body">
+          <VehicleMiniMap
+            vehicle={vehicle}
+            height={useSideKioskCarousel ? 190 : 170}
+          />
+        </div>
+
+        <footer className="vehicle-modal-map-caption kiosk-carousel-card__caption">
+          {writtenAddress}
+        </footer>
+      </article>
+    );
+  };
+
   if (isKioskMode && canRenderKioskLeaderboard) {
     const list = dedupedDisplayVehicles;
     const mid = Math.ceil(list.length / 2);
@@ -1608,7 +1783,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
     const right = list.slice(mid);
 
     const renderRow = (vehicle: VehicleWithSince, position: number) => {
-      const rawLocation = vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
+      const rawLocation =
+        vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION";
       const fullLocation = cleanLocationLabel(rawLocation);
       const truncatedLocation = truncate(fullLocation, 40);
       const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
@@ -1617,22 +1793,21 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : (vehicle.assetRegistration ?? vehicle.assetName ?? "");
 
       return (
-        <div className={`kiosk-leaderboard-row ${getKioskSeverityClass(vehicle.statusSinceMs!)}`} key={`${vehicle.assetRegistration ?? "NO_REG"}-${vehicle.assetName}`}>
+        <div
+          className={`kiosk-leaderboard-row ${getKioskSeverityClass(vehicle.statusSinceMs!)}`}
+          key={`${vehicle.assetRegistration ?? "NO_REG"}-${vehicle.assetName}`}
+        >
           <div className="kiosk-leaderboard-left">
             <span className="kiosk-leaderboard-pos">{position}</span>
             <span className="kiosk-leaderboard-reg">
               {isTrailer ? displayId : formatRegistration(displayId)}
             </span>
-            <span
-              className="kiosk-leaderboard-loc"
-              title={fullLocation}
-            >
+            <span className="kiosk-leaderboard-loc" title={fullLocation}>
               {truncatedLocation}
             </span>
           </div>
 
-          <div className="kiosk-leaderboard-right">
-          </div>
+          <div className="kiosk-leaderboard-right" />
 
           <div className="kiosk-leaderboard-time">
             {formatTimeInState(vehicle.statusSinceMs!)}
@@ -1642,7 +1817,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
     };
 
     return (
-      <div className="kiosk-leaderboard-container" ref={scrollRef} onScroll={handleScroll}>
+      <div
+        className="kiosk-leaderboard-container kiosk-leaderboard-container--with-carousel"
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         {isLoading ? (
           <div className="vehicle-empty-state">
             <p className="vehicle-empty-text">Loading leaderboard…</p>
@@ -1650,16 +1829,73 @@ const Vehicles: React.FC<VehiclesProps> = ({
         ) : list.length === 0 ? (
           <div className="vehicle-empty-state">
             <TriangleAlert className="vehicle-empty-icon" aria-hidden />
-            <p className="vehicle-empty-text">No stopped vehicles outside depots/maintenance sites</p>
+            <p className="vehicle-empty-text">
+              No stopped vehicles outside depots/maintenance sites
+            </p>
           </div>
         ) : (
-          <div className="kiosk-leaderboard-grid">
-            <div className="kiosk-leaderboard-col">
-              {left.map((v, idx) => renderRow(v, idx + 1))}
-            </div>
-            <div className="kiosk-leaderboard-col">
-              {right.map((v, idx) => renderRow(v, mid + idx + 1))}
-            </div>
+          <div
+            className={`kiosk-layout ${
+              useSideKioskCarousel ? "kiosk-layout--side" : "kiosk-layout--bottom"
+            }`}
+          >
+            <section className="kiosk-main">
+              <div className="kiosk-leaderboard-grid">
+                <div className="kiosk-leaderboard-col">
+                  {left.map((v, idx) => renderRow(v, idx + 1))}
+                </div>
+                <div className="kiosk-leaderboard-col">
+                  {right.map((v, idx) => renderRow(v, mid + idx + 1))}
+                </div>
+              </div>
+            </section>
+
+            {topCarouselVehicles.length > 0 && (
+              <aside
+                className={`kiosk-carousel-panel ${
+                  useSideKioskCarousel
+                    ? "kiosk-carousel-panel--side"
+                    : "kiosk-carousel-panel--bottom"
+                }`}
+                aria-label="Top 10 longest stopped vehicles"
+              >
+                <div className="kiosk-carousel-panel__header">
+                  Top 10 longest stopped vehicles
+                </div>
+
+                <div
+                  className={`kiosk-carousel-viewport ${
+                    useSideKioskCarousel
+                      ? "kiosk-carousel-viewport--vertical"
+                      : "kiosk-carousel-viewport--horizontal"
+                  }`}
+                >
+                  <div
+                    className={`kiosk-carousel-track ${
+                      useSideKioskCarousel
+                        ? "kiosk-carousel-track--vertical"
+                        : "kiosk-carousel-track--horizontal"
+                    }`}
+                  >
+                    {[0, 1].map((loopIndex) => (
+                      <div
+                        key={`kiosk-carousel-group-${loopIndex}`}
+                        className={`kiosk-carousel-group ${
+                          useSideKioskCarousel
+                            ? "kiosk-carousel-group--vertical"
+                            : "kiosk-carousel-group--horizontal"
+                        }`}
+                        aria-hidden={loopIndex === 1}
+                      >
+                        {topCarouselVehicles.map((vehicle, index) =>
+                          renderKioskCarouselCard(vehicle, index + 1)
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            )}
           </div>
         )}
       </div>
