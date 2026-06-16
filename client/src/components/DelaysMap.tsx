@@ -3,11 +3,9 @@ import { createPortal } from "react-dom";
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
 import { ALL_DEPOT_LABELS, matchesDepot, getDisplayLocation } from "../utils/depotMatching";
 import api from "../api/client";
-import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import InlineLoader from "./InlineLoader";
 import "../css/DelaysMap.css";
-import API_BASE_URL from "../config";
 import { Pause, Play } from "lucide-react";
 import L from "leaflet";
 import "leaflet.markercluster/dist/MarkerCluster.css";
