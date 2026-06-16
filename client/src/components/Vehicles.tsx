@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs, isCriticalArrival } from "../utils/vehicleRules";
 import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getMatchedDepotLabel } from "../utils/depotMatching";
+import api from "../api/client";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -1116,11 +1117,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       throw new Error("No token found. Please log in.");
     }
 
-    const response = await axios.get(`${API_BASE_URL}/vehicles`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await api.get("/vehicles");
 
     if (response.status === 200) {
       const data = response.data;

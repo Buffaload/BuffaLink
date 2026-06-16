@@ -1,6 +1,7 @@
 import API_BASE_URL from "../config";
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { adjustedMs, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import api from "../api/client";
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
@@ -400,11 +401,7 @@ const Sidebar: React.FC<{
       throw new Error("No token found. Please log in.");
     }
 
-    const response = await axios.get(`${API_BASE_URL}/vehicles`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await api.get("/vehicles");
 
     if (response.status === 200) {
       const data = response.data;

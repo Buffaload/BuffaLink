@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef, useState, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
 import { ALL_DEPOT_LABELS, matchesDepot, getDisplayLocation } from "../utils/depotMatching";
+import api from "../api/client";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import InlineLoader from "./InlineLoader";
@@ -107,11 +108,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
       throw new Error("No token found. Please log in.");
     }
 
-    const response = await axios.get(`${API_BASE_URL}/vehicles`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await api.get("/vehicles");
 
     if (response.status === 200) {
       return response.data;
