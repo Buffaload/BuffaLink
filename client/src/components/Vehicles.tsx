@@ -1882,8 +1882,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 const isVor = !!vehicle.IsVor;
 
                 const depotMatch = getMatchedDepotLabel(vehicle);
+                const getDepotDisplayName = (depot?: string | null) => {
+                  if (!depot) return null;
+                  const normalized = depot.toUpperCase();
+                  if (normalized === "COVENTRY" || normalized === "AVONMOUTH") {
+                    return `Co-op ${depot}`;
+                  }
+                  return `Buffaload ${depot}`;
+                };
+
                 const displayLocation = depotMatch
-                  ? `BUFFALOAD ${depotMatch}`
+                  ? getDepotDisplayName(depotMatch)
                   : (vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION");
 
                 // Trailer display logic
