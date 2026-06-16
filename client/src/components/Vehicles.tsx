@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { filterVehicles, adjustedMs, getStatusSinceMs, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
-import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getMatchedDepotLabel } from "../utils/depotMatching";
+import { filterVehicles, adjustedMs, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
+import { ALL_DEPOT_LABELS, matchesDepot, getMatchedDepotLabel } from "../utils/depotMatching";
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -316,21 +316,6 @@ const toBool = (value: any): boolean => {
     return false;
   }
   return false;
-};
-
-const isMaintenanceSite = (v: { locationGroupName?: string | null; locationName?: string | null; formattedAddress?: string | null }) => {
-  const g = String(v.locationGroupName ?? "").toLowerCase();
-  const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`.toLowerCase();
-  return g.includes("maintenance") || g.includes("workshop") || hay.includes("maintenance");
-};
-
-const isTipper = (v: { assetGroupName?: string | null }) =>
-  (v.assetGroupName ?? "").toLowerCase() === "tippers";
-
-const isTrailerVehicle = (v: { assetType?: string | null; assetGroupName?: string | null }) => {
-  const t = (v.assetType ?? "").toLowerCase().trim();
-  const g = (v.assetGroupName ?? "").toLowerCase();
-  return t === "trailer" || g.includes("trailer");
 };
 
 // Helper function for percentage calculation and color coding for service/MOT due dates

@@ -264,9 +264,6 @@ export const matchesFilter = (
     selectedDepots: string[] = [],
     nowMs: number = Date.now()
 ): boolean => {
-    const eventType = (v.eventType ?? "").toLowerCase();
-    const timeStoppedMs = getTimeInStateMs(v, nowMs);
-
     switch (filterOption) {
         case "Night-Out":
             return !!v.isNightOut;
