@@ -40,6 +40,97 @@ export const adjustedMs = (s?: string): number => {
     return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
 };
 
+const STOPPED_1_HOUR_MS = 60 * 60 * 1000;
+const STOPPED_15_MIN_MS = 15 * 60 * 1000;
+
+export const getStatusSinceMs = (
+    v: VehicleLike,
+    nowMs: number = Date.now()
+): number | undefined => {
+    const candidate =
+        typeof v.statusSinceMs === "number"
+            ? v.statusSinceMs
+            : v.date
+            ? adjustedMs(v.date)
+            : NaN;
+
+    if (!Number.isFinite(candidate)) return undefined;
+
+    // Guard against bad future timestamps
+    return Math.min(candidate, nowMs);
+};
+
+export const getTimeInStateMs = (
+    v: VehicleLike,
+    nowMs: number = Date.now()
+): number => {
+    const sinceMs = getStatusSinceMs(v, nowMs);
+    if (sinceMs == null) return 0;
+    return Math.max(0, nowMs - sinceMs);
+};
+
+export const isStoppedEvent = (v: VehicleLike): boolean =>
+    (v.eventType ?? "").toLowerCase() === "stopped";
+
+export const isDrivingEvent = (v: VehicleLike): boolean =>
+    (v.eventType ?? "").toLowerCase() === "driving";
+
+export const isAtDepot = (v: VehicleLike): boolean =>
+    (v.locationGroupName ?? "").trim() === "Buffaload";
+
+export const isAtMaintenance = (v: VehicleLike): boolean =>
+    (v.locationGroupName ?? "").trim() === "Maintenance";
+
+export const isAtServices = (v: VehicleLike): boolean =>
+    (v.locationGroupName ?? "").trim() === "Services and Truckstops";
+
+export const isEligibleStoppedHgv = (
+    v: VehicleLike,
+    nowMs: number = Date.now()
+): boolean => {
+    return (
+        v.assetType === "HGV" &&
+        isStoppedEvent(v) &&
+        getTimeInStateMs(v, nowMs) >= STOPPED_1_HOUR_MS &&
+        !isAtDepot(v) &&
+        !isAtMaintenance(v) &&
+        !isAtServices(v) &&
+        !isTipper(v)
+    );
+};
+
+export const isEligibleServicesHgv = (
+    v: VehicleLike,
+    nowMs: number = Date.now()
+): boolean => {
+    return (
+        v.assetType === "HGV" &&
+        (isAtServices(v) || !v.locationGroupName) &&
+        getTimeInStateMs(v, nowMs) >= STOPPED_15_MIN_MS &&
+        !isDrivingEvent(v) &&
+        !isAtDepot(v) &&
+        !isAtMaintenance(v) &&
+        !isTipper(v) &&
+        !v.isNightOut
+    );
+};
+
+export const isEligibleKioskVehicle = (
+    v: VehicleLike,
+    nowMs: number = Date.now()
+): boolean => {
+    return (
+        v.assetType === "HGV" &&
+        isStoppedEvent(v) &&
+        getTimeInStateMs(v, nowMs) > 0 &&
+        !isAtDepot(v) &&
+        !isAtMaintenance(v) &&
+        !isTipper(v) &&
+        !v.IsVor &&
+        !v.LiveDefects
+    );
+};
+
 const parseDueMs = (s?: string): number => {
     if (!s) return NaN;
     const t = s.trim();
@@ -174,41 +265,17 @@ export const matchesFilter = (
     nowMs: number = Date.now()
 ): boolean => {
     const eventType = (v.eventType ?? "").toLowerCase();
-    const timeStoppedMs = 
-        typeof v.statusSinceMs === "number"
-            ? nowMs - v.statusSinceMs
-            : v.date
-            ? nowMs - adjustedMs(v.date)
-            : 0;
+    const timeStoppedMs = getTimeInStateMs(v, nowMs);
 
     switch (filterOption) {
         case "Night-Out":
             return !!v.isNightOut;
 
         case "HGVs":
-            const group = (v.locationGroupName ?? "").trim();
-
-            return (
-                v.assetType === "HGV" &&
-                eventType === "stopped" &&
-                timeStoppedMs >= 1 * 60 * 60 * 1000 &&
-                group !== "Buffaload" &&
-                group !== "Maintenance" &&
-                group !== "Services and Truckstops" &&
-                !isTipper(v)
-            );
+            return isEligibleStoppedHgv(v, nowMs);
 
         case "Services":
-            return (
-                v.assetType === "HGV" &&
-                (v.locationGroupName === "Services and Truckstops" || !v.locationGroupName) &&
-                timeStoppedMs > 15 * 60 * 1000 &&
-                eventType !== "driving" &&
-                v.locationGroupName !== "Buffaload" &&
-                v.locationGroupName !== "Maintenance" &&
-                !isTipper(v) &&
-                !v.isNightOut
-            );
+            return isEligibleServicesHgv(v, nowMs);
 
             case "Depots": {
                 // Exclude tippers from depot view

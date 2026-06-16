@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { filterVehicles, adjustedMs, isCriticalArrival } from "../utils/vehicleRules";
+import { filterVehicles, adjustedMs, getStatusSinceMs, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
 import { ALL_DEPOT_LABELS, matchesDepot, isInAnyDepot, getMatchedDepotLabel } from "../utils/depotMatching";
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1216,13 +1216,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     });
 
     if (isKioskMode) {
-      let leaderboard = vehiclesWithSince
-        .filter((v) => (v.eventType ?? "").toLowerCase() === "stopped")
-        .filter((v) => !isInAnyDepot(v))
-        .filter((v) => !isMaintenanceSite(v))
-        .filter((v) => !isTipper(v))
-        .filter((v) => !isTrailerVehicle(v))
-        .filter((v) => !toBool(v.IsVor) && !toBool(v.LiveDefects));
+      let leaderboard = vehiclesWithSince.filter((v) => isEligibleKioskVehicle(v, now));
 
       const allowedBranches = getAllowedBranchIds();
       if (allowedBranches !== null) {
