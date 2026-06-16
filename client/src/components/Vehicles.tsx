@@ -1817,7 +1817,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         <div className="kiosk-carousel-card__body">
           <VehicleMiniMap
             vehicle={vehicle}
-            height={useSideKioskCarousel ? 180 : 145}
+            height={useSideKioskCarousel ? 180 : 120}
           />
         </div>
 
