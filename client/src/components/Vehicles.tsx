@@ -1111,33 +1111,41 @@ const Vehicles: React.FC<VehiclesProps> = ({
   // Helpers for filtering, searching, and sorting
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       throw new Error("No token found. Please log in.");
     }
 
     const response = await api.get("/vehicles");
 
-    if (response.status === 200) {
-      const data = response.data;
-
-      const arr =
-        Array.isArray(data)
-          ? data
-          : Array.isArray(data?.vehicles)
-          ? data.vehicles
-          : [];
-
-      if (arr.length === 0) {
-        const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
-        if (previous?.length) {
-          return previous;
-        }
-      }
-
-      return arr;
+    if (response.status !== 200) {
+      throw new Error("Failed to fetch vehicles");
     }
-    throw new Error("Failed to fetch vehicles");
+
+    const data = response.data;
+    const arr =
+      Array.isArray(data)
+        ? data
+        : Array.isArray(data?.vehicles)
+        ? data.vehicles
+        : [];
+
+    const isPartial = response.headers?.["x-partial-data"] === "1";
+
+    if (isPartial) {
+      const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
+      if (previous?.length) {
+        return previous;
+      }
+    }
+
+    if (arr.length === 0) {
+      const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
+      if (previous?.length) {
+        return previous;
+      }
+    }
+
+    return arr;
   };
 
   // useQuery hook for fetching vehicles
@@ -1191,61 +1199,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
     statusSinceMs?: number;
   };
 
-  type StatusSince = {
-    eventType: string;
-    sinceMs: number;
-  };
-
-  const STATUS_SINCE_STORAGE_KEY = "buffalink:statusSinceMap";
-
-  const statusSinceRef = useRef<Map<string, StatusSince>>(
-    new Map(
-      typeof window !== "undefined"
-        ? (() => {
-            try {
-              const raw = localStorage.getItem(STATUS_SINCE_STORAGE_KEY);
-              const parsed = raw ? JSON.parse(raw) : [];
-              return Array.isArray(parsed) ? parsed : [];
-            } catch {
-              return [];
-            }
-          })()
-        : []
-    )
-  );
-
   // Depot matching helpers (geofence + text/address fallback)
   const { categoryVehicles, displayVehicles, highlightFigures } = useMemo<VehiclesMemoResult>(() => {
     void locationTick;
     const now = Date.now();
-    const currentKeys = new Set<string>();
+
     const vehiclesWithSince: VehicleWithSince[] = vehicles.map((v) => {
-      const key = v.assetName;
-      currentKeys.add(key);
-
-      const currentType = (v.eventType ?? "unknown").toLowerCase();
-
-      // Use vehicle.date as the transition timestamp when state changes
-      // If it's invalid, fall back to "now"
-      const incomingMs = v.date ? adjustedMs(v.date) : NaN;
-      const incomingSafeMs = isNaN(incomingMs) ? now : incomingMs;
-
-      const prev = statusSinceRef.current.get(key);
-
       const sinceMs =
-        !prev || prev.eventType !== currentType
-          ? incomingSafeMs
-          : prev.sinceMs;
-
-      statusSinceRef.current.set(key, { eventType: currentType, sinceMs });
+        typeof (v as any).statusSinceMs === "number"
+          ? (v as any).statusSinceMs
+          : v.date
+          ? adjustedMs(v.date)
+          : undefined;
 
       return { ...v, statusSinceMs: sinceMs };
-    });
-
-    Array.from(statusSinceRef.current.keys()).forEach((k) => {
-      if (!currentKeys.has(k)) {
-        statusSinceRef.current.delete(k);
-      }
     });
 
     if (isKioskMode) {
@@ -1258,7 +1225,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
         .filter((v) => !toBool(v.IsVor) && !toBool(v.LiveDefects));
 
       const allowedBranches = getAllowedBranchIds();
-
       if (allowedBranches !== null) {
         leaderboard = leaderboard.filter((v) => {
           if (v.branchId == null) return false;
@@ -1266,17 +1232,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
         });
       }
 
-      // Sort by LONGEST stopped time (league table)
       const sorted = leaderboard
-        .slice() // clone, avoids mutating the original array
+        .slice()
         .sort((a, b) => {
           const aSince = a.statusSinceMs ?? now;
           const bSince = b.statusSinceMs ?? now;
-
-          const aDuration = now - aSince;
-          const bDuration = now - bSince;
-
-          return bDuration - aDuration;
+          return (now - bSince) - (now - aSince);
         })
         .slice(0, maxRows);
 
@@ -1291,16 +1252,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
     }
 
     let categoryVehicles: VehicleWithSince[] = [];
-
     if (filterOption === "Critical-Arrivals") {
-      categoryVehicles = vehiclesWithSince.filter((v) =>
-        isCriticalArrival(v)
-      );
+      categoryVehicles = vehiclesWithSince.filter((v) => isCriticalArrival(v));
     } else {
-      categoryVehicles = filterVehicles(vehiclesWithSince, filterOption, [], now) as VehicleWithSince[];
+      categoryVehicles = filterVehicles(
+        vehiclesWithSince,
+        filterOption,
+        [],
+        now
+      ) as VehicleWithSince[];
+
       if (filterOption === "Depots") {
         const effectiveDepots =
-            selectedDepots.length > 0 ? selectedDepots : ALL_DEPOT_LABELS;
+          selectedDepots.length > 0 ? selectedDepots : ALL_DEPOT_LABELS;
+
         categoryVehicles = categoryVehicles.filter((v) =>
           effectiveDepots.some((d) => matchesDepot(v, d))
         );
@@ -1309,8 +1274,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     const depotFilteredVehicles =
       filterOption === "Depots" && selectedDepots.length > 0
-        ? categoryVehicles.filter(v =>
-            selectedDepots.some(d => matchesDepot(v, d))
+        ? categoryVehicles.filter((v) =>
+            selectedDepots.some((d) => matchesDepot(v, d))
           )
         : categoryVehicles;
 
@@ -1318,7 +1283,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     if (shouldApplyBranchFilter(filterOption, isKioskMode)) {
       const allowedBranches = getAllowedBranchIds();
-
       if (allowedBranches !== null) {
         list = list.filter((v) => {
           if (v.branchId == null) return false;
@@ -1346,18 +1310,18 @@ const Vehicles: React.FC<VehiclesProps> = ({
         ]
           .map(normalize)
           .join("\n");
+
         return haystack.includes(q);
       });
     }
 
     const highlightFigures = {
       total: list.length,
-      vor: list.filter((v: VehicleWithSince) => isVorOrDefect(v)).length,
+      vor: list.filter((v) => isVorOrDefect(v)).length,
     };
 
     const sorted = [...list].sort((a, b) => {
       if (sortOption === "stoppedTime") {
-        // Make "Stopped time" effectively "Time in current state" across all states
         const aSince = a.statusSinceMs ?? (a.date ? adjustedMs(a.date) : now);
         const bSince = b.statusSinceMs ?? (b.date ? adjustedMs(b.date) : now);
         const aDur = now - aSince;
@@ -1367,16 +1331,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
         return (a.assetName ?? "").localeCompare(b.assetName ?? "");
       }
 
-      // ...keep your other sort options unchanged...
       if (sortOption === "serviceDue") {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayMs = today.getTime();
+
         const aDueMs = a.ServiceDueDate ? adjustedMs(a.ServiceDueDate.trim()) : NaN;
         const bDueMs = b.ServiceDueDate ? adjustedMs(b.ServiceDueDate.trim()) : NaN;
 
-        const aSortVal = isNaN(aDueMs) ? Number.POSITIVE_INFINITY : (aDueMs - todayMs);
-        const bSortVal = isNaN(bDueMs) ? Number.POSITIVE_INFINITY : (bDueMs - todayMs);
+        const aSortVal = isNaN(aDueMs) ? Number.POSITIVE_INFINITY : aDueMs - todayMs;
+        const bSortVal = isNaN(bDueMs) ? Number.POSITIVE_INFINITY : bDueMs - todayMs;
 
         if (aSortVal !== bSortVal) return aSortVal - bSortVal;
         return (a.assetName ?? "").localeCompare(b.assetName ?? "");
@@ -1409,17 +1373,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
     maxRows,
     locationTick,
   ]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        STATUS_SINCE_STORAGE_KEY,
-        JSON.stringify(Array.from(statusSinceRef.current.entries()))
-      );
-    } catch {
-      // Ignore storage failures silently
-    }
-  }, [vehicles]);
 
   const dedupedDisplayVehicles = useMemo(() => {
     const map = new Map<string, VehicleWithSince>();

@@ -186,17 +186,16 @@ export const matchesFilter = (
             return !!v.isNightOut;
 
         case "HGVs":
+            const group = (v.locationGroupName ?? "").trim();
+
             return (
                 v.assetType === "HGV" &&
-                v.eventType?.toLowerCase() === "stopped" &&
-                // "Known location" rule stays consistent with current dashboard:
-                // Volvo fix makes locationName non-null; Michelin already sets it when known.
-                !!v.locationName &&
-                timeStoppedMs > 1 * 60 * 60 * 1000 &&
-                v.locationGroupName !== "Buffaload" &&
-                v.locationGroupName !== "Maintenance" &&
-                !isTipper(v) &&
-                v.locationGroupName !== "Services and Truckstops"
+                eventType === "stopped" &&
+                timeStoppedMs >= 1 * 60 * 60 * 1000 &&
+                group !== "Buffaload" &&
+                group !== "Maintenance" &&
+                group !== "Services and Truckstops" &&
+                !isTipper(v)
             );
 
         case "Services":

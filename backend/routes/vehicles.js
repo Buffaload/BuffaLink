@@ -1697,6 +1697,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return {
           ...vehicle,
           depotMatch: resolvedDepot,
+          locationName:
+            site?.name ??
+            vehicle.locationName ??
+            vehicle.formattedAddress ??
+            "Unknown location",
           locationGroupName: maintenanceByText
             ? "Maintenance"
             : depotByText
