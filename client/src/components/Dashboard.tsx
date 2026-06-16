@@ -289,7 +289,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     }
   }, [token, handleLogout]);
 
-  const HEADER_HEIGHT = isKioskMode ? 80 : 120;
+  const HEADER_HEIGHT = 120;
 
   const contentOverlayStyle: React.CSSProperties = {
     position: "fixed",
