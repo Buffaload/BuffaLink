@@ -534,7 +534,6 @@
   }
 
   .map-sidebar-link,
-  .kiosk-toggle-wrapper,
   .dashboard-header-right,
   .iso-week-banner,
   .wizard-pill,
@@ -551,14 +550,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-  }
-
-  .dashboard-title {
-    margin-top: -15px;
-  }
-
-  .dashboard-title-suffix {
-    display: none !important;
   }
 }
 
