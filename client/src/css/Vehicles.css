@@ -2575,3 +2575,193 @@
     padding: 20px 20px 5px 20px;
   }
 }
+
+/* Vertical viewports */
+@media (min-width: 510px) and (max-width: 769px) {
+  /* Container */
+  .vehicle-container {
+    padding: 12px;
+    padding-right: 18px;
+  }
+
+  /* Wizard (top controls) */
+  .vehicles-wizard {
+    top: 42px;
+    left: calc(var(--sidebar-current-width) + 8px);
+    width: calc(100% - var(--sidebar-current-width) - 22px);
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .wizard-pill {
+    padding: 6px 8px;
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .wizard-select {
+    font-size: 11px;
+    min-width: 118px;
+  }
+
+  .wizard-search-input {
+    font-size: 11px;
+    padding: 7px 9px 7px 28px;
+  }
+
+  /* Highlight pills */
+  .highlight-figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .figure-pill {
+    font-size: 11px;
+    padding: 5px 10px;
+    margin-left: 0;
+  }
+
+  /* Card grid */
+  .vehicle-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Cards */
+  .vehicle-card {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+
+  .vehicle-reg {
+    font-size: 14px;
+  }
+
+  .chip {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  /* Meta */
+  .status-pill {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .vehicle-time-since-update {
+    font-size: 11px;
+  }
+
+  /* Health */
+  .health-block__label {
+    font-size: 11px;
+  }
+
+  .health-block__hint,
+  .health-block__sub {
+    font-size: 10px;
+  }
+
+  .due-progress-bar {
+    height: 10px;
+  }
+
+  /* Vehicle card footer */
+  .vehicle-location {
+    font-size: 11px;
+  }
+
+  /* Toggle */
+  .toggle-container {
+    width: 32px;
+    height: 18px;
+  }
+
+  /* Kiosk leaderboard */
+  .kiosk-leaderboard-container {
+    padding: 12px;
+    padding-right: 18px;
+  }
+
+  .kiosk-layout {
+    gap: 12px;
+  }
+
+  .kiosk-leaderboard-grid {
+    max-width: 100%;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .kiosk-leaderboard-col {
+    gap: 4px;
+  }
+
+  .kiosk-leaderboard-row {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
+  .kiosk-leaderboard-left {
+    gap: 8px;
+  }
+
+  .kiosk-leaderboard-pos {
+    width: 14px;
+    flex: 0 0 14px;
+    font-size: 11px;
+  }
+
+  .kiosk-leaderboard-reg {
+    font-size: 12px;
+  }
+
+  .kiosk-leaderboard-loc {
+    font-size: 10.5px;
+  }
+
+  .kiosk-leaderboard-time {
+    font-size: 10.5px;
+  }
+
+  .kiosk-carousel-panel--bottom {
+    height: 260px;
+    min-height: 260px;
+  }
+
+  .kiosk-carousel-panel__header {
+    padding: 12px 14px;
+    font-size: 11px;
+  }
+
+  .kiosk-carousel-viewport--horizontal {
+    padding: 12px;
+  }
+
+  .kiosk-carousel-panel--bottom .kiosk-carousel-card {
+    width: 260px;
+    min-width: 260px;
+    flex: 0 0 260px;
+    height: 220px;
+    max-height: 220px;
+  }
+
+  .kiosk-carousel-card__header {
+    gap: 8px;
+    padding: 12px 14px 10px 16px;
+  }
+
+  .kiosk-carousel-card__rank,
+  .kiosk-carousel-card__time {
+    font-size: 11px;
+  }
+
+  .kiosk-carousel-card__reg {
+    font-size: 15px;
+  }
+}

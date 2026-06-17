@@ -565,7 +565,7 @@ const KIOSK_CAROUSEL_SIDE_BREAKPOINT = 1660;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT = 340;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL = 300;
 const DEFAULT_KIOSK_MIN_WIDTH = 1300;
-const PORTRAIT_KIOSK_MIN_WIDTH = 900;
+const PORTRAIT_KIOSK_MIN_WIDTH = 510;
 
 const renderStatusIcon = (rawType?: string) => {
   const type = (rawType ?? "unknown").toLowerCase();
@@ -1044,7 +1044,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
         return;
       }
 
-      let rowStep = 52;
+      const isCompactPortrait =
+        window.innerWidth >= 510 &&
+        window.innerWidth <= 769 &&
+        window.innerHeight > window.innerWidth;
+
+      let rowStep = isCompactPortrait ? 42 : 52;
 
       if (rows.length >= 2) {
         const r1 = rows[0].getBoundingClientRect();
@@ -1057,6 +1062,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
           col ? (getComputedStyle(col).rowGap || getComputedStyle(col).gap) : "0px";
         const gap = Number.parseFloat(gapStr) || 0;
         rowStep = Math.max(1, Math.round(r1.height + gap));
+      }
+
+      if (isCompactPortrait) {
+        rowStep = Math.min(rowStep, 42);
       }
 
       const isBottomCarousel =
@@ -1830,9 +1839,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   if (isKioskMode && canRenderKioskLeaderboard) {
     const list = dedupedDisplayVehicles;
-    const mid = Math.ceil(list.length / 2);
+    
+    const isCompactPortrait =
+      viewportInfo.width >= 510 &&
+      viewportInfo.width <= 769 &&
+      viewportInfo.isPortrait;
+
+    // Split only when NOT compact portrait
+    const mid = isCompactPortrait ? list.length : Math.ceil(list.length / 2);
     const left = list.slice(0, mid);
-    const right = list.slice(mid);
+    const right = isCompactPortrait ? [] : list.slice(mid);
 
     const renderRow = (vehicle: VehicleWithSince, position: number) => {
       const rawLocation =
@@ -1896,9 +1912,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 <div className="kiosk-leaderboard-col">
                   {left.map((v, idx) => renderRow(v, idx + 1))}
                 </div>
-                <div className="kiosk-leaderboard-col">
-                  {right.map((v, idx) => renderRow(v, mid + idx + 1))}
-                </div>
+
+                {!isCompactPortrait && (
+                  <div className="kiosk-leaderboard-col">
+                    {right.map((v, idx) => renderRow(v, mid + idx + 1))}
+                  </div>
+                )}
               </div>
             </section>
 
