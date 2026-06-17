@@ -1526,6 +1526,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     isVorFilterActive,
     searchTerm,
     sortOption,
+    sortDirection,
     isKioskMode,
     maxRows,
     locationTick,
