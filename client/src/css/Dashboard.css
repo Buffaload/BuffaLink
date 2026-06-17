@@ -574,5 +574,17 @@
     align-items: flex-end;
     white-space: nowrap;
   }
+
+  .dashboard-header:not(.header-on) .kiosk-toggle-wrapper {
+    margin-top: -12px;
+  }
+
+  .dashboard-title .highlight-figures {
+    margin-top: 6px;
+  }
+
+  .dashboard-container.kiosk-mode .kiosk-toggle-wrapper {
+    margin-top: 6px;
+  }
 }
 
