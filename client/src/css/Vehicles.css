@@ -151,6 +151,7 @@
 .wizard-sort-direction {
   flex-shrink: 0;
   margin-top: 1px;
+  margin-right: 0 !important;
 }
 
 /* Search (pill-like) */

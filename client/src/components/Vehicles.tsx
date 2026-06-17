@@ -1483,7 +1483,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         const bSince = b.statusSinceMs ?? (b.date ? adjustedMs(b.date) : now);
         const aDur = now - aSince;
         const bDur = now - bSince;
-        result = bDur - aDur;
+        result = aDur - bDur;
         if (result === 0) {
           result = (a.assetName ?? "").localeCompare(b.assetName ?? "");
         }
