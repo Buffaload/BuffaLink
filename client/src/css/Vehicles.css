@@ -2582,10 +2582,7 @@
   .vehicle-container {
     padding: 12px;
     padding-right: 18px;
-  }
-
-  /* Kiosk toggle */
-  
+  }  
 
   /* Wizard (top controls) */
   .vehicles-wizard {
@@ -2618,6 +2615,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 16px;
     margin-right: 20px;
   }
 
