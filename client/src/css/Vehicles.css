@@ -307,7 +307,7 @@
 
 @media (max-width: 1300px) {
   .wizard-search {
-    display: none!;
+    display: none !important;
   }
 }
 
