@@ -577,14 +577,19 @@
 
   .dashboard-header:not(.header-on) .kiosk-toggle-wrapper {
     margin-top: -12px;
+    margin-right: 5px;
+  }
+
+  .dashboard-header:not(.header-on) .vehicles-wizard {
+    margin-top: 20px;
   }
 
   .dashboard-title .highlight-figures {
-    margin-top: 6px;
+    margin-top: 18px;
   }
 
   .dashboard-container.kiosk-mode .kiosk-toggle-wrapper {
-    margin-top: 6px;
+    margin-top: 8px;
   }
 }
 
