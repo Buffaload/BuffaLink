@@ -172,12 +172,6 @@
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
-@media (max-width: 1300px) {
-  .iso-week-banner {
-    margin-right: -45px;
-  }
-}
-
 .iso-week-banner__label {
   font-size: 12px;
   font-weight: 400;
@@ -515,7 +509,7 @@
   flex-direction: column;
 }
 
-@media screen and (max-width: 980px) {
+@media screen and (max-width: 1020px) {
   .dashboard-header {
     padding-top: 15px;
   }
@@ -536,6 +530,7 @@
   .map-sidebar-link,
   .iso-week-banner,
   .wizard-pill,
+  .wizard-sort-direction,
   .wizard-search {
     display: none !important;
   }

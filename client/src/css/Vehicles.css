@@ -299,6 +299,17 @@
   }
 }
 
+@media (min-width: 769px) and (max-width: 1300px) {
+  .vehicles-wizard {
+    margin-top: 20px;
+  }
+
+  .wizard-search {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+}
+
 @media (max-width: 1400px) {
   .highlight-figures {
     justify-content: flex-end;
