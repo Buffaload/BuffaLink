@@ -35,7 +35,6 @@ interface Vehicle {
   BrakeDueDate?: string;
   TlWeightDueDate?: string;
   TachoDueDate?: string;
-  TailDueDate?: string;
   FridgeDueDate?: string;
   RflDueDate?: string;
   LolerDueDate?: string;
@@ -717,7 +716,6 @@ const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "ser
   { key: "AncillaryOneDueDate", label: "Loaded brake test", kind: "standard" },
   { key: "TlWeightDueDate", label: "Weight test", kind: "standard" },
   { key: "TachoDueDate", label: "Tacho", kind: "standard" },
-  { key: "TailDueDate", label: "Tail lift", kind: "standard" },
   { key: "FridgeDueDate", label: "Fridge", kind: "standard" },
   { key: "RflDueDate", label: "FGAS", kind: "standard" },
   { key: "LolerDueDate", label: "LOLER", kind: "standard" },
@@ -728,7 +726,6 @@ const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
   "RflDueDate",
   "LolerDueDate",
   "TlWeightDueDate",
-  "TailDueDate",
 ]);
 
 type DepotStreetViewRule = {
@@ -965,6 +962,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [locationTick, setLocationTick] = useState(0);
   const [isVorFilterActive, setIsVorFilterActive] = useState(false);
   const [sortOption, setSortOption] = useState<"stoppedTime" | "serviceDue" | "reg" | "location">("stoppedTime");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [timelineTick, setTimelineTick] = useState(0);
   void timelineTick;
   const [searchTerm, setSearchTerm] = useState("");
@@ -976,6 +974,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [isVehicleModalClosing, setIsVehicleModalClosing] = useState(false);
   const [maxRows, setMaxRows] = useState<number>(100);
   const [viewportInfo, setViewportInfo] = useState(() => getViewportSnapshot());
+  const carouselViewportRef = useRef<HTMLDivElement | null>(null);
+  const carouselGroupRef = useRef<HTMLDivElement | null>(null);
+  const [shouldAnimateCarousel, setShouldAnimateCarousel] = useState(false);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
   const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -1475,14 +1476,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
     };
 
     const sorted = [...list].sort((a, b) => {
+      let result = 0;
+
       if (sortOption === "stoppedTime") {
         const aSince = a.statusSinceMs ?? (a.date ? adjustedMs(a.date) : now);
         const bSince = b.statusSinceMs ?? (b.date ? adjustedMs(b.date) : now);
         const aDur = now - aSince;
         const bDur = now - bSince;
-
-        if (bDur !== aDur) return bDur - aDur;
-        return (a.assetName ?? "").localeCompare(b.assetName ?? "");
+        result = bDur - aDur;
+        if (result === 0) {
+          result = (a.assetName ?? "").localeCompare(b.assetName ?? "");
+        }
       }
 
       if (sortOption === "serviceDue") {
@@ -1493,26 +1497,25 @@ const Vehicles: React.FC<VehiclesProps> = ({
         const aDueMs = a.ServiceDueDate ? adjustedMs(a.ServiceDueDate.trim()) : NaN;
         const bDueMs = b.ServiceDueDate ? adjustedMs(b.ServiceDueDate.trim()) : NaN;
 
-        const aSortVal = isNaN(aDueMs) ? Number.POSITIVE_INFINITY : aDueMs - todayMs;
-        const bSortVal = isNaN(bDueMs) ? Number.POSITIVE_INFINITY : bDueMs - todayMs;
+        const aVal = isNaN(aDueMs) ? Number.POSITIVE_INFINITY : aDueMs - todayMs;
+        const bVal = isNaN(bDueMs) ? Number.POSITIVE_INFINITY : bDueMs - todayMs;
 
-        if (aSortVal !== bSortVal) return aSortVal - bSortVal;
-        return (a.assetName ?? "").localeCompare(b.assetName ?? "");
+        result = aVal - bVal;
       }
 
       if (sortOption === "reg") {
         const aReg = (a.assetRegistration || a.assetName || "").toUpperCase();
         const bReg = (b.assetRegistration || b.assetName || "").toUpperCase();
-        return aReg.localeCompare(bReg);
+        result = aReg.localeCompare(bReg);
       }
 
       if (sortOption === "location") {
         const aLoc = (a.locationName || a.formattedAddress || "").toUpperCase();
         const bLoc = (b.locationName || b.formattedAddress || "").toUpperCase();
-        return aLoc.localeCompare(bLoc);
+        result = aLoc.localeCompare(bLoc);
       }
 
-      return 0;
+      return sortDirection === "asc" ? result : -result;
     });
 
     return { categoryVehicles, displayVehicles: sorted, highlightFigures };
@@ -1586,6 +1589,66 @@ const Vehicles: React.FC<VehiclesProps> = ({
       green,
     });
   }, [isKioskMode, canRenderKioskLeaderboard, onKioskStatsChange, displayVehicles]);
+
+  useEffect(() => {
+    if (!isKioskMode) {
+      setShouldAnimateCarousel(false);
+      return;
+    }
+
+    const viewportEl = carouselViewportRef.current;
+    const groupEl = carouselGroupRef.current;
+
+    if (!viewportEl || !groupEl || topCarouselVehicles.length === 0) {
+      setShouldAnimateCarousel(false);
+      return;
+    }
+
+    const measure = () => {
+      const isSideCarousel = viewportInfo.width > KIOSK_CAROUSEL_SIDE_BREAKPOINT;
+
+      const viewportSize = isSideCarousel
+        ? viewportEl.clientHeight
+        : viewportEl.clientWidth;
+
+      const contentSize = isSideCarousel
+        ? groupEl.scrollHeight
+        : groupEl.scrollWidth;
+
+      // small tolerance avoids 1px measurement noise
+      const shouldScroll = contentSize > viewportSize + 2;
+
+      setShouldAnimateCarousel(shouldScroll);
+    };
+
+    measure();
+
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        measure();
+      });
+
+      resizeObserver.observe(viewportEl);
+      resizeObserver.observe(groupEl);
+    }
+
+    const handleResize = () => {
+      measure();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [
+    isKioskMode,
+    viewportInfo.width,
+    topCarouselVehicles,
+  ]);
 
   const getTipperAlertClass = (
     vehicle: {
@@ -1937,6 +2000,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 </div>
 
                 <div
+                  ref={carouselViewportRef}
                   className={`kiosk-carousel-viewport ${
                     useSideKioskCarousel
                       ? "kiosk-carousel-viewport--vertical"
@@ -1948,23 +2012,39 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       useSideKioskCarousel
                         ? "kiosk-carousel-track--vertical"
                         : "kiosk-carousel-track--horizontal"
+                    } ${
+                      shouldAnimateCarousel
+                        ? "kiosk-carousel-track--animated"
+                        : "kiosk-carousel-track--static"
                     }`}
                   >
-                    {[0, 1].map((loopIndex) => (
+                    <div
+                      ref={carouselGroupRef}
+                      className={`kiosk-carousel-group ${
+                        useSideKioskCarousel
+                          ? "kiosk-carousel-group--vertical"
+                          : "kiosk-carousel-group--horizontal"
+                      }`}
+                    >
+                      {topCarouselVehicles.map((vehicle, index) =>
+                        renderKioskCarouselCard(vehicle, index + 1)
+                      )}
+                    </div>
+
+                    {shouldAnimateCarousel && (
                       <div
-                        key={`kiosk-carousel-group-${loopIndex}`}
                         className={`kiosk-carousel-group ${
                           useSideKioskCarousel
                             ? "kiosk-carousel-group--vertical"
                             : "kiosk-carousel-group--horizontal"
                         }`}
-                        aria-hidden={loopIndex === 1}
+                        aria-hidden="true"
                       >
                         {topCarouselVehicles.map((vehicle, index) =>
                           renderKioskCarouselCard(vehicle, index + 1)
                         )}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </aside>
@@ -2017,6 +2097,40 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <option value="location">Location</option>
                 </select>
               </div>
+
+              <button
+                type="button"
+                className="iso-week-tooltip__sort-toggle wizard-sort-direction"
+                onClick={() =>
+                  setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+                }
+                aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+                title={`Sort ${sortDirection === "asc" ? "Z-A" : "A-Z"}`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                  className={`iso-week-tooltip__sort-icon ${sortDirection}`}
+                >
+                  {/* Up arrow */}
+                  <path
+                    d="M12 4l-5 5h10l-5-5Z"
+                    fill="currentColor"
+                    opacity={sortDirection === "asc" ? 1 : 0.35}
+                  />
+                  
+                  {/* Down arrow */}
+                  <path
+                    d="M12 20l5-5H7l5 5Z"
+                    fill="currentColor"
+                    opacity={sortDirection === "desc" ? 1 : 0.35}
+                  />
+                </svg>
+              </button>
 
               {/* Search bar (pill w/ icon) */}
               <div className="wizard-search">

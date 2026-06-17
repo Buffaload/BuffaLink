@@ -148,6 +148,11 @@
   padding-right: 12px;
 }
 
+.wizard-sort-direction {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 /* Search (pill-like) */
 .wizard-search {
   position: relative;
@@ -2782,5 +2787,9 @@
   .kiosk-carousel-card__reg {
     font-size: 13px;
     gap: 10px;
+  }
+
+  .kiosk-carousel-track--static {
+    animation: none !important;
   }
 }
