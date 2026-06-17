@@ -534,9 +534,7 @@
   }
 
   .map-sidebar-link,
-  .dashboard-header-right,
   .iso-week-banner,
-  .wizard-pill,
   .wizard-search {
     display: none !important;
   }
