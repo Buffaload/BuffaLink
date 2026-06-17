@@ -580,7 +580,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
               <span className="dashboard-title-suffix">
                 {isKioskMode && !isCompactPortraitKioskViewport
                   ? " - stopped vehicles outside of a depot/maintenance site"
-                  : (title.suffix ?? "")}
+                  : ""}
               </span>
               {(
                 filterOption === "Services" ||

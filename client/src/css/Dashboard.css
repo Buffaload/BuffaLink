@@ -550,5 +550,28 @@
     align-items: flex-start;
     gap: 12px;
   }
+
+  .dashboard-title--kiosk {
+    margin-top: 0;
+  }
+}
+
+@media screen and (min-width: 510px) and (max-width: 769px) {
+  .dashboard-header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .dashboard-header-right {
+    margin-left: auto;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+
+  .kiosk-toggle-wrapper {
+    flex-direction: column;
+    align-items: flex-end;
+    white-space: nowrap;
+  }
 }
 
