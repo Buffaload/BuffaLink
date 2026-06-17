@@ -580,8 +580,8 @@
     margin-right: 5px;
   }
 
-  .dashboard-header:not(.header-on) .vehicles-wizard {
-    margin-top: 20px;
+  .dashboard-header:not(.header-on) .highlight-figures {
+    margin-top: 16px;
   }
 
   .dashboard-title .highlight-figures {
