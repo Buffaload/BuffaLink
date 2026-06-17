@@ -300,12 +300,12 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   };
 
   const [isWideEnoughForKiosk, setIsWideEnoughForKiosk] = useState(
-    window.innerWidth > 1300
+    window.innerWidth > 510
   );
 
   useEffect(() => {
     const onResize = () => {
-      setIsWideEnoughForKiosk(window.innerWidth > 1300);
+      setIsWideEnoughForKiosk(window.innerWidth > 510);
     };
 
     window.addEventListener("resize", onResize);
