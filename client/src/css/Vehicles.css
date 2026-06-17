@@ -2584,6 +2584,9 @@
     padding-right: 18px;
   }
 
+  /* Kiosk toggle */
+  
+
   /* Wizard (top controls) */
   .vehicles-wizard {
     top: 42px;
@@ -2694,7 +2697,7 @@
   .kiosk-leaderboard-grid {
     max-width: 100%;
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   .kiosk-leaderboard-col {
@@ -2702,14 +2705,19 @@
   }
 
   .kiosk-leaderboard-row {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: 8px;
-    padding: 8px 10px;
+    padding: 7px 10px;
     border-radius: 12px;
   }
 
   .kiosk-leaderboard-left {
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex-wrap: nowrap;
   }
 
   .kiosk-leaderboard-pos {
@@ -2719,50 +2727,62 @@
   }
 
   .kiosk-leaderboard-reg {
+    flex: 0 0 auto;
     font-size: 12px;
+    white-space: nowrap;
   }
 
   .kiosk-leaderboard-loc {
-    font-size: 10.5px;
+    min-width: 0;
+    flex: 1 1 auto;
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .kiosk-leaderboard-time {
+    flex: 0 0 auto;
     font-size: 10.5px;
+    white-space: nowrap;
+    text-align: right;
+    line-height: 1;
   }
 
   .kiosk-carousel-panel--bottom {
-    height: 260px;
-    min-height: 260px;
+    height: 230px;
+    min-height: 230px;
   }
 
   .kiosk-carousel-panel__header {
-    padding: 12px 14px;
-    font-size: 11px;
+    padding: 10px 12px;
+    font-size: 10px;
   }
 
   .kiosk-carousel-viewport--horizontal {
-    padding: 12px;
+    padding: 10px;
   }
 
   .kiosk-carousel-panel--bottom .kiosk-carousel-card {
-    width: 260px;
-    min-width: 260px;
-    flex: 0 0 260px;
-    height: 220px;
-    max-height: 220px;
+    width: 230px;
+    min-width: 230px;
+    flex: 0 0 230px;
+    height: 180px;
+    max-height: 180px;
   }
 
   .kiosk-carousel-card__header {
-    gap: 8px;
-    padding: 12px 14px 10px 16px;
+    gap: 6px;
+    padding: 10px 12px 8px 14px;
   }
 
   .kiosk-carousel-card__rank,
   .kiosk-carousel-card__time {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .kiosk-carousel-card__reg {
-    font-size: 15px;
+    font-size: 13px;
+    gap: 10px;
   }
 }

@@ -564,6 +564,7 @@ const getViewportSnapshot = () => {
 const KIOSK_CAROUSEL_SIDE_BREAKPOINT = 1660;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT = 340;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL = 300;
+const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT = 250;
 const DEFAULT_KIOSK_MIN_WIDTH = 1300;
 const PORTRAIT_KIOSK_MIN_WIDTH = 510;
 
@@ -1072,9 +1073,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
         window.innerWidth <= KIOSK_CAROUSEL_SIDE_BREAKPOINT;
 
       const reservedCarouselHeight = isBottomCarousel
-        ? window.innerWidth <= TWO_COL_BREAKPOINT
-          ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL
-          : KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT
+        ? isCompactPortrait
+          ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT
+          : window.innerWidth <= TWO_COL_BREAKPOINT
+            ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL
+            : KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT
         : 0;
 
       const availableHeight = Math.max(
@@ -1839,7 +1842,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
   if (isKioskMode && canRenderKioskLeaderboard) {
     const list = dedupedDisplayVehicles;
-    
     const isCompactPortrait =
       viewportInfo.width >= 510 &&
       viewportInfo.width <= 769 &&
@@ -1867,15 +1869,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
         >
           <div className="kiosk-leaderboard-left">
             <span className="kiosk-leaderboard-pos">{position}</span>
+
             <span className="kiosk-leaderboard-reg">
               {isTrailer ? displayId : formatRegistration(displayId)}
             </span>
+
             <span className="kiosk-leaderboard-loc" title={fullLocation}>
               {truncatedLocation}
             </span>
           </div>
-
-          <div className="kiosk-leaderboard-right" />
 
           <div className="kiosk-leaderboard-time">
             {formatTimeInState(vehicle.statusSinceMs!)}

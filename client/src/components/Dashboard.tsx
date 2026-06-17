@@ -303,13 +303,32 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     window.innerWidth > 510
   );
 
+  const [isCompactPortraitKioskViewport, setIsCompactPortraitKioskViewport] = useState(() => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    return width >= 510 && width <= 769 && height > width;
+  });
+
   useEffect(() => {
     const onResize = () => {
-      setIsWideEnoughForKiosk(window.innerWidth > 510);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      setIsWideEnoughForKiosk(width > 510);
+      setIsCompactPortraitKioskViewport(
+        width >= 510 && width <= 769 && height > width
+      );
     };
 
+    onResize();
+
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -559,7 +578,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
                 {isKioskMode ? "Stopped Vehicles Leaderboard" : title.prefix}
               </span>
               <span className="dashboard-title-suffix">
-                {isKioskMode
+                {isKioskMode && !isCompactPortraitKioskViewport
                   ? " - stopped vehicles outside of a depot/maintenance site"
                   : (title.suffix ?? "")}
               </span>
