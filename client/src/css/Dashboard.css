@@ -566,6 +566,7 @@
     margin-left: auto;
     flex-wrap: nowrap;
     align-items: flex-start;
+    margin-right: 20px;
   }
 
   .kiosk-toggle-wrapper {

@@ -581,6 +581,9 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
                 {isKioskMode && !isCompactPortraitKioskViewport
                   ? " - stopped vehicles outside of a depot/maintenance site"
                   : ""}
+                {!isKioskMode
+                  ? title.suffix 
+                  : ""}
               </span>
               {(
                 filterOption === "Services" ||
