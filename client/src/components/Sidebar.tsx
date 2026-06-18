@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { adjustedMs, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import { adjustedMs, useVehiclesWithStatusSince, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
@@ -48,11 +48,6 @@ interface Vehicle {
 
 type VehicleWithSince = Vehicle & {
   statusSinceMs?: number;
-};
-
-type StatusSince = {
-  eventType: string;
-  sinceMs: number;
 };
 
 type CriticalArrivalItem = {
@@ -255,7 +250,6 @@ const Sidebar: React.FC<{
   const showDepotSubTabs = filterOption === "Depots";
   const queryClient = useQueryClient();
   const tooltipAnchorRef = React.useRef<HTMLButtonElement | null>(null);
-  const statusSinceRef = React.useRef<Map<string, StatusSince>>(new Map());
   const [arrivalTooltipPos, setArrivalTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const SIDEBAR_COLLAPSED_KEY = "buffalink:sidebarCollapsed";
   const SIDEBAR_WIDTH_EXPANDED = 260;
@@ -409,7 +403,14 @@ const Sidebar: React.FC<{
         ? data.vehicles
         : [];
 
-      // Protect sidebar counts against empty/incomplete payloads
+      const isPartial = response.headers?.["x-partial-data"] === "1";
+      if (isPartial) {
+        const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
+        if (previous?.length) {
+          return previous;
+        }
+      }
+
       if (arr.length === 0) {
         const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
         if (previous?.length) {
@@ -591,40 +592,7 @@ const Sidebar: React.FC<{
   const renderSidebarValue = (value: number) =>
     shouldShowInitialLoader  ? <InlineLoader size={14} color="#ffffff" /> : value;
 
-  const vehiclesWithSince = useMemo<VehicleWithSince[]>(() => {
-    const now = Date.now();
-    const currentKeys = new Set<string>();
-
-    const enriched = vehicles.map((v) => {
-      const key = (v.assetName ?? v.assetRegistration ?? "").trim();
-      currentKeys.add(key);
-
-      const currentType = (v.eventType ?? "unknown").toLowerCase();
-      const incomingMs = v.date ? adjustedMs(v.date) : NaN;
-      const incomingSafeMs = Number.isNaN(incomingMs) ? now : incomingMs;
-
-      const prev = statusSinceRef.current.get(key);
-      const sinceMs =
-        !prev || prev.eventType !== currentType
-          ? incomingSafeMs
-          : prev.sinceMs;
-
-      statusSinceRef.current.set(key, {
-        eventType: currentType,
-        sinceMs,
-      });
-
-      return { ...v, statusSinceMs: sinceMs };
-    });
-
-    Array.from(statusSinceRef.current.keys()).forEach((k) => {
-      if (!currentKeys.has(k)) {
-        statusSinceRef.current.delete(k);
-      }
-    });
-
-    return enriched;
-  }, [vehicles]);
+  const vehiclesWithSince = useVehiclesWithStatusSince<VehicleWithSince>(vehicles);
 
   // Calculate counts for badges
   const counts = useMemo(() => {

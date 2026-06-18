@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { filterVehicles, adjustedMs, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
+import { filterVehicles, adjustedMs, useVehiclesWithStatusSince, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
 import { ALL_DEPOT_LABELS, matchesDepot, getMatchedDepotLabel } from "../utils/depotMatching";
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1323,6 +1323,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
     staleTime: 60000, // Data is fresh for 1 minute
   });
 
+  const vehiclesWithSince = useVehiclesWithStatusSince<VehicleWithSince>(vehicles);
+
   useEffect(() => {
     if (!isLoading) return;
 
@@ -1365,17 +1367,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const { categoryVehicles, displayVehicles, highlightFigures } = useMemo<VehiclesMemoResult>(() => {
     void locationTick;
     const now = Date.now();
-
-    const vehiclesWithSince: VehicleWithSince[] = vehicles.map((v) => {
-      const sinceMs =
-        typeof (v as any).statusSinceMs === "number"
-          ? (v as any).statusSinceMs
-          : v.date
-          ? adjustedMs(v.date)
-          : undefined;
-
-      return { ...v, statusSinceMs: sinceMs };
-    });
 
     if (isKioskMode) {
       let leaderboard = vehiclesWithSince.filter((v) => isEligibleKioskVehicle(v, now));
@@ -1521,7 +1512,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
     return { categoryVehicles, displayVehicles: sorted, highlightFigures };
   }, [
-    vehicles,
+    vehiclesWithSince,
     filterOption,
     selectedDepots,
     isVorFilterActive,

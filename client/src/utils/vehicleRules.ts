@@ -1,3 +1,5 @@
+import { useMemo, useRef } from "react";
+
 export interface VehicleLike {
     statusSinceMs?: number;
     assetName?: string;
@@ -25,6 +27,19 @@ export interface VehicleLike {
     LiveDefects?: boolean;
     isNightOut?: boolean;
 }
+
+type VehicleWithStatusFields = {
+    assetName?: string;
+    assetRegistration?: string;
+    eventType?: string;
+    date?: string;
+    statusSinceMs?: number;
+};
+
+type StatusSince = {
+    eventType: string;
+    sinceMs: number;
+};
 
 const isTipper = (v: VehicleLike): boolean =>
     v.assetGroupName === "TFP Tipper Operation" ||
@@ -98,6 +113,65 @@ export const isEligibleStoppedHgv = (
         !isTipper(v)
     );
 };
+
+/* Global status since use */
+export type WithPersistedStatusSince<T> = T & {
+    statusSinceMs?: number;
+};
+
+const getVehicleStatusKey = (v: VehicleWithStatusFields): string =>
+    (v.assetName ?? v.assetRegistration ?? "").trim();
+
+export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
+    vehicles: T[]
+): WithPersistedStatusSince<T>[] {
+    const statusSinceRef = useRef<Map<string, StatusSince>>(new Map());
+
+    return useMemo(() => {
+        const now = Date.now();
+        const currentKeys = new Set<string>();
+
+        const enriched = vehicles.map((v) => {
+            const key = getVehicleStatusKey(v);
+            currentKeys.add(key);
+
+            const currentType = (v.eventType ?? "unknown").toLowerCase();
+            const incomingMs =
+                typeof v.statusSinceMs === "number"
+                ? v.statusSinceMs
+                : v.date
+                ? adjustedMs(v.date)
+                : NaN;
+
+            const incomingSafeMs = Number.isFinite(incomingMs) ? incomingMs : now;
+            const prev = statusSinceRef.current.get(key);
+
+            const sinceMs =
+                !prev || prev.eventType !== currentType
+                ? incomingSafeMs
+                : prev.sinceMs;
+
+            statusSinceRef.current.set(key, {
+                eventType: currentType,
+                sinceMs,
+            });
+
+            return {
+                ...v,
+                statusSinceMs: sinceMs,
+            };
+        });
+
+        // Clean up vehicles no longer in the feed
+        Array.from(statusSinceRef.current.keys()).forEach((k) => {
+            if (!currentKeys.has(k)) {
+                statusSinceRef.current.delete(k);
+            }
+        });
+
+        return enriched;
+    }, [vehicles]);
+}
 
 export const isEligibleServicesHgv = (
     v: VehicleLike,
