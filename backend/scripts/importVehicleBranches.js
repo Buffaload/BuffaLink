@@ -6,29 +6,6 @@ import VehicleMetadata from "../models/VehicleMetadata.js";
 
 dotenv.config();
 
-const normalizeId = (value) => {
-    if (!value) return "";
-    return String(value)
-        .toUpperCase()
-        .replace(/\s+/g, "")
-        .replace(/[^A-Z0-9]/g, "");
-};
-
-const isValidVehicleId = (value) => {
-    if (!value) return false;
-
-    const cleaned = String(value)
-        .toUpperCase()
-        .replace(/\s+/g, "")
-        .replace(/[^A-Z0-9]/g, "");
-
-    // Only allow real vehicle-like IDs (7–8 chars max)
-    return cleaned.length > 0 && cleaned.length <= 8;
-};
-
-const DEBUG_ALL = false;      // true = print every processed row
-const DEBUG_LIMIT = 100;      // limit console spam when DEBUG_ALL = true
-
 const inputFile = process.argv[2];
 
 if (!inputFile) {
@@ -44,37 +21,30 @@ if (!process.env.MONGO_URI) {
 const csv = fs.readFileSync(inputFile, "utf8").replace(/^\uFEFF/, "");
 
 const records = parse(csv, {
-    columns: (headers) => 
-        headers.map((h) => h.replace(/^\uFEFF/, "").trim()),
-    skip_empty_lines: true
+    columns: (headers) => headers.map((h) => h.replace(/^\uFEFF/, "").trim()),
+    skip_empty_lines: true,
 });
 
-const describeMongoUri = (uri) => {
-    try {
-        const u = new URL(uri);
-        return {
-            host: u.hostname,
-            dbFromUri: u.pathname.replace("/", "") || "(none)",
-        };
-    } catch {
-        return { host: "invalid", dbFromUri: "invalid" };
-    }
-};
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 await mongoose.connect(process.env.MONGO_URI);
 console.log("Connected to MongoDB");
-
 console.log("CONNECTED DB:", mongoose.connection.name);
 console.log("CONNECTED HOST:", mongoose.connection.host);
 
-let debugPrinted = 0;
-
-// Optional: dedupe CSV rows first so the last non-null branch wins
-const csvByNormalizedKey = new Map();
+const failed = [];
+let processedRows = 0;
+let skippedRows = 0;
+let upsertedRows = 0;
 
 for (const row of records) {
     const rawVehicleId = row.VehicleID;
     const rawBranchId = row.BranchID;
+
+    const vehicleId =
+        rawVehicleId !== undefined && rawVehicleId !== null
+            ? String(rawVehicleId).trim()
+            : "";
 
     const cleanedBranchId =
         rawBranchId !== undefined && rawBranchId !== null
@@ -82,91 +52,57 @@ for (const row of records) {
             : "";
 
     const parsedBranchId =
-        cleanedBranchId !== "" && !isNaN(cleanedBranchId)
+        cleanedBranchId !== "" && !Number.isNaN(Number(cleanedBranchId))
             ? Number(cleanedBranchId)
             : null;
 
-    if (!isValidVehicleId(rawVehicleId) || parsedBranchId === null) {
+    // Only skip rows with empty VehicleID or invalid BranchID
+    if (!vehicleId || parsedBranchId === null) {
+        skippedRows++;
         continue;
-    }
-
-    const normalizedVehicleId = normalizeId(rawVehicleId);
-
-    csvByNormalizedKey.set(normalizedVehicleId, {
-        rawVehicleId,
-        normalizedVehicleId,
-        branchId: parsedBranchId,
-    });
-}
-
-const failed = [];
-
-for (const [vehicleId, csvEntry] of csvByNormalizedKey.entries()) {
-    const existingDoc = await VehicleMetadata.findOne({
-        $expr: {
-            $eq: [
-                {
-                    $replaceAll: {
-                        input: { $toUpper: "$assetName" },
-                        find: " ",
-                        replacement: ""
-                    }
-                },
-                vehicleId
-            ]
-        }
-    }).lean();
-
-    if (vehicleId === "EX24VOF" || vehicleId === "EX24VOY") {
-        console.log("INSERT DEBUG:", {
-            vehicleId,
-            branchId: csvEntry.branchId
-        });
     }
 
     try {
         await VehicleMetadata.updateOne(
-            { assetName: vehicleId }, // match directly
+            { assetName: vehicleId },
             {
                 $set: {
-                    branchId: csvEntry.branchId,
-                    assetName: vehicleId
+                    assetName: vehicleId,
+                    branchId: parsedBranchId,
                 },
                 $setOnInsert: {
                     isNightOut: false,
-                    lastEventType: null
-                }
+                    lastEventType: null,
+                },
             },
             { upsert: true }
         );
+
+        upsertedRows++;
     } catch (err) {
-        failed.push({ vehicleId, error: err.message });
+        failed.push({
+            vehicleId,
+            branchId: parsedBranchId,
+            error: err.message,
+        });
         console.error("UPSERT FAILED:", vehicleId, err.message);
     }
 
-    const missingVehicles = [];
+    processedRows++;
 
-    for (const [vehicleId] of csvByNormalizedKey.entries()) {
-        const exists = await VehicleMetadata.exists({ assetName: vehicleId });
-        if (!exists) {
-            missingVehicles.push(vehicleId);
-        }
+    // Keep console output light to avoid slowing the import down
+    if (processedRows % 250 === 0) {
+        console.log(`Progress: ${processedRows}/${records.length}`);
+        await sleep(10);
     }
-
-    console.log("MISSING AFTER IMPORT:", missingVehicles.length);
 }
 
-// Final validation snapshot
-const finalDocs = await VehicleMetadata.find({
-    branchId: { $ne: null },
-})
-    .select("assetName branchId isNightOut lastEventType")
-    .limit(20)
-    .lean();
-
+console.log("IMPORT COMPLETE");
 console.log("Total parsed rows:", records.length);
-console.log("Valid vehicles:", csvByNormalizedKey.size);
-console.log("FAILED COUNT:", failed.length);
+console.log("Processed rows:", processedRows);
+console.log("Skipped rows:", skippedRows);
+console.log("Successful upserts:", upsertedRows);
+console.log("Failed count:", failed.length);
 
 if (failed.length > 0) {
     console.log("FAILED SAMPLE:", failed.slice(0, 10));
