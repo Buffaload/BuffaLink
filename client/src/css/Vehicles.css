@@ -2039,7 +2039,14 @@
 
 /* Kiosk Leaderboard */
 .kiosk-title-stats {
+  flex: 0 1 auto;
   margin-left: 12px;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: visible;
+  white-space: nowrap;
 }
 
 .kiosk-title-stats .figure-pill {

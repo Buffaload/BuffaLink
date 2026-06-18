@@ -7,6 +7,7 @@ import {
   Building2,
   Bug,
   TriangleAlert,
+  CircleCheckBig,
   ChevronUp,
   Image,
   Moon,
@@ -1962,7 +1963,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
           </div>
         ) : list.length === 0 ? (
           <div className="vehicle-empty-state">
-            <TriangleAlert className="vehicle-empty-icon" aria-hidden />
+            <CircleCheckBig className="vehicle-empty-icon" aria-hidden />
             <p className="vehicle-empty-text">
               No stopped vehicles outside depots/maintenance sites
             </p>
@@ -2156,7 +2157,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 />
               </div>
 
-              <div className="highlight-figures" aria-label="Vehicle highlights">
+              <div className="highlight-figures highlight-figures--dashboard" aria-label="Vehicle highlights">
                 <span className="figure-pill figure-pill--grey">
                   <span className="figure-dot figure-dot--grey" aria-hidden="true" />
                   {highlightFigures.total}{" "}

@@ -31,6 +31,7 @@
 
 .dashboard-header {
   position: fixed;
+  margin-top: -125px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -43,8 +44,8 @@
   z-index: 2;
 }
 
-.dashboard-header {
-  margin-top: -125px;
+.dashboard-header > * {
+  min-width: 0;
 }
 
 .dashboard-header h2 {
@@ -581,7 +582,7 @@
     margin-right: 5px;
   }
 
-  .dashboard-header:not(.header-on) .highlight-figures {
+  .highlight-figures--dashboard {
     margin-top: 16px;
   }
 
@@ -591,12 +592,6 @@
 
   .dashboard-container.kiosk-mode .kiosk-toggle-wrapper {
     margin-top: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .dashboard-title .highlight-figures {
-    display: none !important;
   }
 }
 
