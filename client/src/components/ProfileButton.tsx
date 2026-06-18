@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import "../css/ProfileButton.css";
+
 interface ProfileButtonProps {
   username: string;
   handleLogout: () => void;
+  isCollapsed: boolean;
 }
 
 const getNumber = (key: string, fallback: number) =>
@@ -97,6 +99,10 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
   const portalTitle = isAdmin ? "Admin portal" : "Portal";
   // Get the first letter of the username
   const displayName = normalizeDisplayName(username);
+  const truncatedName =
+    isCollapsed && displayName.length > 5
+      ? `${displayName.slice(0, 3)}...`
+      : displayName;
   const queryClient = useQueryClient();
   const portalRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -431,7 +437,7 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({
         onClick={() => setOpen((v) => !v)}
       >
         <ShieldUser size={16} className="logout-icon" />
-        <span>{displayName}</span>
+        <span>{truncatedName}</span>
       </button>
 
       {open && createPortal(

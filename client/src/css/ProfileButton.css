@@ -12,6 +12,15 @@
   box-sizing: border-box;
 }
 
+.sidebar.is-collapsed .profile-button.container {
+  justify-content: center;
+}
+
+.sidebar.is-collapsed .profile-button {
+  margin-left: 0;
+  justify-content: center;
+}
+
 /* Profile button */
 .profile-button {
   width: 40px;
