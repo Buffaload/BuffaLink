@@ -564,7 +564,7 @@ const getViewportSnapshot = () => {
 const KIOSK_CAROUSEL_SIDE_BREAKPOINT = 1660;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT = 340;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL = 300;
-const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT = 250;
+const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT = 280;
 const DEFAULT_KIOSK_MIN_WIDTH = 1300;
 const PORTRAIT_KIOSK_MIN_WIDTH = 510;
 
@@ -977,6 +977,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   const [viewportInfo, setViewportInfo] = useState(() => getViewportSnapshot());
   const carouselViewportRef = useRef<HTMLDivElement | null>(null);
   const carouselGroupRef = useRef<HTMLDivElement | null>(null);
+  const kioskCarouselPanelRef = useRef<HTMLDivElement | null>(null);
   const [shouldAnimateCarousel, setShouldAnimateCarousel] = useState(false);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
   const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -1074,12 +1075,19 @@ const Vehicles: React.FC<VehiclesProps> = ({
       const isBottomCarousel =
         window.innerWidth <= KIOSK_CAROUSEL_SIDE_BREAKPOINT;
 
+      const measuredCarouselHeight =
+        isBottomCarousel && kioskCarouselPanelRef.current
+          ? Math.ceil(kioskCarouselPanelRef.current.getBoundingClientRect().height)
+          : 0;
+
       const reservedCarouselHeight = isBottomCarousel
-        ? isCompactPortrait
-          ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT
-          : window.innerWidth <= TWO_COL_BREAKPOINT
-            ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL
-            : KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT
+        ? measuredCarouselHeight || (
+            isCompactPortrait
+              ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT
+              : window.innerWidth <= TWO_COL_BREAKPOINT
+                ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL
+                : KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT
+          )
         : 0;
 
       const availableHeight = Math.max(
@@ -1981,6 +1989,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
             {topCarouselVehicles.length > 0 && (
               <aside
+                ref={kioskCarouselPanelRef}
                 className={`kiosk-carousel-panel ${
                   useSideKioskCarousel
                     ? "kiosk-carousel-panel--side"
