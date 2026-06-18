@@ -99,6 +99,8 @@ for (const row of records) {
     });
 }
 
+const failed = [];
+
 for (const [vehicleId, csvEntry] of csvByNormalizedKey.entries()) {
     const existingDoc = await VehicleMetadata.findOne({
         $expr: {
@@ -122,28 +124,36 @@ for (const [vehicleId, csvEntry] of csvByNormalizedKey.entries()) {
         });
     }
 
-    if (existingDoc) {
+    try {
         await VehicleMetadata.updateOne(
-            { _id: existingDoc._id },
+            { assetName: vehicleId }, // match directly
             {
                 $set: {
-                    assetName: vehicleId,
-                    branchId: csvEntry.branchId
+                    branchId: csvEntry.branchId,
+                    assetName: vehicleId
+                },
+                $setOnInsert: {
+                    isNightOut: false,
+                    lastEventType: null
                 }
-            }
+            },
+            { upsert: true }
         );
-    } else {
-        try {
-            await VehicleMetadata.create({
-                assetName: vehicleId,
-                branchId: csvEntry.branchId,
-                isNightOut: false,
-                lastEventType: null
-            });
-        } catch (err) {
-            console.error("CREATE FAILED:", vehicleId, err.message);
+    } catch (err) {
+        failed.push({ vehicleId, error: err.message });
+        console.error("UPSERT FAILED:", vehicleId, err.message);
+    }
+
+    const missingVehicles = [];
+
+    for (const [vehicleId] of csvByNormalizedKey.entries()) {
+        const exists = await VehicleMetadata.exists({ assetName: vehicleId });
+        if (!exists) {
+            missingVehicles.push(vehicleId);
         }
     }
+
+    console.log("MISSING AFTER IMPORT:", missingVehicles.length);
 }
 
 // Final validation snapshot
@@ -156,6 +166,11 @@ const finalDocs = await VehicleMetadata.find({
 
 console.log("Total parsed rows:", records.length);
 console.log("Valid vehicles:", csvByNormalizedKey.size);
+console.log("FAILED COUNT:", failed.length);
+
+if (failed.length > 0) {
+    console.log("FAILED SAMPLE:", failed.slice(0, 10));
+}
 
 await mongoose.disconnect();
 console.log("Disconnected from MongoDB");
