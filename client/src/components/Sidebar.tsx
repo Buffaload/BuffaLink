@@ -995,6 +995,7 @@ const Sidebar: React.FC<{
           <ProfileButton
             username={localStorage.getItem("username") || ""}
             handleLogout={handleLogout}
+            isCollapsed={isCollapsed}
           />
         </div>
       </div>

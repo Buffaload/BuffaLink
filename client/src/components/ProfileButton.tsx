@@ -94,6 +94,7 @@ const LOCATION_DEPOTS_EVENT = "buffalink:locationDepotsChanged";
 const ProfileButton: React.FC<ProfileButtonProps> = ({
   username,
   handleLogout,
+  isCollapsed,
 }) => {
   const isAdmin = isUserAdmin();
   const portalTitle = isAdmin ? "Admin portal" : "Portal";
