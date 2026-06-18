@@ -2718,8 +2718,8 @@
   .kiosk-leaderboard-row {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
+    gap: 10px;
+    padding: 10px 12px;
     border-radius: 12px;
   }
 
@@ -2739,14 +2739,14 @@
 
   .kiosk-leaderboard-reg {
     flex: 0 0 auto;
-    font-size: 12px;
+    font-size: 16px;
     white-space: nowrap;
   }
 
   .kiosk-leaderboard-loc {
     min-width: 0;
     flex: 1 1 auto;
-    font-size: 10px;
+    font-size: 12.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2754,7 +2754,7 @@
 
   .kiosk-leaderboard-time {
     flex: 0 0 auto;
-    font-size: 10.5px;
+    font-size: 12px;
     white-space: nowrap;
     text-align: right;
     line-height: 1;

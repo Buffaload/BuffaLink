@@ -1052,7 +1052,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         window.innerWidth <= 769 &&
         window.innerHeight > window.innerWidth;
 
-      let rowStep = isCompactPortrait ? 42 : 52;
+      let rowStep = isCompactPortrait ? 48 : 52;
 
       if (rows.length >= 2) {
         const r1 = rows[0].getBoundingClientRect();
