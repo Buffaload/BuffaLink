@@ -55,6 +55,7 @@
 
 .dashboard-title {
   margin-left: 30px;
+  overflow: hidden;
 }
 
 .dashboard-header,
@@ -141,8 +142,8 @@
   margin-top: 15px;
   display: flex;
   flex-wrap: nowrap;
-  overflow-x: auto;
   white-space: nowrap;
+  overflow: visible;
   gap: 10px;
 }
 
