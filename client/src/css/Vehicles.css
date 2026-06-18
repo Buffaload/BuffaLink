@@ -2623,14 +2623,6 @@
   }
 
   /* Highlight pills */
-  .highlight-figures {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 16px;
-    margin-right: 20px;
-  }
-
   .figure-pill {
     font-size: 11px;
     padding: 5px 10px;
