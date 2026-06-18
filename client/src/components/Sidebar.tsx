@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { adjustedMs, useVehiclesWithStatusSince, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import { useVehiclesWithStatusSince, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
