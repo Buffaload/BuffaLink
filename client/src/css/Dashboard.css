@@ -139,8 +139,14 @@
 .kiosk-title-stats {
   margin-top: 15px;
   display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  white-space: nowrap;
   gap: 10px;
-  flex-wrap: wrap;
+}
+
+.kiosk-title-stats > * {
+  flex: 0 0 auto;
 }
 
 .dashboard-header-right {
@@ -509,7 +515,7 @@
   flex-direction: column;
 }
 
-@media screen and (max-width: 1020px) {
+@media screen and (max-width: 1047px) {
   .dashboard-header {
     padding-top: 15px;
   }
@@ -580,11 +586,17 @@
   }
 
   .dashboard-title .highlight-figures {
-    margin-top: 18px;
+    margin-top: 26px;
   }
 
   .dashboard-container.kiosk-mode .kiosk-toggle-wrapper {
     margin-top: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-title .highlight-figures {
+    display: none !important;
   }
 }
 
