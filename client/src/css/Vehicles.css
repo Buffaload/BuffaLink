@@ -2767,25 +2767,25 @@
   }
 
   .kiosk-carousel-panel--bottom {
-    height: 230px;
-    min-height: 230px;
+    height: 220px;
+    min-height: 220px;
   }
 
   .kiosk-carousel-panel__header {
-    padding: 10px 12px;
+    padding: 9px 12px;
     font-size: 10px;
   }
 
   .kiosk-carousel-viewport--horizontal {
-    padding: 10px;
+    padding: 8px 10px 10px;
   }
 
   .kiosk-carousel-panel--bottom .kiosk-carousel-card {
-    width: 230px;
-    min-width: 230px;
-    flex: 0 0 230px;
-    height: 180px;
-    max-height: 180px;
+    width: 220px;
+    min-width: 220px;
+    flex: 0 0 220px;
+    height: 165px;
+    max-height: 165px;
   }
 
   .kiosk-carousel-card__header {

@@ -1071,9 +1071,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
 
       const isCompactPortrait =
-        window.innerWidth >= 510 &&
-        window.innerWidth <= 769 &&
-        window.innerHeight > window.innerWidth;
+        viewportInfo.width >= 510 &&
+        viewportInfo.width <= 769 &&
+        viewportInfo.isPortrait;
 
       let rowStep = isCompactPortrait ? 48 : 52;
 
@@ -1091,11 +1091,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
 
       if (isCompactPortrait) {
-        rowStep = Math.min(rowStep, 42);
+        rowStep = Math.min(rowStep, 48);
       }
 
+      const viewportHeight = Math.round(
+        window.visualViewport?.height ??
+          window.innerHeight ??
+          document.documentElement.clientHeight
+      );
+
       const isBottomCarousel =
-        window.innerWidth <= KIOSK_CAROUSEL_SIDE_BREAKPOINT;
+        viewportInfo.width <= KIOSK_CAROUSEL_SIDE_BREAKPOINT;
 
       const measuredCarouselHeight =
         isBottomCarousel && kioskCarouselPanelRef.current
@@ -1105,8 +1111,8 @@ const Vehicles: React.FC<VehiclesProps> = ({
       const reservedCarouselHeight = isBottomCarousel
         ? measuredCarouselHeight || (
             isCompactPortrait
-              ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_COMPACT
-              : window.innerWidth <= TWO_COL_BREAKPOINT
+              ? 240
+              : viewportInfo.width <= TWO_COL_BREAKPOINT
                 ? KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL
                 : KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT
           )
@@ -1114,11 +1120,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
       const availableHeight = Math.max(
         120,
-        window.innerHeight - rect.top - BOTTOM_BUFFER - reservedCarouselHeight
+        viewportHeight - rect.top - BOTTOM_BUFFER - reservedCarouselHeight
       );
 
       const rowsPerColumn = Math.max(1, Math.floor(availableHeight / rowStep));
-      const isTwoCol = window.innerWidth > TWO_COL_BREAKPOINT;
+      const isTwoCol = viewportInfo.width > TWO_COL_BREAKPOINT;
       const columns = isTwoCol ? 2 : 1;
 
       setMaxRows(rowsPerColumn * columns);
@@ -1132,7 +1138,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       window.removeEventListener("resize", recalc);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [isKioskMode, viewportInfo.width]);
+  }, [isKioskMode, viewportInfo.width, viewportInfo.height, viewportInfo.isPortrait]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
