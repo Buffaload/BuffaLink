@@ -906,7 +906,6 @@ const sourceCache = {
 };
 
 const isUsableStale = (ts) => Date.now() - ts <= SOURCE_CACHE_MAX_STALE_MS;
-const hasCachedData = (entry) => Array.isArray(entry?.data) && entry.data.length > 0;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function withRetry(fn, { attempts = 1, baseDelayMs = 250 } = {}) {
@@ -942,13 +941,6 @@ const cacheIfNonEmpty = (key, arr) => {
 };
 
 const isFresh = (ts) => Date.now() - ts <= SOURCE_CACHE_TTL_MS;
-
-if (!isComplete && hasCachedData(sourceCache.combined) && isUsableStale(sourceCache.combined.ts)) {
-  res.set("X-Partial-Data", "1");
-  res.set("X-Served-From", "combined-cache");
-  res.set("X-Data-Stale", String(!isFresh(sourceCache.combined.ts)));
-  return res.json(sourceCache.combined.data);
-}
 
 const filterBlueCrystalRows = (rows) => {
   return (Array.isArray(rows) ? rows : []).filter(
