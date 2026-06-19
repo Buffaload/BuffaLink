@@ -1029,12 +1029,9 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
-  // console.log("BACKEND MONGOOSE DB NAME", mongoose.connection?.name);
-  // console.log("BACKEND VEHICLEMETADATA COLLECTION", VehicleMetadata.collection?.name);
-  console.log("API DB:", mongoose.connection?.name);
-  console.log("API HOST:", mongoose.connection?.host);
-  console.log("API COLLECTION:", VehicleMetadata.collection?.name);
-  
+  console.log("MODEL DB:", VehicleMetadata.db?.name);
+  console.log("MODEL NATIVE DB:", VehicleMetadata.db?.db?.databaseName);
+  console.log("MODEL COLLECTION:", VehicleMetadata.collection?.name);
   console.log("Authenticated request from user:", req.user);
 
   let blueCrystalIntegrity = {
