@@ -1936,7 +1936,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     const dedupedVehicles = Array.from(dedupedMap.values());
-    
+
     const michelinComplete =
       !REQUIRE_MICHELIN_COMPLETE || michelinIntegrity.ok;
     const blueCrystalComplete =
@@ -1959,6 +1959,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           },
           requireMichelinComplete: REQUIRE_MICHELIN_COMPLETE,
           requireBlueCrystalComplete: REQUIRE_BLUECRYSTAL_COMPLETE,
+          michelinIntegrity,
           blueCrystalIntegrity,
           overallComplete: isComplete,
         })
@@ -1987,20 +1988,28 @@ router.get("/", auth, diagnostics, async (req, res) => {
           { upsert: true }
         );
       } catch (err) {
-        console.warn("[Mongo Snapshot] Failed to persist combined snapshot", err.message);
+        console.warn(
+          "[Mongo Snapshot] Failed to persist combined snapshot",
+          err.message
+        );
       }
+
+      return res.json(dedupedVehicles);
     }
 
     // If the current response is incomplete, prefer the last known complete combined cache
     if (!isComplete) {
-      // First: try in-memory cache
-      if (sourceCache.combined?.data?.length && isUsableStale(sourceCache.combined.ts)) {
+      // Try in-memory cache first
+      if (
+        sourceCache.combined?.data?.length &&
+        isUsableStale(sourceCache.combined.ts)
+      ) {
         res.set("X-Partial-Data", "1");
         res.set("X-Served-From", "combined-cache");
         return res.json(sourceCache.combined.data);
       }
 
-      // Then: try Mongo snapshot
+      // Then try Mongo snapshot
       try {
         const mongoSnapshot = await SourceSnapshot.findOne({ key: "combined" });
 
@@ -2010,17 +2019,23 @@ router.get("/", auth, diagnostics, async (req, res) => {
           return res.json(mongoSnapshot.data);
         }
       } catch (err) {
-        console.warn("[Mongo Snapshot] Failed to read combined snapshot", err.message);
+        console.warn(
+          "[Mongo Snapshot] Failed to read combined snapshot",
+          err.message
+        );
       }
-    }
 
-    // If no combined cache exists, still return current data, but flag it as partial
-    if (!isComplete) {
+      // No fallback available — return current partial data, but flag it
       res.set("X-Partial-Data", "1");
-      res.set("X-Served-From", blueCrystalIntegrity.servedFrom);
+      res.set(
+        "X-Served-From",
+        michelinIntegrity.servedFrom || blueCrystalIntegrity.servedFrom || "partial-live"
+      );
+      return res.json(dedupedVehicles);
     }
 
-    res.json(dedupedVehicles);
+    // Final successful response
+    return res.json(dedupedVehicles);
   } catch (err) {
     if (forceDebug) {
       return res.status(500).json({
