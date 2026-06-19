@@ -1029,9 +1029,9 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
-  console.log("MODEL DB:", VehicleMetadata.db?.name);
-  console.log("MODEL NATIVE DB:", VehicleMetadata.db?.db?.databaseName);
-  console.log("MODEL COLLECTION:", VehicleMetadata.collection?.name);
+  // console.log("MODEL DB:", VehicleMetadata.db?.name);
+  // console.log("MODEL NATIVE DB:", VehicleMetadata.db?.db?.databaseName);
+  // console.log("MODEL COLLECTION:", VehicleMetadata.collection?.name);
   console.log("Authenticated request from user:", req.user);
 
   let blueCrystalIntegrity = {
@@ -1453,18 +1453,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           VehicleMetadata.find({}),
       ]);
 
-      if (blueCrystalResponse.status === "fulfilled") {
-        console.log(
-          "[BlueCrystal RAW response]",
-          blueCrystalResponse.value.data
-        );
-      } else {
-        console.warn(
-          "[BlueCrystal ERROR]",
-          blueCrystalResponse.reason
-        );
-      }
-
       const settledToDebug = (r) =>
         r.status === "fulfilled"
           ? { status: "fulfilled", http: r.value?.status, contentType: r.value?.headers?.["content-type"] }
@@ -1750,7 +1738,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     // Data normalization
     const nightOutMap = nightOutMetadata.reduce((acc, item) => {
-      acc[item.assetName.trim().toUpperCase()] = true; // if assetName exits, its a Night-Out
+      const key = normalizeId(item?.assetName);
+      if (!key) return acc;
+      acc[key] = {
+        isNightOut: Boolean(item?.isNightOut),
+        branchId: item?.branchId ?? null,
+      };
       return acc;
     }, {});
 
@@ -1808,9 +1801,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
           vehicle.eventType === "driving" &&
           nightOutMap[normalisedAssetName]
         ) {
-          // Remove Night-Out status in MongoDB
-          await VehicleMetadata.deleteOne({ assetName: normalisedAssetName });
-          nightOutMap[normalisedAssetName] = false; // Update in-memory map
+          await VehicleMetadata.updateOne(
+            { assetName: normalisedAssetName },
+            { $set: { isNightOut: false } }
+          );
+
+          nightOutMap[normalisedAssetName] = false;
         }
 
         const site = matchGeofenceSite(vehicle.latitude, vehicle.longitude);
