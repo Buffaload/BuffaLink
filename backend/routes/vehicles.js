@@ -1051,6 +1051,16 @@ router.get("/", auth, diagnostics, async (req, res) => {
     servedFrom: "none",
   };
 
+  let michelinIntegrity = {
+    ok: false,
+    reason: "initial",
+    currentCount: 0,
+    cachedCount: 0,
+    minimumExpected: MICHELIN_MIN_EXPECTED,
+    minimumRatio: MICHELIN_MIN_COMPLETE_RATIO,
+    servedFrom: "none",
+  };
+
   const forceDebug =
     req.user?.role === "admin" &&
     String(req.query.forceDebug ?? "") === "1";
@@ -1534,14 +1544,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       const volvoVehiclesOk = volvoVehiclesResponse.status === "fulfilled";
       const volvoPositionsOk = volvoPositionsResponse.status === "fulfilled";
 
-      let michelinIntegrity = {
-        ok: false,
-        reason: "initial",
-        currentCount: 0,
-        cachedCount: 0,
-        servedFrom: "none",
-      };
-
       if (vehicleResponse.status === "fulfilled") {
         const arr = normaliseToArray(vehicleResponse.value.data) ?? [];
         const assessed = isMichelinPayloadComplete(arr);
@@ -1934,11 +1936,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     const dedupedVehicles = Array.from(dedupedMap.values());
+    
     const michelinComplete =
       !REQUIRE_MICHELIN_COMPLETE || michelinIntegrity.ok;
-    const blueCrystalComplete =
-      !REQUIRE_BLUECRYSTAL_COMPLETE || blueCrystalIntegrity.ok;
-    const isComplete = michelinComplete && blueCrystalComplete;
     const blueCrystalComplete =
       !REQUIRE_BLUECRYSTAL_COMPLETE || blueCrystalIntegrity.ok;
     const isComplete = michelinComplete && blueCrystalComplete;
