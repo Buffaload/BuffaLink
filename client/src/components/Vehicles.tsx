@@ -876,13 +876,28 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
 
     const displayReg = vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
 
-    const marker = L.circleMarker([lat!, lon!], {
+    const coords: [number, number] = [lat!, lon!];
+
+    const marker = L.circleMarker(coords, {
       radius: 20,
       fillColor: "#6b7280",
       fillOpacity: 0.85,
       color: "#ffffff",
       weight: 2,
     }).addTo(map);
+
+    const recenter = () => {
+      if (!mapInstanceRef.current) return;
+
+      mapInstanceRef.current.invalidateSize({
+        pan: false,
+        animate: false,
+      });
+
+      mapInstanceRef.current.setView(coords, 13, {
+        animate: false,
+      });
+    };
 
     marker.bindTooltip(formatRegForMarkerLabel(displayReg), {
       permanent: true,
@@ -899,15 +914,8 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
     };
 
     // Run multiple times because carousel/sticky layout can settle over a few frames
-    const raf1 = requestAnimationFrame(() => {
-      invalidate();
-    });
-
-    const raf2 = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        invalidate();
-      });
-    });
+    const raf1 = requestAnimationFrame(recenter);
+    const raf2 = requestAnimationFrame(() => requestAnimationFrame(recenter));
 
     const timeout1 = window.setTimeout(invalidate, 120);
     const timeout2 = window.setTimeout(invalidate, 300);
@@ -922,7 +930,7 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
 
     if (typeof ResizeObserver !== "undefined") {
       resizeObserver = new ResizeObserver(() => {
-        invalidate();
+        recenter();
       });
       resizeObserver.observe(container);
     }
