@@ -36,11 +36,6 @@ type VehicleWithStatusFields = {
     statusSinceMs?: number;
 };
 
-type StatusSince = {
-    eventType: string;
-    sinceMs: number;
-};
-
 const isTipper = (v: VehicleLike): boolean =>
     v.assetGroupName === "TFP Tipper Operation" ||
     v.driverGroupName === "TFP Tipper Operation";
@@ -55,6 +50,8 @@ export const adjustedMs = (s?: string): number => {
     return new Date(s).getTime() + (naive ? BST_OFFSET_MS : 0);
 };
 
+// How long to tolerate a vehicle disappearing before resetting it
+const STATUS_EVICT_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const STOPPED_1_HOUR_MS = 60 * 60 * 1000;
 const STOPPED_15_MIN_MS = 15 * 60 * 1000;
 
@@ -133,9 +130,6 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
     };
 
     const statusSinceRef = useRef<Map<string, StatusSince>>(new Map());
-
-  // How long to tolerate a vehicle disappearing before resetting it
-  const STATUS_EVICT_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 
     return useMemo(() => {
         const now = Date.now();
