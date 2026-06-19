@@ -1797,16 +1797,18 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const isNightOut = meta?.isNightOut ?? false;
 
         // Check if the vehicle is "driving"
-        if (
-          vehicle.eventType === "driving" &&
-          nightOutMap[normalisedAssetName]
-        ) {
+        const nightOutEntry = nightOutMap[normalisedAssetName];
+
+        if (vehicle.eventType === "driving" && nightOutEntry?.isNightOut) {
           await VehicleMetadata.updateOne(
             { assetName: normalisedAssetName },
             { $set: { isNightOut: false } }
           );
 
-          nightOutMap[normalisedAssetName] = false;
+          nightOutMap[normalisedAssetName] = {
+            ...nightOutEntry,
+            isNightOut: false,
+          };
         }
 
         const site = matchGeofenceSite(vehicle.latitude, vehicle.longitude);
