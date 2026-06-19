@@ -35,6 +35,7 @@ await mongoose.connect(process.env.MONGO_URI);
 console.log("Connected to MongoDB");
 console.log("CONNECTED DB:", mongoose.connection.name);
 console.log("CONNECTED HOST:", mongoose.connection.host);
+console.log("COLLECTION NAME:", VehicleMetadata.collection.name);
 
 const failed = [];
 let processedRows = 0;
