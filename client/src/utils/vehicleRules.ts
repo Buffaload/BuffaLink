@@ -125,7 +125,17 @@ const getVehicleStatusKey = (v: VehicleWithStatusFields): string =>
 export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
     vehicles: T[]
 ): WithPersistedStatusSince<T>[] {
+
+    type StatusSince = {
+        eventType: string;
+        sinceMs: number;
+        lastSeenMs: number;
+    };
+
     const statusSinceRef = useRef<Map<string, StatusSince>>(new Map());
+
+  // How long to tolerate a vehicle disappearing before resetting it
+  const STATUS_EVICT_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 
     return useMemo(() => {
         const now = Date.now();
@@ -136,6 +146,7 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
             currentKeys.add(key);
 
             const currentType = (v.eventType ?? "unknown").toLowerCase();
+
             const incomingMs =
                 typeof v.statusSinceMs === "number"
                 ? v.statusSinceMs
@@ -143,17 +154,29 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
                 ? adjustedMs(v.date)
                 : NaN;
 
-            const incomingSafeMs = Number.isFinite(incomingMs) ? incomingMs : now;
+            const incomingSafeMs = Number.isFinite(incomingMs)
+                ? incomingMs
+                : now;
+
             const prev = statusSinceRef.current.get(key);
 
-            const sinceMs =
-                !prev || prev.eventType !== currentType
-                ? incomingSafeMs
-                : prev.sinceMs;
+            let sinceMs: number;
+
+            if (!prev) {
+                // First time seeing this vehicle
+                sinceMs = incomingSafeMs;
+            } else if (prev.eventType !== currentType) {
+                // Event type changed → reset timer
+                sinceMs = incomingSafeMs;
+            } else {
+                // Same state → preserve timer
+                sinceMs = prev.sinceMs;
+            }
 
             statusSinceRef.current.set(key, {
                 eventType: currentType,
                 sinceMs,
+                lastSeenMs: now,
             });
 
             return {
@@ -162,17 +185,19 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
             };
         });
 
-        // Clean up vehicles no longer in the feed
-        Array.from(statusSinceRef.current.keys()).forEach((k) => {
-            if (!currentKeys.has(k)) {
-                statusSinceRef.current.delete(k);
+        // Replace immediate deletion with delayed eviction
+        statusSinceRef.current.forEach((entry, key) => {
+            const isMissingNow = !currentKeys.has(key);
+            const isExpired = now - entry.lastSeenMs > STATUS_EVICT_AFTER_MS;
+
+            if (isMissingNow && isExpired) {
+                statusSinceRef.current.delete(key);
             }
         });
 
         return enriched;
     }, [vehicles]);
 }
-
 export const isEligibleServicesHgv = (
     v: VehicleLike,
     nowMs: number = Date.now()
@@ -200,6 +225,7 @@ export const isEligibleKioskVehicle = (
         !isAtDepot(v) &&
         !isAtMaintenance(v) &&
         !isTipper(v) &&
+        !v.isNightOut &&
         !v.IsVor &&
         !v.LiveDefects
     );

@@ -6,6 +6,7 @@ import https from "https";
 import auth from "../middleware/auth.js";
 import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
+import SourceSnapshot from "../models/SourceSnapshot.js";
 import { depotVisibilityRules } from "../config/visibilityRules.js";
 
 // Keep-alive agent for your main upstream APIs
@@ -663,6 +664,75 @@ const MAINTENANCE_DUE_FIELDS = [
   { key: "AncillaryTwoDueDate", label: "Ancillary 2" },
 ];
 
+const MICHELIN_MIN_EXPECTED = Number(process.env.MICHELIN_MIN_EXPECTED ?? 250);
+const MICHELIN_MIN_COMPLETE_RATIO = Number(process.env.MICHELIN_MIN_COMPLETE_RATIO ?? 0.92);
+const MICHELIN_MIN_KEY_OVERLAP_RATIO = Number(process.env.MICHELIN_MIN_KEY_OVERLAP_RATIO ?? 0.85);
+
+const getMichelinKey = (v) => {
+  const reg = normalizeId(v?.assetRegistration);
+  if (reg) return `REG:${reg}`;
+
+  const name = normalizeId(v?.assetName);
+  if (name) return `NAME:${name}`;
+
+  return null;
+};
+
+const isMichelinPayloadComplete = (rows) => {
+  const filtered = filterMichelinRows(rows);
+
+  const currentCount = filtered.length;
+  const cachedRows = Array.isArray(sourceCache.michelin.data)
+    ? sourceCache.michelin.data
+    : [];
+  const cachedCount = cachedRows.length;
+
+  const meetsFloor = currentCount >= MICHELIN_MIN_EXPECTED;
+
+  const meetsRatio =
+    cachedCount === 0
+      ? true
+      : currentCount >= Math.floor(cachedCount * MICHELIN_MIN_COMPLETE_RATIO);
+
+  let overlapRatio = 1;
+  if (cachedCount > 0) {
+    const prevKeys = new Set(cachedRows.map(getMichelinKey).filter(Boolean));
+    const currKeys = new Set(filtered.map(getMichelinKey).filter(Boolean));
+
+    let overlap = 0;
+    for (const key of currKeys) {
+      if (prevKeys.has(key)) overlap++;
+    }
+    overlapRatio = currKeys.size === 0 ? 0 : overlap / currKeys.size;
+  }
+
+  const meetsOverlap = overlapRatio >= MICHELIN_MIN_KEY_OVERLAP_RATIO;
+
+  const ok = currentCount > 0 && meetsFloor && meetsRatio && meetsOverlap;
+
+  let reason = "ok";
+  if (currentCount === 0) reason = "empty";
+  else if (!meetsFloor) reason = "below-min-expected";
+  else if (!meetsRatio) reason = "below-cached-ratio";
+  else if (!meetsOverlap) reason = "low-key-overlap";
+
+  return {
+    ok,
+    filtered,
+    reason,
+    currentCount,
+    cachedCount,
+    minimumExpected: MICHELIN_MIN_EXPECTED,
+    minimumRatio: MICHELIN_MIN_COMPLETE_RATIO,
+    overlapRatio,
+    minimumOverlapRatio: MICHELIN_MIN_KEY_OVERLAP_RATIO,
+  };
+};
+
+const filterMichelinRows = (rows) => {
+  return (Array.isArray(rows) ? rows : []).filter((v) => getMichelinKey(v));
+};
+
 function parseMs(dateString) {
   if (!dateString) return null;
   const ms = Date.parse(dateString);
@@ -815,6 +885,7 @@ async function fetchVolvoOnce({
 }
 
 const SOURCE_CACHE_TTL_MS = Number(process.env.SOURCE_CACHE_TTL_MS ?? 120000);
+const SOURCE_CACHE_MAX_STALE_MS = Number(process.env.SOURCE_CACHE_MAX_STALE_MS ?? 1800000);
 const MICHELIN_RETRY_ATTEMPTS = Number(process.env.MICHELIN_RETRY_ATTEMPTS ?? 1); // 1 retry => 2 total tries
 const BLUE_RETRY_ATTEMPTS = Number(process.env.BLUE_RETRY_ATTEMPTS ?? 0);
 const REQUIRE_MICHELIN_COMPLETE = String(process.env.REQUIRE_MICHELIN_COMPLETE ?? "1") === "1";
@@ -833,6 +904,9 @@ const sourceCache = {
   nightOut: { ts: 0, data: [] },
   combined: { ts: 0, data: [] },
 };
+
+const isUsableStale = (ts) => Date.now() - ts <= SOURCE_CACHE_MAX_STALE_MS;
+const hasCachedData = (entry) => Array.isArray(entry?.data) && entry.data.length > 0;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function withRetry(fn, { attempts = 1, baseDelayMs = 250 } = {}) {
@@ -868,6 +942,13 @@ const cacheIfNonEmpty = (key, arr) => {
 };
 
 const isFresh = (ts) => Date.now() - ts <= SOURCE_CACHE_TTL_MS;
+
+if (!isComplete && hasCachedData(sourceCache.combined) && isUsableStale(sourceCache.combined.ts)) {
+  res.set("X-Partial-Data", "1");
+  res.set("X-Served-From", "combined-cache");
+  res.set("X-Data-Stale", String(!isFresh(sourceCache.combined.ts)));
+  return res.json(sourceCache.combined.data);
+}
 
 const filterBlueCrystalRows = (rows) => {
   return (Array.isArray(rows) ? rows : []).filter(
@@ -1453,15 +1534,72 @@ router.get("/", auth, diagnostics, async (req, res) => {
       const volvoVehiclesOk = volvoVehiclesResponse.status === "fulfilled";
       const volvoPositionsOk = volvoPositionsResponse.status === "fulfilled";
 
+      let michelinIntegrity = {
+        ok: false,
+        reason: "initial",
+        currentCount: 0,
+        cachedCount: 0,
+        servedFrom: "none",
+      };
+
       if (vehicleResponse.status === "fulfilled") {
-        const arr = normaliseToArray(vehicleResponse.value.data);
-        existingVehicles = cacheIfNonEmpty("michelin", arr);
+        const arr = normaliseToArray(vehicleResponse.value.data) ?? [];
+        const assessed = isMichelinPayloadComplete(arr);
+
+        michelinIntegrity = {
+          ...assessed,
+          servedFrom: assessed.ok ? "fresh-michelin" : "michelin-cache-or-partial",
+        };
+
+        if (assessed.ok) {
+          existingVehicles = assessed.filtered;
+          sourceCache.michelin = {
+            ts: Date.now(),
+            data: assessed.filtered,
+          };
+        } else {
+          console.warn("[Michelin] Partial/incomplete payload detected — refusing to overwrite cache", {
+            reason: assessed.reason,
+            currentCount: assessed.currentCount,
+            cachedCount: assessed.cachedCount,
+            minimumExpected: assessed.minimumExpected,
+            minimumRatio: assessed.minimumRatio,
+            overlapRatio: assessed.overlapRatio,
+            minimumOverlapRatio: assessed.minimumOverlapRatio,
+          });
+
+          if (sourceCache.michelin.data.length > 0) {
+            existingVehicles = sourceCache.michelin.data;
+            michelinIntegrity.servedFrom = "michelin-cache";
+          } else {
+            existingVehicles = assessed.filtered;
+            michelinIntegrity.servedFrom = "fresh-michelin-partial";
+          }
+        }
       } else {
-        console.warn("Primary vehicle API failed — continuing");
-        existingVehicles = isFresh(sourceCache.michelin.ts)
-          ? sourceCache.michelin.data
-          : [];
+        console.warn("Primary Michelin API failed — continuing");
+
+        if (sourceCache.michelin.data.length > 0) {
+          existingVehicles = sourceCache.michelin.data;
+          michelinIntegrity = {
+            ok: false,
+            reason: "request-failed-using-cache",
+            currentCount: 0,
+            cachedCount: sourceCache.michelin.data.length,
+            servedFrom: "michelin-cache",
+          };
+        } else {
+          existingVehicles = [];
+          michelinIntegrity = {
+            ok: false,
+            reason: "request-failed-no-cache",
+            currentCount: 0,
+            cachedCount: 0,
+            servedFrom: "none",
+          };
+        }
       }
+
       // Tag Michelin vehicles as canonical source
       existingVehicles = existingVehicles.map(v => ({
         ...v,
@@ -1796,11 +1934,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
     }
 
     const dedupedVehicles = Array.from(dedupedMap.values());
-    const hasMichelin = existingVehicles.length > 0;
-    const michelinComplete = !REQUIRE_MICHELIN_COMPLETE || hasMichelin;
+    const michelinComplete =
+      !REQUIRE_MICHELIN_COMPLETE || michelinIntegrity.ok;
     const blueCrystalComplete =
       !REQUIRE_BLUECRYSTAL_COMPLETE || blueCrystalIntegrity.ok;
-
+    const isComplete = michelinComplete && blueCrystalComplete;
+    const blueCrystalComplete =
+      !REQUIRE_BLUECRYSTAL_COMPLETE || blueCrystalIntegrity.ok;
     const isComplete = michelinComplete && blueCrystalComplete;
 
     if (forceDebug) {
@@ -1831,13 +1971,47 @@ router.get("/", auth, diagnostics, async (req, res) => {
         ts: Date.now(),
         data: dedupedVehicles,
       };
+
+      try {
+        await SourceSnapshot.updateOne(
+          { key: "combined" },
+          {
+            $set: {
+              key: "combined",
+              data: dedupedVehicles,
+              count: dedupedVehicles.length,
+              updatedAtMs: Date.now(),
+              integrity: { michelinIntegrity, blueCrystalIntegrity },
+            },
+          },
+          { upsert: true }
+        );
+      } catch (err) {
+        console.warn("[Mongo Snapshot] Failed to persist combined snapshot", err.message);
+      }
     }
 
     // If the current response is incomplete, prefer the last known complete combined cache
-    if (!isComplete && isFresh(sourceCache.combined?.ts)) {
-      res.set("X-Partial-Data", "1");
-      res.set("X-Served-From", "combined-cache");
-      return res.json(sourceCache.combined.data);
+    if (!isComplete) {
+      // First: try in-memory cache
+      if (sourceCache.combined?.data?.length && isUsableStale(sourceCache.combined.ts)) {
+        res.set("X-Partial-Data", "1");
+        res.set("X-Served-From", "combined-cache");
+        return res.json(sourceCache.combined.data);
+      }
+
+      // Then: try Mongo snapshot
+      try {
+        const mongoSnapshot = await SourceSnapshot.findOne({ key: "combined" });
+
+        if (mongoSnapshot?.data?.length) {
+          res.set("X-Partial-Data", "1");
+          res.set("X-Served-From", "mongo-snapshot");
+          return res.json(mongoSnapshot.data);
+        }
+      } catch (err) {
+        console.warn("[Mongo Snapshot] Failed to read combined snapshot", err.message);
+      }
     }
 
     // If no combined cache exists, still return current data, but flag it as partial

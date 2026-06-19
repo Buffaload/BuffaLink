@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import L from "leaflet";
 import "../css/Vehicles.css";
+import InlineLoader from "./InlineLoader";
 import API_BASE_URL from "../config";
 
 // Define the type for a single vehicle object
@@ -79,6 +80,8 @@ const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
 const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
 const DEFAULT_SERVICE_TIMELINE_DAYS = 42;
 const DEFAULT_MOT_TIMELINE_DAYS = 364;
+const LAST_GOOD_VEHICLES_KEY = "buffalink:lastGoodVehicles";
+const SUSPICIOUS_DROP_RATIO = 0.9; // treat >10% drop as suspicious unless backend explicitly says it's valid
 
 const getServiceTimelineDays = () =>
   Number(localStorage.getItem(SERVICE_TIMELINE_DAYS_KEY)) ||
@@ -87,6 +90,24 @@ const getServiceTimelineDays = () =>
 const getMotTimelineDays = () =>
   Number(localStorage.getItem(MOT_TIMELINE_DAYS_KEY)) ||
   DEFAULT_MOT_TIMELINE_DAYS;
+
+const readLastGoodVehicles = (): Vehicle[] => {
+  try {
+    const raw = localStorage.getItem(LAST_GOOD_VEHICLES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLastGoodVehicles = (vehicles: Vehicle[]) => {
+  try {
+    localStorage.setItem(LAST_GOOD_VEHICLES_KEY, JSON.stringify(vehicles));
+  } catch {
+    // ignore storage/quota errors
+  }
+};
 
 // ISO week number (Monday–Sunday)
 function getISOWeek(date = new Date()): number {
@@ -1279,7 +1300,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }, []);
 
   // Helpers for filtering, searching, and sorting
-  const fetchVehicles = async () => {
+  const fetchVehicles = async (): Promise<Vehicle[]> => {
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("No token found. Please log in.");
@@ -1300,35 +1321,64 @@ const Vehicles: React.FC<VehiclesProps> = ({
         : [];
 
     const isPartial = response.headers?.["x-partial-data"] === "1";
+    const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]) ?? [];
+    const persistentLastGood = readLastGoodVehicles();
 
+    // Explicit partial response from backend
     if (isPartial) {
-      const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
-      if (previous?.length) {
-        return previous;
-      }
+      if (previous.length > 0) return previous;
+      if (persistentLastGood.length > 0) return persistentLastGood;
+      return arr;
     }
 
+    // Empty response - preserve last known good
     if (arr.length === 0) {
-      const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]);
-      if (previous?.length) {
-        return previous;
-      }
+      if (previous.length > 0) return previous;
+      if (persistentLastGood.length > 0) return persistentLastGood;
+      return [];
     }
 
+    // Suspicious count drop guard
+    const comparisonBaseCount =
+      previous.length > 0 ? previous.length : persistentLastGood.length;
+
+    const suspiciousDrop =
+      comparisonBaseCount > 0 &&
+      arr.length < Math.floor(comparisonBaseCount * SUSPICIOUS_DROP_RATIO);
+
+    if (suspiciousDrop) {
+      console.warn("[Vehicles] Suspicious vehicle count drop detected; keeping last known good snapshot", {
+        incomingCount: arr.length,
+        comparisonBaseCount,
+        ratio: comparisonBaseCount > 0 ? arr.length / comparisonBaseCount : null,
+      });
+
+      if (previous.length > 0) return previous;
+      if (persistentLastGood.length > 0) return persistentLastGood;
+    }
+
+    // Fresh good payload - persist it
+    writeLastGoodVehicles(arr);
     return arr;
   };
 
   // useQuery hook for fetching vehicles
   const {
-    data: vehicles = [], //Default to an empty array
+    data: vehicles = [],
     isLoading,
+    isFetching,
     isError,
     error,
   } = useQuery<Vehicle[]>({
     queryKey: ["vehicles"],
     queryFn: fetchVehicles,
-    refetchInterval: 30000, // Poll every 30 sec
-    staleTime: 60000, // Data is fresh for 1 minute
+    refetchInterval: 30000,
+    staleTime: 60000,
+    gcTime: 24 * 60 * 60 * 1000,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false,
   });
 
   const vehiclesWithSince = useVehiclesWithStatusSince<VehicleWithSince>(vehicles);
@@ -2431,7 +2481,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
               })}
             </ul>
           )}
-          <p className="vehicle-disclaimer">Vehicle data is fetched every 30 seconds.</p>
+          <p className="vehicle-disclaimer">
+            Vehicle data is fetched every 30 seconds.
+            {isFetching && (
+              <span className="data-refreshing-indicator" title="Refreshing data">
+                {" "}<InlineLoader size={12} color="rgba(107, 114, 128, 0.8)" /> 
+              </span>
+            )}
+          </p>
         </div>
       </div>
 

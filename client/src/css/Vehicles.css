@@ -1640,6 +1640,12 @@
   text-align: center;
 }
 
+.data-refreshing-indicator {
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
 /* Base alert (uses CSS vars) */
 .alert-pop, .alert-pop--sidebar {
   --accent: #ef4444; /* colour */
