@@ -586,7 +586,7 @@ const getViewportSnapshot = () => {
 const KIOSK_CAROUSEL_SIDE_BREAKPOINT = 1660;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT = 340;
 const KIOSK_BOTTOM_CAROUSEL_RESERVED_HEIGHT_SMALL = 300;
-const DEFAULT_KIOSK_MIN_WIDTH = 1300;
+const DEFAULT_KIOSK_MIN_WIDTH = 922;
 const PORTRAIT_KIOSK_MIN_WIDTH = 510;
 
 const renderStatusIcon = (rawType?: string) => {
@@ -874,8 +874,6 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       keepBuffer: 2,
     }).addTo(map);
 
-    const displayReg = vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
-
     const coords: [number, number] = [lat!, lon!];
 
     const marker = L.circleMarker(coords, {
@@ -899,32 +897,31 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       });
     };
 
+    const displayReg = vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
+
     marker.bindTooltip(formatRegForMarkerLabel(displayReg), {
       permanent: true,
       direction: "center",
       className: "vehicle-reg-tooltip",
     });
 
-    const invalidate = () => {
-      if (!mapInstanceRef.current) return;
-      mapInstanceRef.current.invalidateSize({
-        pan: false,
-        animate: false,
-      });
-    };
-
     // Run multiple times because carousel/sticky layout can settle over a few frames
     const raf1 = requestAnimationFrame(recenter);
     const raf2 = requestAnimationFrame(() => requestAnimationFrame(recenter));
 
-    const timeout1 = window.setTimeout(invalidate, 120);
-    const timeout2 = window.setTimeout(invalidate, 300);
+    const timeout1 = window.setTimeout(recenter, 120);
+    const timeout2 = window.setTimeout(recenter, 300);
+    const timeout3 = window.setTimeout(recenter, 500);
 
     const onTileLoad = () => {
-      invalidate();
+      recenter();
     };
 
     tileLayer.on("load", onTileLoad);
+
+    map.whenReady(() => {
+      recenter();
+    });
 
     let resizeObserver: ResizeObserver | null = null;
 
@@ -940,6 +937,7 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       cancelAnimationFrame(raf2);
       window.clearTimeout(timeout1);
       window.clearTimeout(timeout2);
+      window.clearTimeout(timeout3);
       tileLayer.off("load", onTileLoad);
       resizeObserver?.disconnect();
       map.remove();
@@ -2490,12 +2488,12 @@ const Vehicles: React.FC<VehiclesProps> = ({
             </ul>
           )}
           <p className="vehicle-disclaimer">
-            Vehicle data is fetched every 30 seconds.
             {isFetching && (
               <span className="data-refreshing-indicator" title="Refreshing data">
-                {" "}<InlineLoader size={12} color="rgba(107, 114, 128, 0.8)" /> 
+                <InlineLoader size={12} color="rgba(107, 114, 128, 0.8)" /> 
               </span>
             )}
+            Vehicle data is fetched every 30 seconds
           </p>
         </div>
       </div>
