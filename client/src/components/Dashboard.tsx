@@ -577,7 +577,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
               <span className="dashboard-title-prefix">
                 {isKioskMode ? "Stopped Vehicles Leaderboard" : title.prefix}
               </span>
-              <span className="dashboard-title-suffix">
+              <span className="dashboard-title-suffix dashboard-title-suffix--kiosk">
                 {isKioskMode && !isCompactPortraitKioskViewport
                   ? " - stopped vehicles outside of a depot/maintenance site"
                   : ""}

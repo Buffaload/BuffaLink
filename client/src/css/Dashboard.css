@@ -517,6 +517,12 @@
   flex-direction: column;
 }
 
+@media screen and (max-width: 1300px) {
+  .dashboard-title-suffix--kiosk {
+    display: none;
+  }
+}
+
 @media screen and (max-width: 1047px) {
   .dashboard-header {
     padding-top: 15px;

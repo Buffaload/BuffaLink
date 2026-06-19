@@ -829,11 +829,13 @@ function getStreetViewLatLon(vehicle: {
 type VehicleMiniMapProps = {
   vehicle: VehicleWithSince;
   height?: number;
+  layoutKey?: string;
 };
 
 const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
   vehicle,
   height = 180,
+  layoutKey = "default",
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -847,9 +849,17 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       return;
     }
 
+    const coords: [number, number] = [lat!, lon!];
+    const zoom = window.innerWidth < 769 ? 14 : 13;
+
+    // Clean up any stale Leaflet instance before rebuilding
     if (mapInstanceRef.current) {
-      return;
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
     }
+
+    // Extra safety: clear any stale Leaflet DOM
+    container.innerHTML = "";
 
     const map = L.map(container, {
       zoomControl: false,
@@ -863,7 +873,7 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       fadeAnimation: false,
       zoomAnimation: false,
       markerZoomAnimation: false,
-    }).setView([lat!, lon!], 13);
+    });
 
     mapInstanceRef.current = map;
 
@@ -874,7 +884,7 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       keepBuffer: 2,
     }).addTo(map);
 
-    const coords: [number, number] = [lat!, lon!];
+    const displayReg = vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
 
     const marker = L.circleMarker(coords, {
       radius: 20,
@@ -884,50 +894,54 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       weight: 2,
     }).addTo(map);
 
-    const recenter = () => {
-      if (!mapInstanceRef.current) return;
-
-      mapInstanceRef.current.invalidateSize({
-        pan: false,
-        animate: false,
-      });
-
-      mapInstanceRef.current.setView(coords, 13, {
-        animate: false,
-      });
-    };
-
-    const displayReg = vehicle.assetRegistration ?? vehicle.assetName ?? "N/A";
-
     marker.bindTooltip(formatRegForMarkerLabel(displayReg), {
       permanent: true,
       direction: "center",
       className: "vehicle-reg-tooltip",
     });
 
-    // Run multiple times because carousel/sticky layout can settle over a few frames
-    const raf1 = requestAnimationFrame(recenter);
-    const raf2 = requestAnimationFrame(() => requestAnimationFrame(recenter));
+    const syncMapToContainer = () => {
+      const instance = mapInstanceRef.current;
+      if (!instance) return;
 
-    const timeout1 = window.setTimeout(recenter, 120);
-    const timeout2 = window.setTimeout(recenter, 300);
-    const timeout3 = window.setTimeout(recenter, 500);
+      instance.invalidateSize({
+        pan: false,
+        animate: false,
+      });
+
+      instance.setView(coords, zoom, {
+        animate: false,
+      });
+    };
+
+    // Initial view
+    map.setView(coords, zoom, { animate: false });
+
+    // Run several times because kiosk carousel/card sizing settles over a few frames
+    const raf1 = requestAnimationFrame(syncMapToContainer);
+    const raf2 = requestAnimationFrame(() =>
+      requestAnimationFrame(syncMapToContainer)
+    );
+
+    const timeout1 = window.setTimeout(syncMapToContainer, 120);
+    const timeout2 = window.setTimeout(syncMapToContainer, 300);
+    const timeout3 = window.setTimeout(syncMapToContainer, 500);
 
     const onTileLoad = () => {
-      recenter();
+      syncMapToContainer();
     };
 
     tileLayer.on("load", onTileLoad);
 
     map.whenReady(() => {
-      recenter();
+      syncMapToContainer();
     });
 
     let resizeObserver: ResizeObserver | null = null;
 
     if (typeof ResizeObserver !== "undefined") {
       resizeObserver = new ResizeObserver(() => {
-        recenter();
+        syncMapToContainer();
       });
       resizeObserver.observe(container);
     }
@@ -935,11 +949,15 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
     return () => {
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
+
       window.clearTimeout(timeout1);
       window.clearTimeout(timeout2);
       window.clearTimeout(timeout3);
+
       tileLayer.off("load", onTileLoad);
+
       resizeObserver?.disconnect();
+
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -948,6 +966,8 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
     vehicle.longitude,
     vehicle.assetRegistration,
     vehicle.assetName,
+    height,
+    layoutKey,
   ]);
 
   if (
@@ -1948,8 +1968,26 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
         <div className="kiosk-carousel-card__body">
           <VehicleMiniMap
+            key={`${vehicle.assetRegistration ?? vehicle.assetName}-${
+              useSideKioskCarousel ? "side" : "bottom"
+            }-${
+              viewportInfo.width < 769
+                ? "compact"
+                : viewportInfo.width < 980
+                ? "narrow"
+                : "wide"
+            }`}
             vehicle={vehicle}
             height={useSideKioskCarousel ? 180 : 140}
+            layoutKey={`${
+              useSideKioskCarousel ? "side" : "bottom"
+            }-${
+              viewportInfo.width < 769
+                ? "compact"
+                : viewportInfo.width < 980
+                ? "narrow"
+                : "wide"
+            }`}
           />
         </div>
 
