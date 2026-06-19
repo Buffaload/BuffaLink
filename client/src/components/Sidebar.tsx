@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { useVehiclesWithStatusSince, countFor, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import { useVehiclesWithStatusSince, filterVehicles, isCriticalAlert, isCriticalArrival } from "../utils/vehicleRules"
+import { dedupeVehiclesByIdentity  } from "../utils/vehicleIdentity";
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
@@ -598,12 +599,32 @@ const Sidebar: React.FC<{
   const counts = useMemo(() => {
     const now = Date.now();
 
+    const hgvs = dedupeVehiclesByIdentity(
+      filterVehicles(vehiclesWithSince, "HGVs", [], now) as VehicleWithSince[]
+    );
+
+    const maintenance = dedupeVehiclesByIdentity(
+      filterVehicles(vehiclesWithSince, "Maintenance", [], now) as VehicleWithSince[]
+    );
+
+    const critical = dedupeVehiclesByIdentity(
+      vehiclesWithSince.filter((v) => isCriticalAlert(v))
+    );
+
+    const arrivals = dedupeVehiclesByIdentity(
+      vehiclesWithSince.filter((v) => isCriticalArrival(v))
+    );
+
+    const tippers = dedupeVehiclesByIdentity(
+      filterVehicles(vehiclesWithSince, "Tippers", [], now) as VehicleWithSince[]
+    );
+
     return {
-      hgvsCount: countFor(vehiclesWithSince, "HGVs", [], now),
-      maintenanceCount: countFor(vehiclesWithSince, "Maintenance", [], now),
-      criticalCount: vehiclesWithSince.filter(isCriticalAlert).length,
-      arrivalsCount: vehiclesWithSince.filter(isCriticalArrival).length,
-      tippersCount: countFor(vehiclesWithSince, "Tippers", [], now),
+      hgvsCount: hgvs.length,
+      maintenanceCount: maintenance.length,
+      criticalCount: critical.length,
+      arrivalsCount: arrivals.length,
+      tippersCount: tippers.length,
     };
   }, [vehiclesWithSince]);
 

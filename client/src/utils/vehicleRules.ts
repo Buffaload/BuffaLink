@@ -31,6 +31,7 @@ export interface VehicleLike {
 type VehicleWithStatusFields = {
     assetName?: string;
     assetRegistration?: string;
+    assetType?: string;
     eventType?: string;
     date?: string;
     statusSinceMs?: number;
@@ -116,8 +117,13 @@ export type WithPersistedStatusSince<T> = T & {
     statusSinceMs?: number;
 };
 
-const getVehicleStatusKey = (v: VehicleWithStatusFields): string =>
-    (v.assetName ?? v.assetRegistration ?? "").trim();
+const getVehicleStatusKey = (v: VehicleWithStatusFields): string => {
+    const type = (v.assetType ?? "").toUpperCase().trim();
+    const reg = (v.assetRegistration ?? "").toUpperCase().trim();
+    const name = (v.assetName ?? "").toUpperCase().trim();
+
+    return `${type}|${reg || "NO_REG"}|${name || "NO_NAME"}`;
+};
 
 export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
     vehicles: T[]
@@ -245,7 +251,8 @@ export const isCriticalAlert = (v: VehicleLike): boolean => {
     // Must be out of a depot OR maintenance
     if (
         v.locationGroupName === "Buffaload" ||
-        v.locationGroupName === "Maintenance"
+        v.locationGroupName === "Maintenance" ||
+        isTipper(v)
     ) {
         return false;
     }
@@ -427,10 +434,3 @@ export const filterVehicles = <T extends VehicleLike>(
     selectedDepots: string[] = [],
     nowMs: number = Date.now()
 ): T[] => vehicles.filter((v) => matchesFilter(v, filterOption, selectedDepots, nowMs));
-
-export const countFor = <T extends VehicleLike>(
-    vehicles: T[],
-    filterOption: string,
-    selectedDepots: string[] = [],
-    nowMs: number = Date.now()
-): number => filterVehicles(vehicles, filterOption, selectedDepots, nowMs).length;

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs, useVehiclesWithStatusSince, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
 import { ALL_DEPOT_LABELS, matchesDepot, getMatchedDepotLabel } from "../utils/depotMatching";
+import { dedupeVehiclesByIdentity } from "../utils/vehicleIdentity";
 import api from "../api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -1520,12 +1521,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
       });
     }
 
+    const normalizedList = dedupeVehiclesByIdentity(list);
+
     const highlightFigures = {
-      total: list.length,
-      vor: list.filter((v) => isVorOrDefect(v)).length,
+      total: normalizedList.length,
+      vor: normalizedList.filter((v) => isVorOrDefect(v)).length,
     };
 
-    const sorted = [...list].sort((a, b) => {
+    const sorted = [...normalizedList].sort((a, b) => {
       let result = 0;
 
       if (sortOption === "stoppedTime") {
@@ -1534,6 +1537,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
         const aDur = now - aSince;
         const bDur = now - bSince;
         result = aDur - bDur;
+
         if (result === 0) {
           result = (a.assetName ?? "").localeCompare(b.assetName ?? "");
         }
@@ -1582,16 +1586,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     locationTick,
   ]);
 
-  const dedupedDisplayVehicles = useMemo(() => {
-    const map = new Map<string, VehicleWithSince>();
-
-    displayVehicles.forEach((v) => {
-      const key = `${v.assetRegistration ?? "NO_REG"}-${v.assetName}`;
-      map.set(key, v);
-    });
-
-    return Array.from(map.values());
-  }, [displayVehicles]);
+  const dedupedDisplayVehicles = displayVehicles;
 
   const useSideKioskCarousel = viewportInfo.width > KIOSK_CAROUSEL_SIDE_BREAKPOINT;
   const topCarouselVehicles = useMemo(() => {
