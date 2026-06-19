@@ -25,6 +25,10 @@ const records = parse(csv, {
     skip_empty_lines: true,
 });
 
+const TRACE_IDS = new Set([
+    "BV72NZZ",
+]);
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 await mongoose.connect(process.env.MONGO_URI);
@@ -36,6 +40,7 @@ const failed = [];
 let processedRows = 0;
 let skippedRows = 0;
 let upsertedRows = 0;
+let successfulWrites = 0;
 
 for (const row of records) {
     const rawVehicleId = row.VehicleID;
@@ -56,14 +61,48 @@ for (const row of records) {
             ? Number(cleanedBranchId)
             : null;
 
-    // Only skip rows with empty VehicleID or invalid BranchID
-    if (!vehicleId || parsedBranchId === null) {
+    const shouldTrace =
+        TRACE_IDS.has(vehicleId) ||
+        TRACE_IDS.has(
+            String(rawVehicleId ?? "")
+                .replace(/\s+/g, "")
+                .toUpperCase()
+        );
+
+    if (shouldTrace) {
+        console.log("TRACE RAW ROW:", {
+            rawVehicleId,
+            rawBranchId,
+            vehicleId,
+            cleanedBranchId,
+            parsedBranchId,
+            rowKeys: Object.keys(row),
+        });
+
+        console.log("TRACE VEHICLE CODEPOINTS:", [...vehicleId].map((c) => ({
+            char: c,
+            code: c.charCodeAt(0),
+        })));
+    }
+
+    if (!vehicleId) {
+        if (shouldTrace) {
+            console.log("TRACE SKIP: empty vehicleId");
+        }
+        skippedRows++;
+        continue;
+    }
+
+    if (parsedBranchId === null) {
+        if (shouldTrace) {
+            console.log("TRACE SKIP: invalid branchId");
+        }
         skippedRows++;
         continue;
     }
 
     try {
-        await VehicleMetadata.updateOne(
+        const result = await VehicleMetadata.updateOne(
             { assetName: vehicleId },
             {
                 $set: {
@@ -78,19 +117,38 @@ for (const row of records) {
             { upsert: true }
         );
 
-        upsertedRows++;
+        if (shouldTrace) {
+            console.log("TRACE UPSERT RESULT:", {
+                matchedCount: result.matchedCount,
+                modifiedCount: result.modifiedCount,
+                upsertedCount: result.upsertedCount,
+                upsertedId: result.upsertedId ?? null,
+            });
+
+            const verify = await VehicleMetadata.findOne({ assetName: vehicleId })
+                .select("assetName branchId")
+                .lean();
+
+            console.log("TRACE VERIFY AFTER UPSERT:", verify);
+        }
+
+        successfulWrites++;
     } catch (err) {
         failed.push({
             vehicleId,
             branchId: parsedBranchId,
             error: err.message,
         });
-        console.error("UPSERT FAILED:", vehicleId, err.message);
+
+        if (shouldTrace) {
+            console.error("TRACE UPSERT FAILED:", err);
+        } else {
+            console.error("UPSERT FAILED:", vehicleId, err.message);
+        }
     }
 
     processedRows++;
 
-    // Keep console output light to avoid slowing the import down
     if (processedRows % 250 === 0) {
         console.log(`Progress: ${processedRows}/${records.length}`);
         await sleep(10);
