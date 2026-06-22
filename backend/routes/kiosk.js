@@ -1,6 +1,6 @@
 // routes/kiosk.ts
 import express from 'express';
-import KioskDevice from '../models/KioskDevice.js';
+import KioskDeviceSchema from '../models/KioskDevice.js';
 import { getClientIp } from '../middleware/getClientIp.js';
 import jwt from 'jsonwebtoken';
 
@@ -10,7 +10,7 @@ router.get('/check', async (req, res) => {
     try {
         const ip = getClientIp(req);
 
-        const kiosk = await KioskDevice.findOne({ ip, isActive: true });
+        const kiosk = await KioskDeviceSchema.findOne({ ip, isActive: true });
 
         if (!kiosk) {
             return res.json({ isKiosk: false });
