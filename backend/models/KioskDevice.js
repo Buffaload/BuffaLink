@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const kioskDeviceSchema = new mongoose.Schema({
     name: {
@@ -25,4 +25,4 @@ const kioskDeviceSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-module.exports = mongoose.model('KioskDevice', kioskDeviceSchema);
+export default mongoose.model("KioskDevice", kioskDeviceSchema);
