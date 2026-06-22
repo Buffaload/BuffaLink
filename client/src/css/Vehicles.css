@@ -2611,6 +2611,17 @@
   .vehicle-card {
     padding: 20px 20px 5px 20px;
   }
+
+  .kiosk-carousel-card__map-frame--mobile-offset {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .kiosk-carousel-card__map-frame--mobile-offset .leaflet-container {
+    height: calc(100% + 56px) !important;
+    transform: translateY(-35px);
+    transform-origin: top center;
+  }
 }
 
 /* Vertical viewports */

@@ -999,11 +999,15 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
     );
   }
 
+  const isCompactKioskMap = window.innerWidth < 769;
+
   return (
     <div className="kiosk-carousel-card__map" style={{ height }}>
       <div
         ref={containerRef}
-        className="kiosk-carousel-card__map-frame"
+        className={`kiosk-carousel-card__map-frame ${
+          isCompactKioskMap ? "kiosk-carousel-card__map-frame--mobile-offset" : ""
+        }`}
         style={{ width: "100%", height: "100%" }}
       />
     </div>
