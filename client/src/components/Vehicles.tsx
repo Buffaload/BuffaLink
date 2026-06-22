@@ -353,6 +353,87 @@ const cleanLocationLabel = (value?: string | null): string => {
   return value.replace(/_\d+$/, "");
 };
 
+const getDepotDisplayName = (depot?: string | null): string => {
+  if (!depot) return "UNKNOWN LOCATION";
+
+  const name = titleCaseWords(depot.trim());
+
+  if (["Coventry", "Avonmouth"].includes(name)) {
+    return `Co-op ${name}`;
+  }
+
+  return `Buffaload ${name}`;
+};
+
+const normalizeLocationSortValue = (value?: string | null): string => {
+  return cleanLocationLabel(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+};
+
+const isUnknownLocationLabel = (value?: string | null): boolean => {
+  const normalized = normalizeLocationSortValue(value);
+  return (
+    !normalized ||
+    normalized === "UNKNOWN LOCATION" ||
+    normalized === "UNKNOWN LOCATIONS"
+  );
+};
+
+const getVehicleLocationDisplayLabel = (
+  vehicle: Vehicle,
+  filterOption: string
+): string => {
+  if (filterOption === "Depots") {
+    const depotMatch = getMatchedDepotLabel(vehicle);
+    if (depotMatch) {
+      return getDepotDisplayName(depotMatch);
+    }
+  }
+
+  return cleanLocationLabel(
+    vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION"
+  );
+};
+
+const compareByLocation = (
+  a: VehicleWithSince,
+  b: VehicleWithSince,
+  filterOption: string,
+  sortDirection: "asc" | "desc"
+): number => {
+  const aLabel = getVehicleLocationDisplayLabel(a, filterOption);
+  const bLabel = getVehicleLocationDisplayLabel(b, filterOption);
+
+  const aUnknown = isUnknownLocationLabel(aLabel);
+  const bUnknown = isUnknownLocationLabel(bLabel);
+
+  // Always pin unknowns to the bottom
+  if (aUnknown !== bUnknown) {
+    return aUnknown ? 1 : -1;
+  }
+
+  let result = normalizeLocationSortValue(aLabel).localeCompare(
+    normalizeLocationSortValue(bLabel),
+    undefined,
+    { numeric: true, sensitivity: "base" }
+  );
+
+  // Stable fallback
+  if (result === 0) {
+    const aReg = (a.assetRegistration ?? a.assetName ?? "").toUpperCase();
+    const bReg = (b.assetRegistration ?? b.assetName ?? "").toUpperCase();
+
+    result = aReg.localeCompare(bReg, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  }
+
+  return sortDirection === "asc" ? result : -result;
+};
+
 const isNilLike = (v: any) =>
   v == null ||
   v === "" ||
@@ -1611,9 +1692,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
 
       if (sortOption === "location") {
-        const aLoc = (a.locationName || a.formattedAddress || "").toUpperCase();
-        const bLoc = (b.locationName || b.formattedAddress || "").toUpperCase();
-        result = aLoc.localeCompare(bLoc);
+        return compareByLocation(a, b, filterOption, sortDirection);
       }
 
       return sortDirection === "asc" ? result : -result;
@@ -2344,19 +2423,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 const now = Date.now();
                 const isVor = !!vehicle.IsVor;
 
-                const depotMatch = getMatchedDepotLabel(vehicle);
-                const getDepotDisplayName = (depot?: string | null) => {
-                  if (!depot) return null;
-                  const normalized = depot.toUpperCase();
-                  if (normalized === "COVENTRY" || normalized === "AVONMOUTH") {
-                    return `Co-op ${depot}`;
-                  }
-                  return `Buffaload ${depot}`;
-                };
-
-                const displayLocation = depotMatch
-                  ? getDepotDisplayName(depotMatch)
-                  : (vehicle.locationName ?? vehicle.formattedAddress ?? "UNKNOWN LOCATION");
+                const displayLocation = getVehicleLocationDisplayLabel(vehicle, filterOption);
 
                 // Trailer display logic
                 const isTrailer = (vehicle.assetType ?? "").toLowerCase() === "trailer";
