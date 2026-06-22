@@ -199,24 +199,41 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
     }, [vehicles]);
 }
 
-const isServiceLikeText = (v: VehicleLike): boolean => {
-    const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`.toUpperCase();
-    return /SERVICE|SERVICES|TRUCKSTOP|TRUCK STOP|WELCOME BREAK|MOTO|ROADCHEF|EXTRA/i.test(hay);
-};
-
 export const isEligibleServicesHgv = (
     v: VehicleLike,
     nowMs: number = Date.now()
 ): boolean => {
+    const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`
+        .toUpperCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const looksLikeDepot = (v: VehicleLike): boolean => {
+        const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`
+            .toUpperCase();
+
+        return /BUFFALOAD|ELLINGTON|CREWE|SKELMERSDALE|BELLSHILL|COVENTRY|AVONMOUTH/i.test(hay);
+    };
+
+    const looksLikeService =
+        /SERVICE|SERVICES|TRUCKSTOP|TRUCK STOP|WELCOME BREAK|MOTO|ROADCHEF|EXTRA/i.test(hay);
+
+    const inServicesGroup = isAtServices(v);
+    const hasNoGroup = !v.locationGroupName;
+
     return (
         v.assetType === "HGV" &&
-        (isAtServices(v) || (!v.locationGroupName && isServiceLikeText(v))) &&
         getTimeInStateMs(v, nowMs) >= STOPPED_15_MIN_MS &&
         !isDrivingEvent(v) &&
         !isAtDepot(v) &&
         !isAtMaintenance(v) &&
         !isTipper(v) &&
-        !v.isNightOut
+        !v.isNightOut &&
+        (
+            inServicesGroup ||
+            (hasNoGroup && !looksLikeDepot(v) && looksLikeService) ||
+            (hasNoGroup && !looksLikeDepot(v))
+        )
     );
 };
 
