@@ -902,28 +902,26 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
 
     const syncMapToContainer = () => {
       let hasOffsetApplied = false;
+      const instance = mapInstanceRef.current;
       const offsetY = height * 0.15;
+      
+      if (!instance) return;
 
-      const syncMapToContainer = () => {
-        const instance = mapInstanceRef.current;
-        if (!instance) return;
+      instance.invalidateSize({
+        pan: false,
+        animate: false,
+      });
 
-        instance.invalidateSize({
-          pan: false,
-          animate: false,
-        });
+      instance.setView(coords, zoom, {
+        animate: false,
+      });
 
-        instance.setView(coords, zoom, {
-          animate: false,
-        });
+      // Apply offset for small viewports minimap ONLY ONCE
+      if (!hasOffsetApplied && window.innerWidth < 769) {
+        hasOffsetApplied = true;
 
-        // Apply offset for small viewports minimap ONLY ONCE
-        if (!hasOffsetApplied && window.innerWidth < 769) {
-          hasOffsetApplied = true;
-
-          instance.panBy([0, -offsetY], { animate: false });
-        }
-      };
+        instance.panBy([0, -offsetY], { animate: false });
+      }
     };
 
     // Initial view
