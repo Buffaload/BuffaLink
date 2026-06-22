@@ -2474,6 +2474,11 @@
   overflow: hidden;
 }
 
+.kiosk-carousel-card__map-frame .leaflet-container {
+  transform: scale(1.05);
+  transform-origin: center;
+}
+
 .kiosk-carousel-card__map--empty {
   display: grid;
   place-items: center;

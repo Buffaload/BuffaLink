@@ -850,7 +850,7 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
     }
 
     const coords: [number, number] = [lat!, lon!];
-    const zoom = window.innerWidth < 769 ? 14 : 13;
+    const zoom = window.innerWidth < 769 ? 12.5 : 13;
 
     // Clean up any stale Leaflet instance before rebuilding
     if (mapInstanceRef.current) {
@@ -912,6 +912,10 @@ const VehicleMiniMap: React.FC<VehicleMiniMapProps> = ({
       instance.setView(coords, zoom, {
         animate: false,
       });
+
+      if (window.innerWidth < 769) {
+        instance.panBy([0, -40], { animate: false }); // shift marker up into visible zone for small viewports
+      }
     };
 
     // Initial view
@@ -1264,14 +1268,16 @@ const Vehicles: React.FC<VehiclesProps> = ({
       selectedVehicle.assetName ??
       "N/A";
 
+    const isMobile = window.innerWidth < 769;
+
     const marker = L.circleMarker(
       [selectedVehicle.latitude!, selectedVehicle.longitude!],
       {
-        radius: 24,
+        radius: isMobile ? 14 : 24,
         fillColor: "#6b7280",
         fillOpacity: 0.85,
         color: "#ffffff",
-        weight: 2,
+        weight: isMobile ? 1.5 : 2,
       }
     ).addTo(map);
 
