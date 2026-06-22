@@ -1823,7 +1823,12 @@ router.get("/", auth, diagnostics, async (req, res) => {
               ? null
               : matchDepotByText(vehicle);
         const resolvedDepot = depotByGeo ?? depotByText ?? null;
-        
+        const resolvedLocationGroup =
+          maintenanceByText || site?.group === "Maintenance"
+            ? "Maintenance"
+            : (depotByGeo || depotByText)
+              ? "Buffaload"
+              : vehicle.locationGroupName;
 
         return {
           ...vehicle,
@@ -1833,11 +1838,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
             vehicle.locationName ??
             vehicle.formattedAddress ??
             "Unknown location",
-          locationGroupName: maintenanceByText
-            ? "Maintenance"
-            : depotByText
-              ? "Buffaload"
-              : vehicle.locationGroupName,
+          locationGroupName: resolvedLocationGroup,
           ServiceDueDate: maintenance?.ServiceDueDate || "N/A",
           MotDueDate: maintenance?.MotDueDate || "N/A",
           BrakeDueDate: maintenance?.BrakeDueDate || "N/A",         

@@ -198,13 +198,19 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
         return enriched;
     }, [vehicles]);
 }
+
+const isServiceLikeText = (v: VehicleLike): boolean => {
+    const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`.toUpperCase();
+    return /SERVICE|SERVICES|TRUCKSTOP|TRUCK STOP|WELCOME BREAK|MOTO|ROADCHEF|EXTRA/i.test(hay);
+};
+
 export const isEligibleServicesHgv = (
     v: VehicleLike,
     nowMs: number = Date.now()
 ): boolean => {
     return (
         v.assetType === "HGV" &&
-        (isAtServices(v) || !v.locationGroupName) &&
+        (isAtServices(v) || (!v.locationGroupName && isServiceLikeText(v))) &&
         getTimeInStateMs(v, nowMs) >= STOPPED_15_MIN_MS &&
         !isDrivingEvent(v) &&
         !isAtDepot(v) &&
