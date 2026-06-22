@@ -6,4 +6,4 @@ const getClientIp = (req) => {
     );
 };
 
-module.exports = getClientIp;
+export default getClientIp;
