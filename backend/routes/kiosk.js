@@ -1,7 +1,7 @@
 // routes/kiosk.ts
 import express from 'express';
 import KioskDeviceSchema from '../models/KioskDevice.js';
-import { getClientIp } from '../middleware/getClientIp.js';
+import getClientIp from '../middleware/getClientIp.js';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
