@@ -831,6 +831,10 @@ const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
   "TlWeightDueDate",
 ]);
 
+const VEHICLE_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
+  "TachoDueDate",
+]);
+
 type DepotStreetViewRule = {
   tokens: string[]; // must ALL be present
   lat: number;
@@ -2812,9 +2816,15 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                   <div className="vehicle-modal-health">
                     {MODAL_HEALTH_FIELDS                 
-                      .filter((f) =>
-                        isTrailer ? true : !TRAILER_ONLY_HEALTH_KEYS.has(f.key)
-                      )
+                      .filter((f) => {
+                        if (isTrailer) {
+                          // Exclude vehicle-only fields for trailers
+                          return !VEHICLE_ONLY_HEALTH_KEYS.has(f.key);
+                        }
+
+                        // Exclude trailer-only fields for vehicles
+                        return !TRAILER_ONLY_HEALTH_KEYS.has(f.key);
+                      })
                       .map((f) => {
                         const raw = (selectedVehicle as any)[f.key] as string | undefined;
 
