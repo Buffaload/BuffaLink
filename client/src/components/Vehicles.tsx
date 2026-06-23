@@ -913,11 +913,13 @@ function getStreetViewLatLon(vehicle: {
 
 type ShowFilterKey = "all" | "showVorDefects" | "hideVorDefects" | "hgvOnly" | "trailersOnly";
 type ShowFilterState = Record<ShowFilterKey, boolean>;
+type ShowFilterGroup = "base" | "vor" | "asset";
 
 type ShowFilterOption = {
   key: ShowFilterKey;
   label: string;
   summaryLabel: string;
+  group: ShowFilterGroup;
 };
 
 const DEFAULT_SHOW_FILTERS: ShowFilterState = {
@@ -929,16 +931,16 @@ const DEFAULT_SHOW_FILTERS: ShowFilterState = {
 };
 
 const SHOW_FILTER_OPTIONS: ShowFilterOption[] = [
-  { key: "all", label: "All", summaryLabel: "All" },
-  { key: "showVorDefects", label: "Show VOR/Defects", summaryLabel: "VOR/Defects" },
-  { key: "hideVorDefects", label: "Hide VOR/Defects", summaryLabel: "Hide VOR/Defects" },
-  { key: "hgvOnly", label: "HGVs only", summaryLabel: "HGVs" },
-  { key: "trailersOnly", label: "Trailers only", summaryLabel: "Trailers" },
+  { key: "all", label: "All", summaryLabel: "All", group: "base" },
+  { key: "showVorDefects", label: "Show VOR/Defects", summaryLabel: "VOR/Defects", group: "vor" },
+  { key: "hideVorDefects", label: "Hide VOR/Defects", summaryLabel: "Hide VOR/Defects", group: "vor" },
+  { key: "hgvOnly", label: "HGVs only", summaryLabel: "HGVs", group: "asset" },
+  { key: "trailersOnly", label: "Trailers only", summaryLabel: "Trailers", group: "asset" },
 ];
 
 const getAvailableShowFilterOptions = (filterOption: string) => {
   return SHOW_FILTER_OPTIONS.filter((option) => {
-    if (filterOption === "Services") {
+    if (filterOption === "HGVs" || filterOption === "Services") {
       return option.key !== "hgvOnly" && option.key !== "trailersOnly";
     }
     return true;
@@ -949,7 +951,6 @@ const getShowFilterSummaryLabel = (
   filters: ShowFilterState,
   filterOption: string
 ): string => {
-
   if (filters.all) return "All";
 
   const selected = getAvailableShowFilterOptions(filterOption).filter(
@@ -958,7 +959,47 @@ const getShowFilterSummaryLabel = (
 
   if (selected.length === 0) return "All";
   if (selected.length === 1) return selected[0].summaryLabel;
-  return `${selected.length} selected`;
+  return selected.map((option) => option.summaryLabel).join(" + ");
+};
+
+const resetShowFilters = (): ShowFilterState => ({
+  ...DEFAULT_SHOW_FILTERS,
+});
+
+const getNextShowFilters = (
+  previous: ShowFilterState,
+  option: ShowFilterOption,
+  checked: boolean
+): ShowFilterState => {
+  if (option.key === "all") {
+    return resetShowFilters();
+  }
+
+  const next: ShowFilterState = {
+    ...previous,
+    all: false,
+    [option.key]: checked,
+  };
+
+  if (option.group === "vor") {
+    const siblingKey: ShowFilterKey =
+      option.key === "showVorDefects" ? "hideVorDefects" : "showVorDefects";
+    next[siblingKey] = false;
+  }
+
+  if (option.group === "asset") {
+    const siblingKey: ShowFilterKey =
+      option.key === "hgvOnly" ? "trailersOnly" : "hgvOnly";
+    next[siblingKey] = false;
+  }
+
+  const hasActiveSpecificFilter =
+    next.showVorDefects ||
+    next.hideVorDefects ||
+    next.hgvOnly ||
+    next.trailersOnly;
+
+  return hasActiveSpecificFilter ? next : resetShowFilters();
 };
 
 const isTrailerAsset = (v: Vehicle) => {
@@ -1400,7 +1441,27 @@ const Vehicles: React.FC<VehiclesProps> = ({
   };
 
   useEffect(() => {
+    setSearchTerm("");
     setIsShowDropdownOpen(false);
+
+    if (filterOption === "Services") {
+      setShowFilters((prev) => {
+        if (!prev.hgvOnly && !prev.trailersOnly) return prev;
+
+        const next = {
+          ...prev,
+          hgvOnly: false,
+          trailersOnly: false,
+        };
+
+        const hasActiveSpecificFilter =
+          next.showVorDefects || next.hideVorDefects;
+
+        return hasActiveSpecificFilter
+          ? { ...next, all: false }
+          : resetShowFilters();
+      });
+    }
   }, [filterOption]);
 
   useEffect(() => {
@@ -1719,23 +1780,22 @@ const Vehicles: React.FC<VehiclesProps> = ({
     }
 
     if (!showFilters.all) {
-      const wantsShowVor = showFilters.hideVorDefects;
-      const wantsHideVor = showFilters.hideVorDefects;
+      // Apply Show filters
+      if (!showFilters.all) {
+        // VOR group (mutually exclusive)
+        if (showFilters.showVorDefects) {
+          list = list.filter((v) => isVorOrDefect(v));
+        } else if (showFilters.hideVorDefects) {
+          list = list.filter((v) => !isVorOrDefect(v));
+        }
 
-      if (wantsShowVor !== wantsHideVor) {
-        list = list.filter((v) =>
-          wantsShowVor ? isVorOrDefect(v) : !isVorOrDefect(v)
-        );
-      }
-
-      if (filterOption !== "Services") {
-        const onlyHgv = showFilters.hgvOnly;
-        const onlyTrailer = showFilters.trailersOnly;
-
-        if (onlyHgv !== onlyTrailer) {
-          list = list.filter((v) =>
-            onlyTrailer ? isTrailerAsset(v) : isHgvAsset(v)
-          );
+        // Asset type group (mutually exclusive)
+        if (filterOption !== "HGVs" && filterOption !== "Services") {
+          if (showFilters.hgvOnly) {
+            list = list.filter((v) => isHgvAsset(v));
+          } else if (showFilters.trailersOnly) {
+            list = list.filter((v) => isTrailerAsset(v));
+          }
         }
       }
     }
@@ -2375,7 +2435,13 @@ const Vehicles: React.FC<VehiclesProps> = ({
           {(filterOption !== "DelaysMap" && !isKioskMode) ? (
             <div className="vehicles-wizard" aria-label="Dashboard tools">
               {/* VOR only (styled like a pill) */}
-              <div className="wizard-pill wizard-sort wizard-show" ref={showDropdownRef}>
+              {/* Show filters dropdown */}
+              <div
+                className={`wizard-pill wizard-sort wizard-show ${
+                  isShowDropdownOpen ? "wizard-show--open" : ""
+                }`}
+                ref={showDropdownRef}
+              >
                 <button
                   type="button"
                   className="wizard-show-trigger"
@@ -2385,54 +2451,54 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <span className="wizard-show-value">
                     {getShowFilterSummaryLabel(showFilters, filterOption)}
                   </span>
-
-                  <span className={`wizard-show-caret ${isShowDropdownOpen ? "open" : ""}`} />
+                  <svg
+                    className={`wizard-show-caret ${
+                      isShowDropdownOpen ? "open" : ""
+                    }`}
+                    width="14"
+                    height="14"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                  >
+                    <path
+                      d="M5.5 7.5L10 12l4.5-4.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
 
                 {isShowDropdownOpen && (
                   <div className="wizard-show-menu">
-                    {getAvailableShowFilterOptions(filterOption).map((opt) => (
-                      <label key={opt.key} className="wizard-show-option">
-                        <input
-                          type="checkbox"
-                          checked={showFilters[opt.key]}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setShowFilters((prev) => {
-                              // Selecting ALL resets everything    
-                              if (opt.key === "all") {
-                                return {
-                                  all: true,
-                                  showVorDefects: false,
-                                  hideVorDefects: false,
-                                  hgvOnly: false,
-                                  trailersOnly: false,
-                                };
+                    {getAvailableShowFilterOptions(filterOption).map(
+                      (opt, index, arr) => (
+                        <React.Fragment key={opt.key}>
+                          <label className="wizard-show-option">
+                            <input
+                              className="wizard-checkbox"
+                              type="checkbox"
+                              checked={showFilters[opt.key]}
+                              onChange={(e) =>
+                                setShowFilters((prev) =>
+                                  getNextShowFilters(prev, opt, e.target.checked)
+                                )
                               }
-                              // Any other selection = turn ALL off
-                              const next = {
-                                ...prev,
-                                all: false,
-                                [opt.key]: checked,
-                              };
-                              // If everything unchecked → revert to ALL
-                              const anyActive =
-                                next.showVorDefects ||
-                                next.hideVorDefects ||
-                                next.hgvOnly ||
-                                next.trailersOnly;
-                              
-                              if (!anyActive) {
-                                return DEFAULT_SHOW_FILTERS;
-                              }
+                            />
+                            <span className="wizard-show-option-text">
+                              {opt.label}
+                            </span>
+                          </label>
 
-                              return next;
-                            });
-                          }}
-                        />
-                        {opt.label}
-                      </label>
-                    ))}
+                          {/* Divider between groups */}
+                          {opt.key === "hideVorDefects" &&
+                            index < arr.length - 1 && (
+                              <div className="wizard-show-divider" />
+                            )}
+                        </React.Fragment>
+                      )
+                    )}
                   </div>
                 )}
               </div>
