@@ -43,7 +43,7 @@ const createVolvoAxios = (baseURL) => {
   return axios.create({
     baseURL,
     auth: { username: volvoUsername, password: volvoPassword },
-    timeout: 10000,
+    timeout: 4000,
     httpsAgent: upstreamHttpsAgent,
   });
 };
@@ -1029,12 +1029,11 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
-  await connectDb();
+  console.log("[vehicles] start");
 
   // console.log("MODEL DB:", VehicleMetadata.db?.name);
   // console.log("MODEL NATIVE DB:", VehicleMetadata.db?.db?.databaseName);
   // console.log("MODEL COLLECTION:", VehicleMetadata.collection?.name);
-  console.log("Authenticated request from user:", req.user);
 
   let blueCrystalIntegrity = {
     ok: false,
@@ -1065,6 +1064,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
   res.set("X-ForceDebug-Enabled", String(forceDebug));
 
   try {
+    console.log("[vehicles] before connectDb");
+    await connectDb();
+    console.log("[vehicles] after connectDb");
+    console.log("Authenticated request from user:", req.user);
+
     // Environment detection: Use NODE_ENV or check for dummy URLs
     // const useMockData = process.env.NODE_ENV !== 'production' ||
     //                    process.env.API_URL?.includes('dummy') ||
@@ -1311,7 +1315,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         }
         return axios.get(url, {
           httpsAgent: upstreamHttpsAgent,
-          timeout: 15000,
+          timeout: 5000,
           ...config,
         });
       };
@@ -1454,6 +1458,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
           }),
           VehicleMetadata.find({}),
       ]);
+
+      console.log("[vehicles] after upstream calls");
 
       const settledToDebug = (r) =>
         r.status === "fulfilled"
@@ -1751,6 +1757,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     const metadataMap = new Map();
 
+    console.log("[vehicles] before merge");
+
     for (const item of nightOutMetadata) {
       const key = normalizeId(item?.assetName);
       if (!key) continue;
@@ -1861,6 +1869,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
         };
       })
     );
+
+    console.log("[vehicles] after merge");
 
     // Dedupe & canonical merge
     // Prefer Registration (present in both Michelin + Volvo) → VIN → assetName
@@ -2027,6 +2037,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
       );
       return res.json(dedupedVehicles);
     }
+
+    console.log("[vehicles] before response");
 
     // Final successful response
     return res.json(dedupedVehicles);
