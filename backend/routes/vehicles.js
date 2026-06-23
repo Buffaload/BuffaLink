@@ -1793,9 +1793,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
         const archived = maintenance?.Archived ?? null;
-        const bcArchived = maintenance?.archived ?? null;
+        const Archived = maintenance?.archived ?? null;
         const archive = maintenance?.Archive ?? null;
-        const bcArchive = maintenance?.archive ?? null;
+        const Archive = maintenance?.archive ?? null;
         const bcBranchId = maintenance?.BranchID ?? null;
         const bcBranchName = maintenance?.BranchName ?? null;
 
