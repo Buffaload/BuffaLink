@@ -58,7 +58,8 @@ router.post(
 );
 
 // Login a user
-router.post(router.post",
+router.post(
+  "/login",
   [
     check("username", "Username is required").not().isEmpty(),
     check("password", "Password is required").exists(),
