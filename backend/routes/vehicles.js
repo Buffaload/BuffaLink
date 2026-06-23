@@ -1783,10 +1783,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       vehicles.map(async (vehicle) => {
         const normalisedAssetName = normalizeId(vehicle.assetName);
         const normalisedReg = normalizeId(vehicle.assetRegistration);
-        const archived = maintenance?.Archived ?? null;
-        const bcArchived = maintenance?.archived ?? null;
-        const archive = maintenance?.Archive ?? null;
-        const bcArchive = maintenance?.archive ?? null;
 
         // Match BlueCrystal data
         const maintenance = 
@@ -1796,6 +1792,10 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
+        const archived = maintenance?.Archived ?? null;
+        const bcArchived = maintenance?.archived ?? null;
+        const archive = maintenance?.Archive ?? null;
+        const bcArchive = maintenance?.archive ?? null;
         const bcBranchId = maintenance?.BranchID ?? null;
         const bcBranchName = maintenance?.BranchName ?? null;
 
