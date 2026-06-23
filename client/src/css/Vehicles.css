@@ -68,6 +68,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  height: 34px;
   padding: 8px 10px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -95,6 +96,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
+  height: 100%;
   padding: 8px 12px;
   background: transparent;
   border: none;
@@ -169,6 +171,7 @@
 .wizard-sort-label {
   opacity: 0.75;
   font-weight: 600;
+  font-size: 13px;
 }
 
 .wizard-select {
@@ -176,20 +179,33 @@
   outline: none;
   background: transparent;
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding: 0 30px 0 10px; /* space for text + chevron */
-  min-width: 150px;          /* makes it feel less cramped */
+  padding: 0 26px 0 6px;
+  min-width: 150px;
   border-radius: 8px;
-  background-color: transparent;
   font-weight: 700;
   font-size: 13px;
   color: #111827;
   cursor: pointer;
+}
+
+.wizard-sort::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 7.5L10 12l4.5-4.5' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 14px;
+  background-size: contain;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  pointer-events: none;
+}
+
+.wizard-sort:focus-within::after {
+  transform: translateY(-50%) rotate(180deg);
+  filter: brightness(0) saturate(100%) invert(47%) sepia(83%) saturate(427%) hue-rotate(88deg);
 }
 
 .wizard-select:hover {
@@ -202,8 +218,9 @@
   box-shadow: 0 0 0 3px rgba(21, 168, 65, 0.15);
 }
 
-.wizard-select {
-  border-radius: 8px;
+.wizard-select option {
+  padding: 6px;
+  font-weight: 600;
 }
 
 .wizard-select option:checked {
@@ -215,7 +232,14 @@
 }
 
 .wizard-pill.wizard-sort {
+  position: relative;
   padding-right: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wizard-sort:focus-within {
+  border-color: rgba(21, 168, 65, 0.55);
+  box-shadow: 0 0 0 3px rgba(21, 168, 65, 0.15);
 }
 
 .wizard-sort-direction {
