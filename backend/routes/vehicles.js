@@ -1064,9 +1064,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
   res.set("X-ForceDebug-Enabled", String(forceDebug));
 
   try {
-    console.log("[vehicles] before connectDb");
     await connectDb();
-    console.log("[vehicles] after connectDb");
     console.log("Authenticated request from user:", req.user);
 
     // Environment detection: Use NODE_ENV or check for dummy URLs
@@ -1458,8 +1456,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           }),
           VehicleMetadata.find({}),
       ]);
-
-      console.log("[vehicles] after upstream calls");
 
       const settledToDebug = (r) =>
         r.status === "fulfilled"
@@ -1870,8 +1866,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       })
     );
 
-    console.log("[vehicles] after merge");
-
     // Dedupe & canonical merge
     // Prefer Registration (present in both Michelin + Volvo) → VIN → assetName
     const normalizeKey = (val) =>
@@ -1977,6 +1971,10 @@ router.get("/", auth, diagnostics, async (req, res) => {
         data: dedupedVehicles,
       };
 
+      console.log("[vehicles] before SourceSnapshot.updateOne", {
+        dedupedCount: dedupedVehicles.length,
+      });
+
       try {
         await SourceSnapshot.updateOne(
           { key: "combined" },
@@ -1991,6 +1989,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
           },
           { upsert: true }
         );
+
+        console.log("[vehicles] after SourceSnapshot.updateOne");
       } catch (err) {
         console.warn(
           "[Mongo Snapshot] Failed to persist combined snapshot",
@@ -1998,11 +1998,13 @@ router.get("/", auth, diagnostics, async (req, res) => {
         );
       }
 
+      console.log("[vehicles] before final res.json (complete path)");
       return res.json(dedupedVehicles);
     }
 
     // If the current response is incomplete, prefer the last known complete combined cache
     if (!isComplete) {
+      console.log("[vehicles] entering incomplete branch");
       // Try in-memory cache first
       if (
         sourceCache.combined?.data?.length &&
@@ -2015,7 +2017,9 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
       // Then try Mongo snapshot
       try {
+        console.log("[vehicles] before SourceSnapshot.findOne");
         const mongoSnapshot = await SourceSnapshot.findOne({ key: "combined" });
+        console.log("[vehicles] after SourceSnapshot.findOne");
 
         if (mongoSnapshot?.data?.length) {
           res.set("X-Partial-Data", "1");
