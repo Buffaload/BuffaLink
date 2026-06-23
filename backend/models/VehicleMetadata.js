@@ -7,4 +7,6 @@ const vehicleMetadataSchema = new mongoose.Schema({
   lastEventType: { type: String }, // Track last eventType to automate status change
 });
 
-export default mongoose.model("VehicleMetadata", vehicleMetadataSchema);
+// Prevent recompilation in dev/serverless
+export default mongoose.models.VehicleMetadata ||
+    mongoose.model("VehicleMetadata", vehicleMetadataSchema);

@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import express from "express";
 import axios from "axios";
 import crypto from "crypto";
@@ -9,6 +8,7 @@ import diagnostics from "../middleware/diagnostics.js";
 import VehicleMetadata from "../models/VehicleMetadata.js";
 import SourceSnapshot from "../models/SourceSnapshot.js";
 import { depotVisibilityRules } from "../config/visibilityRules.js";
+import connectDb from "../lib/connectDb.js";
 
 // Keep-alive agent for your main upstream APIs
 const upstreamHttpsAgent = new https.Agent({
@@ -1029,6 +1029,8 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
+  await connectDb();
+
   // console.log("MODEL DB:", VehicleMetadata.db?.name);
   // console.log("MODEL NATIVE DB:", VehicleMetadata.db?.db?.databaseName);
   // console.log("MODEL COLLECTION:", VehicleMetadata.collection?.name);
@@ -2044,6 +2046,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
 });
 
 router.patch("/:assetName/night-out", auth, async (req, res) => {
+  await connectDb();
+
   const { assetName } = req.params;
   const { isNightOut } = req.body;
 

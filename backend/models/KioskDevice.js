@@ -25,4 +25,6 @@ const kioskDeviceSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-export default mongoose.model("KioskDevice", kioskDeviceSchema);
+// Prevent recompilation in dev/serverless
+export default mongoose.models.KioskDevice ||
+    mongoose.model("KioskDevice", kioskDeviceSchema);

@@ -7,4 +7,6 @@ const userSchema = new mongoose.Schema({
   depot: { type: String, required: true },
 });
 
-export default mongoose.model("User", userSchema);
+// Prevent recompilation in dev/serverless
+export default mongoose.models.User ||
+    mongoose.model("User", userSchema);

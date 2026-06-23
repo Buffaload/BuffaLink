@@ -1,16 +1,22 @@
-// routes/kiosk.ts
-import express from 'express';
-import KioskDeviceSchema from '../models/KioskDevice.js';
-import getClientIp from '../middleware/getClientIp.js';
-import jwt from 'jsonwebtoken';
+import express from "express";
+import jwt from "jsonwebtoken";
+import KioskDevice from "../models/KioskDevice.js";
+import getClientIp from "../middleware/getClientIp.js";
+import connectDb from "../lib/connectDb.js";
 
 const router = express.Router();
 
-router.get('/check', async (req, res) => {
+router.get("/check", async (req, res) => {
     try {
-        const ip = getClientIp(req);
+        await connectDb();
 
-        const kiosk = await KioskDeviceSchema.findOne({ ip, isActive: true });
+        const ip = getClientIp(req);
+        console.log("Kiosk check request from IP:", ip);
+
+        const kiosk = await KioskDevice.findOne({
+            ip,
+            isActive: true,
+        }).lean();
 
         if (!kiosk) {
             return res.json({ isKiosk: false });
@@ -21,14 +27,13 @@ router.get('/check', async (req, res) => {
             return res.status(500).json({ msg: "Server configuration error" });
         }
 
-        // Generate auto-login JWT
         const token = jwt.sign(
             {
                 userId: kiosk.autoLoginUserId,
-                role: 'kiosk',
+                role: "kiosk",
             },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: "7d" }
         );
 
         return res.json({
@@ -39,6 +44,7 @@ router.get('/check', async (req, res) => {
         console.error("Kiosk check failed:", err);
         return res.status(500).json({
             msg: "Kiosk detection failed",
+            error: err.message,
         });
     }
 });

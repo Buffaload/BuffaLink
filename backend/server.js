@@ -1,5 +1,4 @@
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import auth from "./middleware/auth.js"; // Auth middleware
@@ -62,12 +61,6 @@ app.use((req, res, next) => {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
 //Test route
 app.get("/api/test", (req, res) => {
