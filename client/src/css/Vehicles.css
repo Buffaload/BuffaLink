@@ -78,6 +78,43 @@
   line-height: 1;
 }
 
+.wizard-show {
+  position: relative;
+}
+
+.wizard-show-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.wizard-show-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  padding: 8px;
+  z-index: 50;
+}
+
+.wizard-show-option {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.wizard-show-option:hover {
+  background: #f3f4f6;
+}
+
 .wizard-checkbox {
   width: 14px;
   height: 14px;

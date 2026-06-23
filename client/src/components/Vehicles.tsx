@@ -911,6 +911,68 @@ function getStreetViewLatLon(vehicle: {
   return null;
 }
 
+type ShowFilterKey = "all" | "showVorDefects" | "hideVorDefects" | "hgvOnly" | "trailersOnly";
+type ShowFilterState = Record<ShowFilterKey, boolean>;
+
+type ShowFilterOption = {
+  key: ShowFilterKey;
+  label: string;
+  summaryLabel: string;
+};
+
+const DEFAULT_SHOW_FILTERS: ShowFilterState = {
+  all: true,
+  showVorDefects: false,
+  hideVorDefects: false,
+  hgvOnly: false,
+  trailersOnly: false,
+};
+
+const SHOW_FILTER_OPTIONS: ShowFilterOption[] = [
+  { key: "all", label: "All", summaryLabel: "All" },
+  { key: "showVorDefects", label: "Show VOR/Defects", summaryLabel: "VOR/Defects" },
+  { key: "hideVorDefects", label: "Hide VOR/Defects", summaryLabel: "Hide VOR/Defects" },
+  { key: "hgvOnly", label: "HGVs only", summaryLabel: "HGVs" },
+  { key: "trailersOnly", label: "Trailers only", summaryLabel: "Trailers" },
+];
+
+const getAvailableShowFilterOptions = (filterOption: string) => {
+  return SHOW_FILTER_OPTIONS.filter((option) => {
+    if (filterOption === "Services") {
+      return option.key !== "hgvOnly" && option.key !== "trailersOnly";
+    }
+    return true;
+  });
+};
+
+const getShowFilterSummaryLabel = (
+  filters: ShowFilterState,
+  filterOption: string
+): string => {
+
+  if (filters.all) return "All";
+
+  const selected = getAvailableShowFilterOptions(filterOption).filter(
+    (o) => o.key !== "all" && filters[o.key]
+  );
+
+  if (selected.length === 0) return "All";
+  if (selected.length === 1) return selected[0].summaryLabel;
+  return `${selected.length} selected`;
+};
+
+const isTrailerAsset = (v: Vehicle) => {
+  const type = String(v.assetType ?? "").toLowerCase();
+  const group = String(v.assetGroupName ?? "").toLowerCase();
+  return type === "trailer" || group.includes("trailer");
+};
+
+const isHgvAsset = (v: Vehicle) => {
+  const type = String(v.assetType ?? "").toLowerCase();
+  const group = String(v.assetGroupName ?? "").toLowerCase();
+  return type === "hgv" || group.includes("hgv");
+};
+
 type VehicleMiniMapProps = {
   vehicle: VehicleWithSince;
   height?: number;
@@ -1107,7 +1169,9 @@ const Vehicles: React.FC<VehiclesProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [locationTick, setLocationTick] = useState(0);
-  const [isVorFilterActive, setIsVorFilterActive] = useState(false);
+  const [showFilters, setShowFilters] = useState<ShowFilterState>(DEFAULT_SHOW_FILTERS);
+  const [isShowDropdownOpen, setIsShowDropdownOpen] = useState(false);
+  const showDropdownRef = useRef<HTMLDivElement | null>(null);
   const [sortOption, setSortOption] = useState<"stoppedTime" | "serviceDue" | "reg" | "location">("stoppedTime");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [timelineTick, setTimelineTick] = useState(0);
@@ -1135,6 +1199,27 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return () =>
       window.removeEventListener(LOCATION_DEPOTS_EVENT, onLocationChanged);
   }, []);
+
+  useEffect(() => {
+    if (!isShowDropdownOpen) return;
+
+    const handleClick = (e: MouseEvent) => {
+      if (showDropdownRef.current?.contains(e.target as Node)) return;
+      setIsShowDropdownOpen(false);
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsShowDropdownOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isShowDropdownOpen]);
 
   const scrollToTop = () => {
     const el = scrollRef.current;
@@ -1313,6 +1398,10 @@ const Vehicles: React.FC<VehiclesProps> = ({
       lastActiveElementRef.current?.focus?.();
     }, 180);
   };
+
+  useEffect(() => {
+    setIsShowDropdownOpen(false);
+  }, [filterOption]);
 
   useEffect(() => {
     if (!isVehicleModalOpen) return;
@@ -1629,8 +1718,26 @@ const Vehicles: React.FC<VehiclesProps> = ({
       }
     }
 
-    if (isVorFilterActive) {
-      list = list.filter(isVorOrDefect);
+    if (!showFilters.all) {
+      const wantsShowVor = showFilters.hideVorDefects;
+      const wantsHideVor = showFilters.hideVorDefects;
+
+      if (wantsShowVor !== wantsHideVor) {
+        list = list.filter((v) =>
+          wantsShowVor ? isVorOrDefect(v) : !isVorOrDefect(v)
+        );
+      }
+
+      if (filterOption !== "Services") {
+        const onlyHgv = showFilters.hgvOnly;
+        const onlyTrailer = showFilters.trailersOnly;
+
+        if (onlyHgv !== onlyTrailer) {
+          list = list.filter((v) =>
+            onlyTrailer ? isTrailerAsset(v) : isHgvAsset(v)
+          );
+        }
+      }
     }
 
     const normalize = (value: string | null | undefined): string =>
@@ -1707,7 +1814,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
     vehiclesWithSince,
     filterOption,
     selectedDepots,
-    isVorFilterActive,
+    showFilters,
     searchTerm,
     sortOption,
     sortDirection,
@@ -2268,15 +2375,67 @@ const Vehicles: React.FC<VehiclesProps> = ({
           {(filterOption !== "DelaysMap" && !isKioskMode) ? (
             <div className="vehicles-wizard" aria-label="Dashboard tools">
               {/* VOR only (styled like a pill) */}
-              <label className="wizard-pill wizard-vor">
-                <input
-                  className="wizard-checkbox"
-                  type="checkbox"
-                  checked={isVorFilterActive}
-                  onChange={(e) => setIsVorFilterActive(e.target.checked)}
-                />
-                <span className="wizard-pill-text">VOR/Defects only</span>
-              </label>
+              <div className="wizard-pill wizard-sort wizard-show" ref={showDropdownRef}>
+                <button
+                  type="button"
+                  className="wizard-show-trigger"
+                  onClick={() => setIsShowDropdownOpen((o) => !o)}
+                >
+                  <span className="wizard-sort-label">Show:</span>
+                  <span className="wizard-show-value">
+                    {getShowFilterSummaryLabel(showFilters, filterOption)}
+                  </span>
+
+                  <span className={`wizard-show-caret ${isShowDropdownOpen ? "open" : ""}`} />
+                </button>
+
+                {isShowDropdownOpen && (
+                  <div className="wizard-show-menu">
+                    {getAvailableShowFilterOptions(filterOption).map((opt) => (
+                      <label key={opt.key} className="wizard-show-option">
+                        <input
+                          type="checkbox"
+                          checked={showFilters[opt.key]}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setShowFilters((prev) => {
+                              // Selecting ALL resets everything    
+                              if (opt.key === "all") {
+                                return {
+                                  all: true,
+                                  showVorDefects: false,
+                                  hideVorDefects: false,
+                                  hgvOnly: false,
+                                  trailersOnly: false,
+                                };
+                              }
+                              // Any other selection = turn ALL off
+                              const next = {
+                                ...prev,
+                                all: false,
+                                [opt.key]: checked,
+                              };
+                              // If everything unchecked → revert to ALL
+                              const anyActive =
+                                next.showVorDefects ||
+                                next.hideVorDefects ||
+                                next.hgvOnly ||
+                                next.trailersOnly;
+                              
+                              if (!anyActive) {
+                                return DEFAULT_SHOW_FILTERS;
+                              }
+
+                              return next;
+                            });
+                          }}
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Sort dropdown (pill) */}
               <div className="wizard-pill wizard-sort">
@@ -2418,7 +2577,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
               <p className="vehicle-empty-text">
                 {categoryVehicles.length === 0
                   ? "No stopped vehicles to show in this category"
-                  : "No vehicles match your current filters (Search / VOR)"}
+                  : "No vehicles match your current filters (Search / Show)"}
               </p>
             </div>
           ) : (

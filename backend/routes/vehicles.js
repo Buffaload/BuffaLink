@@ -1792,12 +1792,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
         const nextMaint = computeNextMaintenanceDue(maintenance, vehicle.assetType);
 
-        const archived = maintenance?.Archived ?? null;
-        const Archived = maintenance?.archived ?? null;
-        const archive = maintenance?.Archive ?? null;
-        const Archive = maintenance?.archive ?? null;
         const bcBranchId = maintenance?.BranchID ?? null;
-        const bcBranchName = maintenance?.BranchName ?? null;
 
         const ownershipKey = 
           normalizeId(maintenance?.VehicleId) ||
@@ -1805,7 +1800,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           normalisedAssetName;
         const meta = ownershipKey ? metadataMap.get(ownershipKey) : null;
         const branchId = bcBranchId ?? meta?.branchId ?? null;
-        const branchName = bcBranchName ?? null;
         const isNightOut = meta?.isNightOut ?? false;
 
         // Check if the vehicle is "driving"
@@ -1867,11 +1861,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           IsVor: maintenance?.IsVor ?? false,
           LiveDefects: maintenance?.LiveDefects ?? false,
           branchId,
-          branchName,
-          archived,
-          Archived,
-          archive,
-          Archive,
           isNightOut,
         };
       })
