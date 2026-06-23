@@ -2031,8 +2031,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
     console.error("Error fetching vehicles:", err.message);
     res.status(500).json({ message: "Failed to fetch vehicle data." });
   }
-
-  export const getCombinedVehicleCache = () => sourceCache.combined;
 });
 
 router.patch("/:assetName/night-out", auth, async (req, res) => {
@@ -2070,4 +2068,5 @@ router.patch("/:assetName/night-out", auth, async (req, res) => {
   }
 });
 
+export const getCombinedVehicleCache = () => sourceCache.combined;
 export default router;
