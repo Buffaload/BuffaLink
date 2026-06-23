@@ -1029,8 +1029,6 @@ router.use((req, res, next) => {
 
 // Fetch vehicles from external API
 router.get("/", auth, diagnostics, async (req, res) => {
-  console.log("[vehicles] start");
-
   // console.log("MODEL DB:", VehicleMetadata.db?.name);
   // console.log("MODEL NATIVE DB:", VehicleMetadata.db?.db?.databaseName);
   // console.log("MODEL COLLECTION:", VehicleMetadata.collection?.name);
@@ -1964,47 +1962,22 @@ router.get("/", auth, diagnostics, async (req, res) => {
       );
     }
 
-    // Only allow fully complete responses to refresh the combined cache
+    // Only allow fully complete responses to refresh the in-memory cache
     if (dedupedVehicles.length > 0 && isComplete) {
       sourceCache.combined = {
         ts: Date.now(),
         data: dedupedVehicles,
       };
 
-      console.log("[vehicles] before SourceSnapshot.updateOne", {
+      console.log("[vehicles] returning complete response without snapshot write", {
         dedupedCount: dedupedVehicles.length,
       });
 
-      try {
-        await SourceSnapshot.updateOne(
-          { key: "combined" },
-          {
-            $set: {
-              key: "combined",
-              data: dedupedVehicles,
-              count: dedupedVehicles.length,
-              updatedAtMs: Date.now(),
-              integrity: { michelinIntegrity, blueCrystalIntegrity },
-            },
-          },
-          { upsert: true }
-        );
-
-        console.log("[vehicles] after SourceSnapshot.updateOne");
-      } catch (err) {
-        console.warn(
-          "[Mongo Snapshot] Failed to persist combined snapshot",
-          err.message
-        );
-      }
-
-      console.log("[vehicles] before final res.json (complete path)");
       return res.json(dedupedVehicles);
     }
 
     // If the current response is incomplete, prefer the last known complete combined cache
     if (!isComplete) {
-      console.log("[vehicles] entering incomplete branch");
       // Try in-memory cache first
       if (
         sourceCache.combined?.data?.length &&
@@ -2017,9 +1990,10 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
       // Then try Mongo snapshot
       try {
-        console.log("[vehicles] before SourceSnapshot.findOne");
-        const mongoSnapshot = await SourceSnapshot.findOne({ key: "combined" });
-        console.log("[vehicles] after SourceSnapshot.findOne");
+        const mongoSnapshot = await SourceSnapshot.findOne(
+          { key: "combined" },
+          { data: 1, _id: 0 }
+        ).lean();
 
         if (mongoSnapshot?.data?.length) {
           res.set("X-Partial-Data", "1");
@@ -2042,8 +2016,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
       return res.json(dedupedVehicles);
     }
 
-    console.log("[vehicles] before response");
-
     // Final successful response
     return res.json(dedupedVehicles);
   } catch (err) {
@@ -2059,6 +2031,8 @@ router.get("/", auth, diagnostics, async (req, res) => {
     console.error("Error fetching vehicles:", err.message);
     res.status(500).json({ message: "Failed to fetch vehicle data." });
   }
+
+  export const getCombinedVehicleCache = () => sourceCache.combined;
 });
 
 router.patch("/:assetName/night-out", auth, async (req, res) => {
