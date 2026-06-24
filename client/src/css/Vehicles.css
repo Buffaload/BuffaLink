@@ -224,7 +224,7 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.wizard-sort:focus-within {
+.wizard-sort--open {
   border-color: rgba(21, 168, 65, 0.55);
   box-shadow: 0 0 0 3px rgba(21, 168, 65, 0.15);
 }

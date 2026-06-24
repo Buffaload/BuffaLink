@@ -2451,23 +2451,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   <span className="wizard-show-value">
                     {getShowFilterSummaryLabel(showFilters, filterOption)}
                   </span>
-                  <svg
-                    className={`wizard-show-caret ${
-                      isShowDropdownOpen ? "open" : ""
-                    }`}
-                    width="14"
-                    height="14"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                  >
-                    <path
-                      d="M5.5 7.5L10 12l4.5-4.5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
                 </button>
 
                 {isShowDropdownOpen && (
