@@ -2,14 +2,11 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import KioskDevice from "../models/KioskDevice.js";
 import getClientIp from "../middleware/getClientIp.js";
-import connectDb from "../lib/connectDb.js";
 
 const router = express.Router();
 
 router.get("/check", async (req, res) => {
     try {
-        await connectDb();
-
         const ip = getClientIp(req);
         console.log("Kiosk check request from IP:", ip);
 
