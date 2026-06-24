@@ -62,4 +62,4 @@ const connectDb = async () => {
     return cached.conn;
 };
 
-export default connectD
+export default connectDb;
