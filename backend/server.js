@@ -5,9 +5,7 @@ import auth from "./middleware/auth.js"; // Auth middleware
 import checkRole from "./middleware/role.js"; // Role checking middleware
 import authRoutes from "./routes/auth.js"; // Auth routes (register/login)
 import vehicleRoutes from "./routes/vehicles.js";
-import kioskRoutes from "./routes/kiosk.js";
 import User from "./models/User.js";
-import vehicleSnapshotRoutes from "./routes/vehicleSnapshots.js";
 
 dotenv.config();
 
@@ -74,8 +72,6 @@ app.get("/api/test", (req, res) => {
 // Public routes
 app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
-app.use("/api/kiosk", kioskRoutes);
-app.use("/api/vehicles", vehicleSnapshotRoutes);
 
 // Protected route (for admin role)
 app.get("/api/admin", auth, checkRole("admin"), (req, res) => {
@@ -117,3 +113,4 @@ app.get("/api/debug/users", auth, async (req, res) => {
 export default function handler(req, res) {
   return app(req, res);
 }
+
