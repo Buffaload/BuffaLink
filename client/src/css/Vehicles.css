@@ -107,17 +107,6 @@
   color: #111827;
 }
 
-.wizard-show-caret {
-  margin-left: auto;
-  color: #6b7280;
-  transition: transform 0.2s ease;
-}
-
-.wizard-show-caret.open {
-  transform: rotate(180deg);
-  color: #15a841;
-}
-
 .wizard-show-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -152,7 +141,7 @@
 .wizard-checkbox {
   width: 14px;
   height: 14px;
-  accent-color: #15a841; /* Buffaload green */
+  accent-color: #15a841;
 }
 
 .wizard-checkbox:hover {
@@ -213,8 +202,7 @@
 
 .wizard-select:focus {
   outline: none;
-  border-color: rgba(21, 168, 65, 0.55);
-  box-shadow: 0 0 0 3px rgba(21, 168, 65, 0.15);
+  box-shadow: none;
 }
 
 .wizard-select option {
