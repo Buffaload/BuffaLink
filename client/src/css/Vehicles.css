@@ -90,6 +90,16 @@
   box-shadow: 0 0 0 3px rgba(21, 168, 65, 0.15);
 }
 
+.wizard-show--open::after {
+  transform: translateY(-50%) rotate(180deg);
+  filter: brightness(0)
+    saturate(100%)
+    invert(47%)
+    sepia(83%)
+    saturate(427%)
+    hue-rotate(88deg);
+}
+
 .wizard-show-trigger {
   display: flex;
   align-items: center;
@@ -189,6 +199,11 @@
   background-size: contain;
   transition: transform 0.2s ease, filter 0.2s ease;
   pointer-events: none;
+}
+
+.wizard-sort:focus-within {
+  border-color: rgba(21, 168, 65, 0.55);
+  box-shadow: 0 0 0 3px rgba(21, 168, 65, 0.15);
 }
 
 .wizard-sort:focus-within::after {
