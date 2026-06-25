@@ -2275,6 +2275,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 .kiosk-skeleton-grid {
@@ -2288,8 +2289,8 @@
 }
 
 .kiosk-skeleton-row {
-  flex: 1;
-  min-height: 48px;
+  min-height: auto;
+  padding: 10px 14px;
   opacity: 0.85;
 }
 
