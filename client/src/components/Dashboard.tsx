@@ -248,7 +248,22 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
     },
   };
 
+  useEffect(() => {
+    const isKioskSession = localStorage.getItem("isKioskSession") === "1";
+
+    if (isKioskSession) {
+      setIsKioskMode(true);
+      setIsCollapsed(true);
+      setIsMobileSidebarOpen(false);
+    }
+  }, []);
+
   const toggleKioskMode = () => {
+    const isKioskSession = localStorage.getItem("isKioskSession") === "1";
+
+    // Prevent kiosks from toggling
+    if (isKioskSession) return;
+
     setIsKioskMode((prevMode) => {
       const next = !prevMode;
       if (next) {
@@ -258,7 +273,6 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       return next;
     });
   };
-
 
   const [isMobile, setIsMobile] = useState(
     window.matchMedia("(max-width: 768px)").matches
@@ -566,6 +580,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   }
 
   const title = filterTitles[filterOption] ?? filterTitles.default;
+  const isKioskSession = localStorage.getItem("isKioskSession") === "1";
 
   return (
     <div className={`dashboard-container ${isKioskMode ? "kiosk-mode" : ""}`}>
@@ -636,7 +651,7 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
             <div className="iso-week-banner__label">ISO Week</div>
             <div className="iso-week-banner__value">{isoWeek}</div>
           </div>
-          {isWideEnoughForKiosk && (
+          {isWideEnoughForKiosk && !isKioskSession && (
             <div className="kiosk-toggle">
               <div className={`kiosk-toggle-wrapper ${isKioskMode ? "wrapper-on" : "wrapper-off"}`}>
                 <span className="kiosk-toggle-label">Kiosk Mode</span>
@@ -813,3 +828,4 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
 };
 
 export default Dashboard;
+
