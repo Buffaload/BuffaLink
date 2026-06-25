@@ -1710,8 +1710,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     const metadataMap = new Map();
 
-    console.log("[vehicles] before merge");
-
     for (const item of nightOutMetadata) {
       const key = normalizeId(item?.assetName);
       if (!key) continue;
@@ -1928,10 +1926,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
         ts: Date.now(),
         data: dedupedVehicles,
       };
-
-      console.log("[vehicles] returning complete response without snapshot write", {
-        dedupedCount: dedupedVehicles.length,
-      });
 
       return res.json(dedupedVehicles);
     }
