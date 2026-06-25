@@ -394,7 +394,11 @@ const Sidebar: React.FC<{
       throw new Error("No token found. Please log in.");
     }
 
-    const response = await api.get("/vehicles");
+    const response = await api.get("/vehicles", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.status === 200) {
       const data = response.data;

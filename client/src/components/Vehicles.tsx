@@ -1589,7 +1589,11 @@ const Vehicles: React.FC<VehiclesProps> = ({
       throw new Error("No token found. Please log in.");
     }
 
-    const response = await api.get("/vehicles");
+    const response = await api.get("/vehicles", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (response.status !== 200) {
       throw new Error("Failed to fetch vehicles");
@@ -3217,3 +3221,4 @@ const Vehicles: React.FC<VehiclesProps> = ({
 };
 
 export default Vehicles;
+
