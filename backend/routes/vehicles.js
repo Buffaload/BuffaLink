@@ -26,8 +26,6 @@ const nominatimHttpsAgent = new https.Agent({
 
 const VOLVO_BASE_URLS = {
   vehicle: "https://api.volvotrucks.com/vehicle",
-  tacho: "https://api.volvotrucks.com/tacho",
-  driver: "https://api.volvotrucks.com/driver",
 };
 
 const VOLVO_ACCEPT = {
@@ -50,8 +48,6 @@ const createVolvoAxios = (baseURL) => {
 
 const volvoClients = {
   vehicle: createVolvoAxios(VOLVO_BASE_URLS.vehicle),
-  tacho: createVolvoAxios(VOLVO_BASE_URLS.tacho),
-  driver: createVolvoAxios(VOLVO_BASE_URLS.driver),
 };
 
 const makeRequestId = () => {
@@ -835,35 +831,58 @@ async function fetchVolvoPaged({
   accept,
   extractItems,
   getNextPageParam,
+  maxPages = 10,
+  label = path,
 }) {
   const all = [];
   let pageParams = {};
   let guard = 0;
+  const seenPageParams = new Set();
 
-  while (guard++ < 50) {
+  while (guard++ < maxPages) {
+    const pageKey = JSON.stringify(pageParams ?? {});
+
+    if (seenPageParams.has(pageKey)) {
+      console.warn(`[Volvo pagination] Stopping repeated page params for ${label}`, {
+        pageParams,
+        fetchedCount: all.length,
+      });
+      break;
+    }
+
+    seenPageParams.add(pageKey);
+
+    const headers = accept ? { Accept: accept } : undefined;
+
     const resp = await axiosInstance.get(path, {
       params: {
         ...params,
         ...pageParams,
         requestId: makeRequestId(),
       },
-      headers: { Accept: accept },
-      timeout: 10000,
+      ...(headers ? { headers } : {}),
+      timeout: 4000,
     });
 
     const items = extractItems(resp.data) || [];
     all.push(...items);
 
-    const more = !!resp.data?.moreDataAvailable;
+    const more = Boolean(resp.data?.moreDataAvailable);
     if (!more || items.length === 0) break;
 
-    // Compute params for next page (VIN or starttime depending on endpoint)
     pageParams =
       typeof getNextPageParam === "function"
         ? getNextPageParam({ respData: resp.data, items })
         : {};
 
     if (!pageParams || Object.keys(pageParams).length === 0) break;
+  }
+
+  if (guard >= maxPages) {
+    console.warn(`[Volvo pagination] Hit maxPages for ${label}`, {
+      maxPages,
+      fetchedCount: all.length,
+    });
   }
 
   return all;
@@ -1328,7 +1347,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return arr.map((code) => fuelCodeMap[code] ?? code);
       };
 
-      const mapVolvoVehicles = async (volvoVehicles, volvoPositions, driverMap) => {
+      const mapVolvoVehicles = async (volvoVehicles, volvoPositions) => {
         const posByVin = new Map((volvoPositions ?? []).map((p) => [p.vin, p]));
         let budget = REVERSE_GEOCODE_BUDGET;
 
@@ -1367,16 +1386,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
               reverseName = await reverseGeocodeLimit(() => reverseGeocode(lat, lon));
             }
 
-            // driver name lookup
-            let driverName = null;
-            const driverId =
-              p.triggerType?.driverId?.tachoDriverIdentification?.driverIdentification;
-
-            if (driverId && driverMap?.has(driverId)) {
-              const driver = driverMap.get(driverId);
-              driverName = `${driver.firstName} ${driver.lastName}`.trim() || null;
-            }
-
             return {
               assetVin: v.vin,
               assetName: reg ?? v.vin,
@@ -1385,7 +1394,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
               assetGroupName: "HGVs",
               energyType: v.energyType ?? null,
               fuelType,
-              driverName,
               speed: speedMph ?? undefined,
               rawSpeed: Number.isFinite(rawSpeedNum) ? rawSpeedNum : undefined,
               eventType: isMoving ? "driving" : "stopped",
@@ -1406,7 +1414,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         return mapped.filter(Boolean);
       };
 
-      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, volvoDriversResponse, nightOutMetadataResult] =
+      const [vehicleResponse, blueCrystalResponse, volvoVehiclesResponse, volvoPositionsResponse, nightOutMetadataResult] =
         await Promise.allSettled([
           // Michelin with retry: prevents Volvo-only first loads when Michelin is flaky/cold
           withRetry(
@@ -1440,18 +1448,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
             extractItems: (data) => data?.vehiclePositionResponse?.vehiclePositions,
             getNextPageParam: null,
           }),
-          fetchVolvoPaged({
-            axiosInstance: volvoClients.driver,
-            path: "/drivers",
-            params: {
-              driverIdType: "Tacho", // Ensure IDs line up with vehiclepositions
-            },
-            accept: VOLVO_ACCEPT.drivers,
-            extractItems: (data) => data?.driverResponse?.drivers,
-            getNextPageParam: ({ items }) => ({
-              lastDriverId: items?.[items.length - 1]?.driverId,
-            }),
-          }),
           VehicleMetadata.find({}),
       ]);
 
@@ -1483,43 +1479,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
         });
       } else {
         console.log("[VOLVO /vehiclepositions] fulfilled", { count: volvoPositionsResponse.value?.length ?? 0 });
-      }
-
-      let driverMap = new Map();
-
-      if (volvoDriversResponse.status === "fulfilled") {
-        const drivers = volvoDriversResponse.value ?? [];
-
-        console.log("[VOLVO /drivers] fetched", drivers.length);
-
-        for (const d of drivers) {
-          const id =
-            d?.driverId?.tachoDriverIdentification?.driverIdentification ??
-            d?.driverId ??
-            null;
-
-          const firstName = d?.firstName ?? d?.driverName?.givenName ?? null;
-          const lastName = d?.lastName ?? d?.driverName?.familyName ?? null;
-
-          if (id && (firstName || lastName)) {
-            const normalized = id.trim().toUpperCase();
-
-            driverMap.set(normalized, {
-              firstName: firstName ?? "",
-              lastName: lastName ?? "",
-            });
-
-            // store short version too (last 14 chars)
-            if (normalized.length > 14) {
-              driverMap.set(normalized.slice(-14), {
-                firstName: firstName ?? "",
-                lastName: lastName ?? "",
-              });
-            }
-          }
-        }
-
-        console.log("[VOLVO Driver Map]", driverMap.size);
       }
 
       let volvoMapped = [];
@@ -1671,7 +1630,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         volvoVehicles = volvoVehiclesResponse.value;
         volvoPositions = volvoPositionsResponse.value;
 
-        const mapped = await mapVolvoVehicles(volvoVehicles, volvoPositions, driverMap);
+        const mapped = await mapVolvoVehicles(volvoVehicles, volvoPositions);
         volvoMapped = cacheIfNonEmpty("volvoMapped", mapped);
       } else {
         volvoMapped = isFresh(sourceCache.volvoMapped.ts)
@@ -1897,7 +1856,6 @@ router.get("/", auth, diagnostics, async (req, res) => {
           // Preserve Volvo enrichment fields
           assetVin: michelin.assetVin ?? volvo.assetVin,
           fuelType: michelin.fuelType ?? volvo.fuelType,
-          driverName: michelin.driverName ?? volvo.driverName,
           energyType: michelin.energyType ?? volvo.energyType,
           // speed from Volvo mapped into mph (enrichment)
           speed: michelin.speed ?? volvo.speed,
@@ -2072,3 +2030,4 @@ router.patch("/:assetName/night-out", auth, async (req, res) => {
 
 export const getCombinedVehicleCache = () => sourceCache.combined;
 export default router;
+
