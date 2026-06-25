@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
 import Vehicles from "./components/Vehicles";
 import API_BASE_URL from "./config";
+import api from "./api/client";
 
 // Kiosk helpers
 const KIOSK_QUERY_PARAM = "kiosk";
@@ -31,8 +32,8 @@ const clearKioskSession = () => {
 
 const persistKioskSession = (payload: {
   token: string;
-  role: string;
-  depot: string;
+  role?: string;
+  depot?: string;
   kioskLocation?: string | null;
   kioskDeviceName?: string | null;
 }) => {
@@ -57,40 +58,50 @@ const persistKioskSession = (payload: {
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [selectedDepots] = useState<string[]>([]);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
-
   const kioskEntryRequested = useMemo(() => isKioskEntryRequest(), []);
+
+  const [isBootstrapping, setIsBootstrapping] = useState(
+    kioskEntryRequested && !localStorage.getItem("token")
+  );
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister(); // Unregister the service worker
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    const bootstrapAuth = async () => {
+    const bootstrapKiosk = async () => {
+      // Non-kiosk visits should never see kiosk boot UI
+      if (!kioskEntryRequested) {
+        setIsBootstrapping(false);
+        return;
+      }
+
+      // Already authenticated - no need to re-bootstrap
+      const existingToken = localStorage.getItem("token");
+      if (existingToken) {
+        setToken(existingToken);
+        setIsBootstrapping(false);
+        return;
+      }
+
       try {
-        if (!kioskEntryRequested) {
-          return;
-        }
-
-        if (localStorage.getItem("token")) {
-          return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/kiosk/check`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          clearKioskSession();
-          return;
-        }
-
-        const data = await response.json();
+        const response = await api.get("/kiosk/check");
+        const data = response.data;
+        console.log("[kiosk bootstrap] response:", data);
 
         if (!data?.isKiosk || !data?.token) {
           clearKioskSession();
+          if (!cancelled) {
+            setToken(null);
+          }
           return;
         }
 
@@ -106,8 +117,12 @@ function App() {
           setToken(data.token);
         }
       } catch (error) {
-        console.error("Kiosk bootstrap failed:", error);
+        console.error("[kiosk bootstrap] failed:", error);
         clearKioskSession();
+
+        if (!cancelled) {
+          setToken(null);
+        }
       } finally {
         if (!cancelled) {
           setIsBootstrapping(false);
@@ -115,7 +130,7 @@ function App() {
       }
     };
 
-    bootstrapAuth();
+    bootstrapKiosk();
 
     return () => {
       cancelled = true;
@@ -128,28 +143,14 @@ function App() {
     }
   }, [kioskEntryRequested]);
 
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        for (let registration of registrations) {
-          registration.unregister(); // Unregister the service worker
-        }
-      });
-    }
-  }, []);
-
   const handleLogin = (userToken: string) => {
     setToken(userToken);
     localStorage.setItem("token", userToken);
   };
 
   const handleLogout = () => {
-    if (kioskEntryRequested) {
-      clearKioskSession();
-    } else {
       setToken(null);
-      localStorage.removeItem("token");
-    }
+      clearKioskSession();
   };
 
   if (isBootstrapping) {
