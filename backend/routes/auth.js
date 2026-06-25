@@ -34,13 +34,13 @@ router.get("/kiosk-check", async (req, res) => {
       return res.status(200).json({ isKiosk: false });
     }
 
-    const role = "kiosk";
+    const role = "admin";
     const depot = String(kiosk.location ?? "").trim().toLowerCase();
 
     const payload = {
       user: {
         id: String(kiosk.autoLoginUserId ?? kiosk._id),
-        role: "kiosk",
+        role: "admin",
         depot: String(kiosk.location ?? "").trim().toLowerCase(),
       },
     };
