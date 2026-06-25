@@ -2270,6 +2270,19 @@
   --row-accent: #16a34a;
 }
 
+/* Skeleton leaderboard state */
+.kiosk-leaderboard-row .skeleton {
+  height: 14px;
+}
+
+.kiosk-leaderboard-row .skeleton--reg {
+  height: 16px;
+}
+
+.kiosk-leaderboard-row .skeleton--location {
+  height: 12px;
+}
+
 .kiosk-leaderboard-left {
   display: flex;
   align-items: baseline;

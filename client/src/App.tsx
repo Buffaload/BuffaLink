@@ -156,7 +156,33 @@ function App() {
   };
 
   if (isBootstrapping) {
-    return <div style={{ padding: "2rem" }}>Starting kiosk session...</div>;
+    return (
+      <div className="kiosk-leaderboard-container">
+        <div className="kiosk-leaderboard-grid">
+          
+          {[0, 1].map((col) => (
+            <div key={col} className="kiosk-leaderboard-col">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="kiosk-leaderboard-row">
+
+                  <div className="kiosk-leaderboard-left">
+                    <div className="skeleton skeleton--label" style={{ width: 20 }} />
+                    <div className="skeleton skeleton--reg" style={{ width: 110 }} />
+                    <div className="skeleton skeleton--location" style={{ width: 160 }} />
+                  </div>
+
+                  <div className="kiosk-leaderboard-right">
+                    <div className="skeleton skeleton--time" style={{ width: 80 }} />
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          ))}
+
+        </div>
+      </div>
+    );
   }
 
   return (
