@@ -40,10 +40,12 @@ router.get("/kiosk-check", async (req, res) => {
     const payload = {
       user: {
         id: String(kiosk.autoLoginUserId ?? kiosk._id),
-        role,
-        depot,
+        role: "kiosk",
+        depot: String(kiosk.location ?? "").trim().toLowerCase(),
       },
     };
+
+    console.log("[ Payload ]", { payload });
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "7d",
