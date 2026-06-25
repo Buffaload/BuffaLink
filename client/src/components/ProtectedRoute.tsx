@@ -14,25 +14,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const checkTokenValidity = () => {
       const token = localStorage.getItem("token");
       const tokenExpiry = localStorage.getItem("tokenExpiry");
+      const isKiosk = localStorage.getItem("isKioskSession") === "1";
 
       const currentTime = Date.now();
-      if (!token || !tokenExpiry || Number(tokenExpiry) < currentTime) {
-        // Clear invalid token
-        localStorage.removeItem("token");
-        localStorage.removeItem("tokenExpiry");
-        localStorage.removeItem("role");
-        localStorage.removeItem("username");
+      if (!token || (!isKiosk && (!tokenExpiry || Number(tokenExpiry) < currentTime))) {
+        console.log("[ProtectedRoute] token invalid - redirecting");
 
-        setIsTokenValid(false); // Mark token as invalid
-        navigate("/login"); // Redirect ot login
+        localStorage.clear();
+        setIsTokenValid(false);
+        navigate("/login");
       }
     };
 
     checkTokenValidity();
 
-    const intervalId = setInterval(() => {
-      checkTokenValidity();
-    }, 1000);
+    const intervalId = setInterval(checkTokenValidity, 1000);
 
     return () => clearInterval(intervalId); // Clean up on mount
   }, [navigate]);
@@ -42,3 +38,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 export default ProtectedRoute;
+
