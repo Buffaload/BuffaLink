@@ -92,7 +92,7 @@ console.log("kioskEntryRequested:", kioskEntryRequested);
       }
 
       try {
-        const response = await api.get("/kiosk/check");
+        const response = await api.get("/auth/kiosk-check");
         const data = response.data;
         console.log("[kiosk bootstrap] response:", data);
 

@@ -4,8 +4,68 @@ import jwt from "jsonwebtoken";
 import { check, validationResult } from "express-validator";
 import User from "../models/User.js"; // Assuming User is already typed as a Mongoose model
 import connectDb from "../lib/connectDb.js";
+import KioskDevice from "../models/KioskDevice.js";
+import getClientIp from "../middleware/getClientIp.js";
+
+const normalizeIp = (value = "") =>
+  String(value)
+    .trim()
+    .replace(/^::ffff:/i, "")
+    .replace(/^\[|\]$/g, "");
 
 const router = express.Router();
+
+// Identify kiosk mode
+router.get("/kiosk-check", async (req, res) => {
+  await connectDb();
+
+  try {
+    const rawIp = getClientIp(req);
+    const ip = normalizeIp(rawIp);
+
+    console.log("[auth/kiosk-check] IP lookup", { rawIp, ip });
+
+    const kiosk = await KioskDevice.findOne({
+      ip,
+      isActive: true,
+    }).lean();
+
+    if (!kiosk) {
+      return res.status(200).json({ isKiosk: false });
+    }
+
+    const role = "kiosk";
+    const depot = String(kiosk.location ?? "").trim().toLowerCase();
+
+    const payload = {
+      user: {
+        id: String(kiosk.autoLoginUserId ?? kiosk._id),
+        role,
+        depot,
+      },
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return res.status(200).json({
+      isKiosk: true,
+      token,
+      role,
+      depot,
+      kioskLocation: kiosk.location ?? null,
+      kioskDeviceName: kiosk.name ?? null,
+    });
+  } catch (err) {
+    console.error("[auth/kiosk-check] failed:", err);
+    return res.status(500).json({
+      isKiosk: false,
+      msg: "Kiosk detection failed",
+      error: err.message,
+    });
+  }
+});
 
 // Register a new user
 router.post(
