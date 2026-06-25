@@ -57,11 +57,8 @@ const persistKioskSession = (payload: {
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [selectedDepots] = useState<string[]>([]);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
   const kioskEntryRequested = useMemo(() => isKioskEntryRequest(), []);
-console.log("kioskEntryRequested:", kioskEntryRequested);
-  const [isBootstrapping, setIsBootstrapping] = useState(
-    kioskEntryRequested && !localStorage.getItem("token")
-  );
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -79,7 +76,6 @@ console.log("kioskEntryRequested:", kioskEntryRequested);
     const bootstrapKiosk = async () => {
       // Non-kiosk visits should never see kiosk boot UI
       if (!kioskEntryRequested) {
-        setIsBootstrapping(false);
         return;
       }
 
@@ -87,9 +83,10 @@ console.log("kioskEntryRequested:", kioskEntryRequested);
       const existingToken = localStorage.getItem("token");
       if (existingToken) {
         setToken(existingToken);
-        setIsBootstrapping(false);
         return;
       }
+
+      setIsBootstrapping(true);
 
       try {
         const response = await api.get("/auth/kiosk-check");
@@ -100,6 +97,9 @@ console.log("kioskEntryRequested:", kioskEntryRequested);
           clearKioskSession();
           if (!cancelled) {
             setToken(null);
+          }
+          if (!cancelled) {
+            setIsBootstrapping(false);
           }
           return;
         }
