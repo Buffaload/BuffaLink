@@ -155,6 +155,10 @@ function App() {
       clearKioskSession();
   };
 
+  if (isBootstrapping) {
+    return null;
+  }
+
   return (
     <Router>
       <div className="App">
