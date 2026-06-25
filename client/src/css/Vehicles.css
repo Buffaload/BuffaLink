@@ -2271,6 +2271,28 @@
 }
 
 /* Skeleton leaderboard state */
+.kiosk-skeleton-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.kiosk-skeleton-grid {
+  flex: 1;
+  align-items: stretch;
+}
+
+.kiosk-leaderboard-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.kiosk-skeleton-row {
+  flex: 1;
+  min-height: 48px;
+  opacity: 0.85;
+}
+
 .kiosk-leaderboard-row .skeleton {
   height: 14px;
 }

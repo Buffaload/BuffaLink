@@ -2321,19 +2321,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
         onScroll={handleScroll}
       >
         {isLoading ? (
-          <div className="kiosk-leaderboard-container">
-            <div className="kiosk-leaderboard-grid">
+          <div className="kiosk-leaderboard-container kiosk-skeleton-container">
+            <div className="kiosk-leaderboard-grid kiosk-skeleton-grid">
+
               {[0, 1].map((col) => (
                 <div key={col} className="kiosk-leaderboard-col">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="kiosk-leaderboard-row">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="kiosk-leaderboard-row kiosk-skeleton-row">
                       <div className="kiosk-leaderboard-left">
                         <div className="skeleton" style={{ width: 20, height: 14 }} />
                         <div className="skeleton skeleton--reg" style={{ width: 110 }} />
-                        <div
-                          className="skeleton skeleton--location"
-                          style={{ width: `${120 + Math.random() * 80}px` }}
-                        />
+                        <div className="skeleton skeleton--location" />
                       </div>
                       <div className="kiosk-leaderboard-right">
                         <div className="skeleton skeleton--time" style={{ width: 80 }} />
