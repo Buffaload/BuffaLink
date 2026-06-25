@@ -27,6 +27,7 @@ const clearKioskSession = () => {
   localStorage.removeItem("isKioskSession");
   localStorage.removeItem("kioskLocation");
   localStorage.removeItem("kioskDeviceName");
+  delete api.defaults.headers.common.Authorization;
 };
 
 const persistKioskSession = (payload: {
@@ -111,6 +112,8 @@ function App() {
           kioskLocation: data.kioskLocation,
           kioskDeviceName: data.kioskDeviceName,
         });
+
+        api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
 
         if (!cancelled) {
           setToken(data.token);
