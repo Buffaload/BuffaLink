@@ -9,7 +9,6 @@ import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
 import Vehicles from "./components/Vehicles";
-import API_BASE_URL from "./config";
 import api from "./api/client";
 
 // Kiosk helpers
