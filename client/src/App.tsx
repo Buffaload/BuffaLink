@@ -58,7 +58,7 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [selectedDepots] = useState<string[]>([]);
   const kioskEntryRequested = useMemo(() => isKioskEntryRequest(), []);
-
+console.log("kioskEntryRequested:", kioskEntryRequested);
   const [isBootstrapping, setIsBootstrapping] = useState(
     kioskEntryRequested && !localStorage.getItem("token")
   );
