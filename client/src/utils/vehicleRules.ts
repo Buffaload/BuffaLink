@@ -230,7 +230,8 @@ export const isEligibleStoppedVehicle = (
         getTimeInStateMs(v, nowMs) > STOPPED_5_MIN_MS &&
         !isAtDepot(v) &&
         !isAtMaintenance(v) &&
-        !isTipper(v)
+        !isTipper(v) &&
+        !v.isNightOut
     );
 };
 
