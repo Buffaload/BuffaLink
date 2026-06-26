@@ -745,7 +745,7 @@ const Sidebar: React.FC<{
             >            
               <span className="sidebar-link-text">
                 <Fuel className="sidebar-icon" />
-                <span className="sidebar-label">Services</span>
+                <span className="sidebar-label">Stopped</span>
               </span>       
               <span className="sidebar-link-meta sidebar-chevron">
                 {filterOption === "Services" ? (

@@ -199,41 +199,40 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
     }, [vehicles]);
 }
 
-export const isEligibleServicesHgv = (
+const STOPPED_5_MIN_MS = 5 * 60 * 1000;
+
+export const isIdlingEvent = (v: VehicleLike): boolean =>
+    (v.eventType ?? "").toLowerCase() === "idling";
+
+export const hasMovingSpeed = (v: VehicleLike): boolean =>
+    typeof v.speed === "number" && v.speed > 0;
+
+export const isStationaryVehicle = (v: VehicleLike): boolean => {
+    const event = (v.eventType ?? "").toLowerCase();
+
+    // Explicit moving states are always excluded
+    if (event === "driving") return false;
+
+    // Explicit stopped / idling states are stationary
+    if (event === "stopped" || event === "idling") return true;
+
+    // Fallback: if speed exists and is zero, treat as stationary
+    if (typeof v.speed === "number") return v.speed <= 0.1;
+
+    return false;
+};
+
+export const isEligibleStoppedVehicle = (
     v: VehicleLike,
     nowMs: number = Date.now()
 ): boolean => {
-    const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`
-        .toUpperCase()
-        .replace(/\s+/g, " ")
-        .trim();
-
-    const looksLikeDepot = (v: VehicleLike): boolean => {
-        const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""}`
-            .toUpperCase();
-
-        return /BUFFALOAD|ELLINGTON|CREWE|SKELMERSDALE|BELLSHILL|COVENTRY|AVONMOUTH/i.test(hay);
-    };
-
-    const looksLikeService =
-        /SERVICE|SERVICES|TRUCKSTOP|TRUCK STOP|WELCOME BREAK|MOTO|ROADCHEF|EXTRA/i.test(hay);
-
-    const inServicesGroup = isAtServices(v);
-    const hasNoGroup = !v.locationGroupName;
-
     return (
         v.assetType === "HGV" &&
-        getTimeInStateMs(v, nowMs) >= STOPPED_15_MIN_MS &&
-        !isDrivingEvent(v) &&
+        isStationaryVehicle(v) &&
+        getTimeInStateMs(v, nowMs) > STOPPED_5_MIN_MS &&
         !isAtDepot(v) &&
         !isAtMaintenance(v) &&
-        !isTipper(v) &&
-        !v.isNightOut &&
-        (
-            inServicesGroup ||
-            (hasNoGroup && !looksLikeDepot(v) && looksLikeService) ||
-            (hasNoGroup && !looksLikeDepot(v))
-        )
+        !isTipper(v)
     );
 };
 
@@ -396,43 +395,43 @@ export const matchesFilter = (
             return isEligibleStoppedHgv(v, nowMs);
 
         case "Services":
-            return isEligibleServicesHgv(v, nowMs);
+            return isEligibleStoppedVehicle(v, nowMs);
 
-            case "Depots": {
-                // Exclude tippers from depot view
-                if (isTipper(v)) return false;
+        case "Depots": {
+            // Exclude tippers from depot view
+            if (isTipper(v)) return false;
 
-                const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""} ${v.locationGroupName ?? ""}`
-                    .toUpperCase()
-                    .replace(/\s+/g, " ")
-                    .trim();
+            const hay = `${v.locationName ?? ""} ${v.formattedAddress ?? ""} ${v.locationGroupName ?? ""}`
+                .toUpperCase()
+                .replace(/\s+/g, " ")
+                .trim();
 
-                const depotMatchers: Record<string, RegExp[]> = {
-                    Ellington: [/ELLINGTON/i, /BUFFALOAD ELLINGTON/i],
-                    Crewe: [/CREWE/i, /BUFFALOAD CREWE/i],
-                    Skelmersdale: [/SKELMERSDALE/i, /BUFFALOAD SKELMERSDALE/i],
-                    Coventry: [/COVENTRY/i, /CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i],
-                    Avonmouth: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i],
-                    Bellshill: [/BELLSHILL/i],
-                };
+            const depotMatchers: Record<string, RegExp[]> = {
+                Ellington: [/ELLINGTON/i, /BUFFALOAD ELLINGTON/i],
+                Crewe: [/CREWE/i, /BUFFALOAD CREWE/i],
+                Skelmersdale: [/SKELMERSDALE/i, /BUFFALOAD SKELMERSDALE/i],
+                Coventry: [/COVENTRY/i, /CO-OP\s*COVENTRY/i, /COOP\s*COVENTRY/i],
+                Avonmouth: [/AVONMOUTH/i, /CO-OP\s*AVONMOUTH/i, /COOP\s*AVONMOUTH/i],
+                Bellshill: [/BELLSHILL/i],
+            };
 
-                const matchesAnyDepot = Object.values(depotMatchers).some((patterns) =>
-                    patterns.some((re) => re.test(hay))
-                );
+            const matchesAnyDepot = Object.values(depotMatchers).some((patterns) =>
+                patterns.some((re) => re.test(hay))
+            );
 
-                // "Depot base" = either geofenced (Buffaload group) OR text match fallback
-                const isDepotBase = v.locationGroupName === "Buffaload" || matchesAnyDepot;
+            // "Depot base" = either geofenced (Buffaload group) OR text match fallback
+            const isDepotBase = v.locationGroupName === "Buffaload" || matchesAnyDepot;
 
-                if (selectedDepots.length === 0) return isDepotBase;
+            if (selectedDepots.length === 0) return isDepotBase;
 
-                return (
-                    isDepotBase &&
-                    selectedDepots.some((depot) => {
-                    const patterns = depotMatchers[depot];
-                    return patterns ? patterns.some((re) => re.test(hay)) : false;
-                    })
-                );
-            }
+            return (
+                isDepotBase &&
+                selectedDepots.some((depot) => {
+                const patterns = depotMatchers[depot];
+                return patterns ? patterns.some((re) => re.test(hay)) : false;
+                })
+            );
+        }
 
         case "Maintenance":
             return v.locationGroupName === "Maintenance";

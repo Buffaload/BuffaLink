@@ -456,8 +456,8 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     kioskCounts.total === 1 ? "Vehicle" : "Vehicles";
 
   const servicesLabel = isPortraitViewport
-    ? truncatePillLabel("Services/Truckstops/Unknown", 8)
-    : "Services/Truckstops/Unknown";
+    ? truncatePillLabel("Stopped vehicles", 16)
+    : "Stopped vehicles";
 
   const nightOutLabel = isPortraitViewport
     ? truncatePillLabel("Night-Out", 16)
@@ -529,7 +529,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
           {kioskCounts.services}{" "}
           <span
             className="figure-pill__label"
-            title="Services/Truckstops/Unknown"
+            title="Stopped vehicles"
           >
             {servicesLabel}
           </span>
