@@ -2328,7 +2328,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                   {[0, 1].map((col) => (
                     <div key={col} className="kiosk-leaderboard-col">
-                      {[...Array(10)].map((_, i) => (
+                      {[...Array(9)].map((_, i) => (
                         <div key={i} className="kiosk-leaderboard-row kiosk-skeleton-row">
                           <div className="kiosk-leaderboard-left">
                             <div className="skeleton" style={{ width: 20, height: 14 }} />
