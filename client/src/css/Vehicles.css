@@ -2175,11 +2175,13 @@
   grid-template-columns: 1fr 1fr;
   gap: 18px;
   align-items: start;
+  align-content: start;
 }
 
 .kiosk-leaderboard-col {
   display: grid;
   gap: 6px;
+  align-content: start;
 }
 
 .kiosk-leaderboard-row {
@@ -2188,6 +2190,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  height: auto;
+  line-height: 1;
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(17, 24, 39, 0.10);
