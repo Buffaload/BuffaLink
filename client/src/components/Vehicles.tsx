@@ -1703,6 +1703,26 @@ const Vehicles: React.FC<VehiclesProps> = ({
     return () => window.removeEventListener("resize", recalcSkeletons);
   }, [isLoading, filterOption]);
 
+  useEffect(() => {
+    if (!isLoading) {
+      // Force layout recalculation AFTER skeleton disappears
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+      });
+    }
+  }, [isLoading]);
+
+  // Second trigger for late renders
+  useEffect(() => {
+    if (!isLoading) {
+      const trigger = () =>
+        window.dispatchEvent(new Event("resize"));
+
+      requestAnimationFrame(trigger);
+      setTimeout(trigger, 100);
+    }
+  }, [isLoading]);
+
   // Tracks when each vehicle entered its current eventType (state)
   type VehicleWithSince = Vehicle & {
     statusSinceMs?: number;
