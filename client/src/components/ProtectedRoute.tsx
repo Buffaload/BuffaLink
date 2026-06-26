@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -9,15 +9,16 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [isTokenValid, setIsTokenValid] = useState<boolean>(true);
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const checkTokenValidity = () => {
-      const token = localStorage.getItem("token");
+      const storedToken = localStorage.getItem("token");
       const tokenExpiry = localStorage.getItem("tokenExpiry");
       const isKiosk = localStorage.getItem("isKioskSession") === "1";
 
       const currentTime = Date.now();
-      if (!token || (!isKiosk && (!tokenExpiry || Number(tokenExpiry) < currentTime))) {
+      if (!storedToken || (!isKiosk && (!tokenExpiry || Number(tokenExpiry) < currentTime))) {
         console.log("[ProtectedRoute] token invalid - redirecting");
 
         localStorage.clear();
@@ -34,7 +35,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }, [navigate]);
 
   // Show children only if the token is valid
-  return isTokenValid ? <>{children}</> : null;
+  if (!isTokenValid || !token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
