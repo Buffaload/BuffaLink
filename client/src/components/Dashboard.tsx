@@ -352,13 +352,15 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
   }, [isWideEnoughForKiosk, isKioskMode]);
 
   useEffect(() => {
-    // next tick + after layout changes
-    const t1 = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 0);
-    const t2 = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
+    if (!isKioskMode) return;
+    const triggerResize = () => {
+      window.dispatchEvent(new Event("resize"));
     };
+    // Run multiple times to catch layout settling
+    requestAnimationFrame(triggerResize);
+    setTimeout(triggerResize, 50);
+    setTimeout(triggerResize, 150);
+    setTimeout(triggerResize, 300);
   }, [isKioskMode]);
 
   useEffect(() => {

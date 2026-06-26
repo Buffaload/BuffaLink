@@ -2160,7 +2160,9 @@
 .kiosk-leaderboard-container {
   padding: 20px;
   width: 100%;
-  height: calc(100% - var(--app-header-height, 120px));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
