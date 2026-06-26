@@ -54,7 +54,7 @@ export const adjustedMs = (s?: string): number => {
 // How long to tolerate a vehicle disappearing before resetting it
 const STATUS_EVICT_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const STOPPED_1_HOUR_MS = 60 * 60 * 1000;
-const STOPPED_15_MIN_MS = 15 * 60 * 1000;
+const STOPPED_5_MIN_MS = 5 * 60 * 1000;
 
 export const getStatusSinceMs = (
     v: VehicleLike,
@@ -198,8 +198,6 @@ export function useVehiclesWithStatusSince<T extends VehicleWithStatusFields>(
         return enriched;
     }, [vehicles]);
 }
-
-const STOPPED_5_MIN_MS = 5 * 60 * 1000;
 
 export const isIdlingEvent = (v: VehicleLike): boolean =>
     (v.eventType ?? "").toLowerCase() === "idling";
