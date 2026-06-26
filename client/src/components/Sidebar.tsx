@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import {
   Truck,
-  Fuel,
+  OctagonPause,
   Moon,
   Map as MapIcon,
   Building2,
@@ -744,7 +744,7 @@ const Sidebar: React.FC<{
               }}
             >            
               <span className="sidebar-link-text">
-                <Fuel className="sidebar-icon" />
+                <OctagonPause className="sidebar-icon" />
                 <span className="sidebar-label">Stopped</span>
               </span>       
               <span className="sidebar-link-meta sidebar-chevron">

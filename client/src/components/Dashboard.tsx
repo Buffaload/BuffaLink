@@ -208,8 +208,8 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout }) => {
       suffix: "- stopped >1 hr",
     },
     Services: {
-      prefix: "Services ",
-      suffix: "- stopped vehicles",
+      prefix: "Stopped vehicles ",
+      suffix: "- outside of depot/maintenance sites",
     },
     "Night-Out": {
       prefix: "Night-Out ",
