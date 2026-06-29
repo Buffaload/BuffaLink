@@ -1428,6 +1428,12 @@
   color: rgba(17, 24, 39, 0.70);
 }
 
+.health-block__sub--fuel {
+  display: flex;
+  justify-content: flex-end;
+  text-align: right;
+}
+
 .health-block__sub.is-overdue {
   color: #b91c1c;
 }

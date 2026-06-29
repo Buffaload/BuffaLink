@@ -32,7 +32,9 @@ interface Vehicle {
   depotMatch?: string | null;
   assetGroupName?: string;
   assetType?: string;
-  // New fields from BlueCrystal API
+  fuelLevelPercentage?: number | string;
+  fuelLevelLitres?: number | string;
+  // BlueCrystal API
   ServiceDueDate?: string;
   MotDueDate?: string;
   BrakeDueDate?: string;
@@ -327,6 +329,37 @@ const getProgressColorClass = (percentage: number) => {
   return "progress-green";
 };
 
+const FUEL_ONLY_CARD_DASHBOARDS = new Set(["Stopped", "HGVs"]);
+
+const shouldShowFuelOnlyCardHealth = (filterOption: string) =>
+  FUEL_ONLY_CARD_DASHBOARDS.has(filterOption);
+
+const clampPercentage = (value: number) => {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, Math.ceil(value)));
+};
+
+const getFuelLevelPercentage = (vehicle: Vehicle): number | null => {
+  const percentage = Number(vehicle.fuelLevelPercentage);
+  if (Number.isFinite(percentage)) {
+    return clampPercentage(percentage);
+  }
+
+  const litresAsPercentage = Number(vehicle.fuelLevelLitres);
+  if (Number.isFinite(litresAsPercentage)) {
+    return clampPercentage(litresAsPercentage);
+  }
+
+  return null;
+};
+
+const getFuelLevelProgressClass = (percentage: number): string => {
+  if (percentage <= 20) return "progress-red";
+  if (percentage < 50) return "progress-orange";
+  if (percentage < 70) return "progress-yellow";
+  return "progress-green";
+};
+
 // Remove trailing <_2> from UI written locations
 const cleanLocationLabel = (value?: string | null): string => {
   if (!value) return "UNKNOWN LOCATION";
@@ -613,6 +646,15 @@ const getKioskSeverityClass = (sinceMs?: number): string => {
   return "pastel-green";
 };
 
+const getFuelCardClass = (percentage: number | null): string => {
+  if (percentage == null) return "";
+
+  if (percentage <= 20) return "pastel-red";
+  if (percentage < 50) return "pastel-orange";
+  if (percentage < 70) return "pastel-yellow";
+  return "pastel-green";
+};
+
 const getViewportSnapshot = () => {
   if (typeof window === "undefined") {
     return {
@@ -792,27 +834,36 @@ const getAllowedBranchIds = (): Set<string> | null => {
   }
 };
 
-const MODAL_HEALTH_FIELDS: Array<{ key: keyof Vehicle; label: string; kind: "service" | "standard" }> = [
+type HealthKind = "service" | "standard" | "fuel";
+type HealthFieldKey = keyof Vehicle | "fuelLevel";
+
+const MODAL_HEALTH_FIELDS: Array<{ 
+  key: HealthFieldKey; 
+  label: string; 
+  kind: HealthKind;
+}> = [
   { key: "ServiceDueDate", label: "Service", kind: "service" },
   { key: "MotDueDate", label: "MOT", kind: "standard" },
   { key: "BrakeDueDate", label: "Brake test", kind: "standard" },
   { key: "AncillaryOneDueDate", label: "Loaded brake test", kind: "standard" },
   { key: "TlWeightDueDate", label: "Weight test", kind: "standard" },
   { key: "TachoDueDate", label: "Tacho", kind: "standard" },
+  { key: "fuelLevel", label: "Fuel level", kind: "fuel" },
   { key: "FridgeDueDate", label: "Fridge", kind: "standard" },
   { key: "RflDueDate", label: "FGAS", kind: "standard" },
   { key: "LolerDueDate", label: "LOLER", kind: "standard" },
 ];
 
-const TRAILER_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
+const TRAILER_ONLY_HEALTH_KEYS = new Set<HealthFieldKey>([
   "FridgeDueDate",
   "RflDueDate",
   "LolerDueDate",
   "TlWeightDueDate",
 ]);
 
-const VEHICLE_ONLY_HEALTH_KEYS = new Set<keyof Vehicle>([
+const VEHICLE_ONLY_HEALTH_KEYS = new Set<HealthFieldKey>([
   "TachoDueDate",
+  "fuelLevel",
 ]);
 
 type DepotStreetViewRule = {
@@ -1563,91 +1614,6 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }, []);
 
   // Helpers for filtering, searching, and sorting
-  // const fetchVehicles = async (): Promise<Vehicle[]> => {
-  //   const token = localStorage.getItem("token");
-  //   if (!token) {
-  //     throw new Error("No token found. Please log in.");
-  //   }
-
-  //   const response = await api.get("/vehicles", {
-  //     headers: {
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //   });
-
-  //   if (response.status !== 200) {
-  //     throw new Error("Failed to fetch vehicles");
-  //   }
-
-  //   const data = response.data;
-  //   const arr =
-  //     Array.isArray(data)
-  //       ? data
-  //       : Array.isArray(data?.vehicles)
-  //       ? data.vehicles
-  //       : [];
-
-  //   const isPartial = response.headers?.["x-partial-data"] === "1";
-  //   const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]) ?? [];
-  //   const persistentLastGood = readLastGoodVehicles();
-
-  //   // Explicit partial response from backend
-  //   if (isPartial) {
-  //     if (previous.length > 0) return previous;
-  //     if (persistentLastGood.length > 0) return persistentLastGood;
-  //     return arr;
-  //   }
-
-  //   // Empty response - preserve last known good
-  //   if (arr.length === 0) {
-  //     if (previous.length > 0) return previous;
-  //     if (persistentLastGood.length > 0) return persistentLastGood;
-  //     return [];
-  //   }
-
-  //   // Suspicious count drop guard
-  //   const comparisonBaseCount =
-  //     previous.length > 0 ? previous.length : persistentLastGood.length;
-
-  //   const suspiciousDrop =
-  //     comparisonBaseCount > 0 &&
-  //     arr.length < Math.floor(comparisonBaseCount * SUSPICIOUS_DROP_RATIO);
-
-  //   if (suspiciousDrop) {
-  //     console.warn("[Vehicles] Suspicious vehicle count drop detected; keeping last known good snapshot", {
-  //       incomingCount: arr.length,
-  //       comparisonBaseCount,
-  //       ratio: comparisonBaseCount > 0 ? arr.length / comparisonBaseCount : null,
-  //     });
-
-  //     if (previous.length > 0) return previous;
-  //     if (persistentLastGood.length > 0) return persistentLastGood;
-  //   }
-
-  //   // Fresh good payload - persist it
-  //   writeLastGoodVehicles(arr);
-  //   return arr;
-  // };
-
-  // // useQuery hook for fetching vehicles
-  // const {
-  //   data: vehicles = [],
-  //   isLoading,
-  //   isFetching,
-  //   isError,
-  //   error,
-  // } = useQuery<Vehicle[]>({
-  //   queryKey: ["vehicles"],
-  //   queryFn: fetchVehicles,
-  //   refetchInterval: 30000,
-  //   staleTime: 60000,
-  //   gcTime: 24 * 60 * 60 * 1000,
-  //   retry: 3,
-  //   retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
-  //   placeholderData: (previousData) => previousData,
-  //   refetchOnWindowFocus: false,
-  // });
-
   const {
     data: vehicles = [],
     isLoading,
@@ -2200,6 +2166,41 @@ const Vehicles: React.FC<VehiclesProps> = ({
     );
   }
 
+  const renderFuelHealthBlock = (
+    vehicle: Vehicle,
+    options?: { key?: string; showHint?: boolean }
+  ) => {
+    const fuelPercentage = getFuelLevelPercentage(vehicle);
+    const barClass =
+      fuelPercentage != null ? getFuelLevelProgressClass(fuelPercentage) : "";
+
+    return (
+      <div key={options?.key ?? "fuel-level"} className="health-block">
+        <div className="health-block__row">
+          <span className="health-block__label">Fuel level</span>
+          {options?.showHint ? (
+            <span className="health-block__hint" />
+          ) : null}
+        </div>
+
+        <div className={`due-progress-bar ${fuelPercentage == null ? "empty-progress-bar" : ""}`}>
+          <div
+            className={`due-progress-bar-inner ${barClass}`}
+            style={{ width: `${fuelPercentage ?? 0}%` }}
+          />
+        </div>
+
+        <div className="health-block__sub health-block__sub--fuel">
+          {fuelPercentage != null ? (
+            <b className="vehicle-due-dates">{fuelPercentage}%</b>
+          ) : (
+            <span className="muted">Data not available</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderKioskCarouselCard = (
     vehicle: VehicleWithSince,
     leaderboardPosition: number
@@ -2680,9 +2681,14 @@ const Vehicles: React.FC<VehiclesProps> = ({
                 // Apply conditional formatting site-wide except Night-Out/Map
                 const shouldApplySeverityColour =
                   filterOption !== "Night-Out" && filterOption !== "DelaysMap";
+                const fuelPercentage = getFuelLevelPercentage(vehicle);
+                const showFuelOnlyHealth = shouldShowFuelOnlyCardHealth(filterOption);
+
                 const BackgroundColourClass = shouldApplySeverityColour
-                    ? getServiceDueCardClass(vehicle.ServiceDueDate ?? "")
-                    : "";
+                  ? showFuelOnlyHealth
+                    ? getFuelCardClass(fuelPercentage)
+                    : getServiceDueCardClass(vehicle.ServiceDueDate ?? "")
+                  : "";
 
                 // Apply breathing red effect
                 const animationClass = !isVor
@@ -2690,6 +2696,7 @@ const Vehicles: React.FC<VehiclesProps> = ({
                   : "";
 
                 const vorSkin = isVor ? "vor-banner" : "";
+
                 const serviceProgress = getServiceDueProgress(vehicle.ServiceDueDate ?? "");
                 const serviceBarClass = serviceProgress
                   ? getServiceSeverityProgressClass(vehicle.ServiceDueDate)
@@ -2776,67 +2783,82 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <div className="vehicle-card__divider" />
 
                     {/* Health */}
-                    <section className="vehicle-card__health" aria-label="Vehicle compliance health">
-                      {/* Service */}
-                      <div className="health-block">
-                        <div className="health-block__row">
-                          <span className="health-block__label">Service health</span>
-                          <span className="health-block__hint">{serviceProgress?.label ?? ""}</span>
-                        </div>
+                    <section
+                      className="vehicle-card__health"
+                      aria-label={showFuelOnlyHealth ? "Vehicle fuel level" : "Vehicle compliance health"}
+                    >
+                      {showFuelOnlyHealth ? (
+                        renderFuelHealthBlock(vehicle)
+                      ) : (
+                        <>
+                          {/* Service */}
+                          <div className="health-block">
+                            <div className="health-block__row">
+                              <span className="health-block__label">Service health</span>
+                              <span className="health-block__hint">{serviceProgress?.label ?? ""}</span>
+                            </div>
+                            <div className={`due-progress-bar ${serviceProgress ? "" : "empty-progress-bar"}`}>
+                              <div
+                                className={`due-progress-bar-inner ${serviceBarClass}`}
+                                style={{ width: `${serviceProgress?.percentage ?? 0}%` }}
+                              />
+                            </div>
+                            <div
+                              className={`health-block__sub ${
+                                isDatePast(vehicle.ServiceDueDate ?? "") ? "is-overdue" : ""
+                              }`}
+                            >
+                              {serviceProgress ? (
+                                <>
+                                  <span className="vehicle-due-span">Due:</span>{" "}
+                                  {(() => {
+                                    const info = getServiceDueISOInfo(vehicle.ServiceDueDate);
+                                    return (
+                                      <b className="vehicle-due-dates">
+                                        {info ? formatDueISOWeekWithYear(info) : "N/A"}
+                                      </b>
+                                    );
+                                  })()}
+                                </>
+                              ) : (
+                                <span className="muted">Data not available</span>
+                              )}
+                            </div>
+                          </div>
 
-                        <div className={`due-progress-bar ${serviceProgress ? "" : "empty-progress-bar"}`}>
-                          <div
-                            className={`due-progress-bar-inner ${serviceBarClass}`}
-                            style={{ width: `${serviceProgress?.percentage ?? 0}%` }}
-                          />
-                        </div>
-
-                        <div className={`health-block__sub ${isDatePast(vehicle.ServiceDueDate ?? "") ? "is-overdue" : ""}`}>
-                          {serviceProgress ? (
-                            <>
-                              <span className="vehicle-due-span">Due:</span>{" "}                
-                              {(() => {
-                                const info = getServiceDueISOInfo(vehicle.ServiceDueDate);
-                                return (
+                          {/* Maintenance */}
+                          <div className="health-block">
+                            <div className="health-block__row">
+                              <span className="health-block__label">{maintenanceLabel}</span>
+                              <span className="health-block__hint">{maintenanceProgress?.label ?? ""}</span>
+                            </div>
+                            <div className={`due-progress-bar ${maintenanceProgress ? "" : "empty-progress-bar"}`}>
+                              <div
+                                className={`due-progress-bar-inner ${maintenanceProgress?.colorClass ?? ""}`}
+                                style={{ width: `${maintenanceProgress?.percentage ?? 0}%` }}
+                              />
+                            </div>
+                            <div
+                              className={`health-block__sub ${
+                                isDatePast(vehicle.NextMaintenanceDueDate ?? "") ? "is-overdue" : ""
+                              }`}
+                            >
+                              {maintenanceProgress ? (
+                                <>
+                                  <span className="vehicle-due-span">Due:</span>{" "}
                                   <b className="vehicle-due-dates">
-                                    {info ? formatDueISOWeekWithYear(info) : "N/A"}
+                                    {vehicle.NextMaintenanceDueDate
+                                      ? formatDate(vehicle.NextMaintenanceDueDate)
+                                      : "N/A"}
                                   </b>
-                                );
-                              })()}
-                            </>
-                          ) : (
-                            <span className="muted">Data not available</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Maintenance */}
-                      <div className="health-block">
-                        <div className="health-block__row">
-                          <span className="health-block__label">{maintenanceLabel}</span>
-                          <span className="health-block__hint">{maintenanceProgress?.label ?? ""}</span>
-                        </div>
-
-                        <div className={`due-progress-bar ${maintenanceProgress ? "" : "empty-progress-bar"}`}>
-                          <div
-                            className={`due-progress-bar-inner ${maintenanceProgress?.colorClass ?? ""}`}
-                            style={{ width: `${maintenanceProgress?.percentage ?? 0}%` }}
-                          />
-                        </div>
-
-                        <div className={`health-block__sub ${isDatePast(vehicle.NextMaintenanceDueDate ?? "") ? "is-overdue" : ""}`}>
-                          {maintenanceProgress ? (
-                            <>
-                              <span className="vehicle-due-span">Due:</span>{" "}
-                              <b className="vehicle-due-dates">
-                                {vehicle.NextMaintenanceDueDate ? formatDate(vehicle.NextMaintenanceDueDate) : "N/A"}
-                              </b>
-                            </>
-                          ) : (
-                            <span className="muted">Data not available</span>
-                          )}
-                        </div>
-                      </div>
+                                </>
+                              ) : (
+                                <span className="muted">Data not available</span>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </section>
 
                     {/* Footer */}
@@ -3068,6 +3090,38 @@ const Vehicles: React.FC<VehiclesProps> = ({
                         return !TRAILER_ONLY_HEALTH_KEYS.has(f.key);
                       })
                       .map((f) => {
+                        // Fuel card handling
+                        if (f.kind === "fuel") {
+                          const fuelPercentage = getFuelLevelPercentage(selectedVehicle);
+                          const barColorClass =
+                            fuelPercentage != null
+                              ? getFuelLevelProgressClass(fuelPercentage)
+                              : "";
+
+                          return (
+                            <div key="fuelLevel" className="health-block">
+                              <div className="health-block__row">
+                                <span className="health-block__label">Fuel level</span>
+                              </div>
+
+                              <div className={`due-progress-bar ${fuelPercentage == null ? "empty-progress-bar" : ""}`}>
+                                <div
+                                  className={`due-progress-bar-inner ${barColorClass}`}
+                                  style={{ width: `${fuelPercentage ?? 0}%` }}
+                                />
+                              </div>
+
+                              <div className="health-block__sub health-block__sub--fuel">
+                                {fuelPercentage != null ? (
+                                  <b className="vehicle-due-dates">{fuelPercentage}%</b>
+                                ) : (
+                                  <span className="muted">Data not available</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
                         const raw = (selectedVehicle as any)[f.key] as string | undefined;
 
                         const progress =
