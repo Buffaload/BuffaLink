@@ -12,34 +12,8 @@ import L from "leaflet";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet.markercluster";
-
 // Import Leaflet CSS
 import "leaflet/dist/leaflet.css";
-
-// Define the type for a single vehicle object
-interface Vehicle {
-  id?: string;
-  assetName: string;
-  assetRegistration?: string;
-  locationName?: string;
-  formattedAddress?: string;
-  eventType: string;
-  date: string;
-  locationGroupName?: string;
-  branchId?: string | number;
-  assetGroupName?: string;
-  assetType?: string;
-  latitude?: number;
-  longitude?: number;
-  temperature?: number;
-  // New fields from BlueCrystal API
-  ServiceDueDate?: string;
-  MotDueDate?: string;
-  IsVor?: boolean;
-  LiveDefects?: boolean;
-  // Local flags
-  isNightOut?: boolean;
-}
 
 interface DelaysMapProps {
   filterOption: string;
