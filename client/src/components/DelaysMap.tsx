@@ -2,8 +2,9 @@ import React, { useMemo, useEffect, useRef, useState, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
 import { ALL_DEPOT_LABELS, matchesDepot, getDisplayLocation } from "../utils/depotMatching";
-import api from "../api/client";
-import { useQuery } from "@tanstack/react-query";
+import { dedupeVehiclesByIdentity } from "../utils/vehicleIdentity";
+import { applyAllowedBranchFilter } from "../utils/vehicleVisibility";
+import { useVehiclesQuery } from "../hooks/useVehiclesQuery";
 import InlineLoader from "./InlineLoader";
 import "../css/DelaysMap.css";
 import { Pause, Play } from "lucide-react";
@@ -25,6 +26,7 @@ interface Vehicle {
   eventType: string;
   date: string;
   locationGroupName?: string;
+  branchId?: string | number;
   assetGroupName?: string;
   assetType?: string;
   latitude?: number;
@@ -98,35 +100,14 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
 
   const activeKioskPillRef = useRef<KioskPill>("services");
   const isKioskModeRef = useRef<boolean>(isKioskMode);
-
-  const fetchVehicles = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("No token found. Please log in.");
-    }
-
-    const response = await api.get("/vehicles");
-
-    if (response.status === 200) {
-      return response.data;
-    }
-    throw new Error("Failed to fetch vehicles");
-  };
-
-  // useQuery hook for fetching vehicles
+  
   const {
-    data: vehicles = [], //Default to an empty array
+    data: vehicles = [],
     isLoading,
     isError,
     error,
-  } = useQuery<Vehicle[]>({
-    queryKey: ["vehicles"],
-    queryFn: fetchVehicles,
-    refetchInterval: 30000, // Poll every 30 sec
-    staleTime: 60000, // Data is fresh for 1 minute
-  });
-  
+  } = useVehiclesQuery();
+
   const getPillClass = (pill: KioskPill) =>
     `figure-pill figure-pill--kiosk ${
       activeKioskPill === pill ? "is-active" : "is-inactive"
@@ -135,24 +116,39 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
   const kioskVehicleBuckets = useMemo(() => {
     const now = Date.now();
 
-    const services = filterVehicles(vehicles, "Services", [], now);
-    const nightOut = filterVehicles(vehicles, "Night-Out", [], now);
-    const depots = vehicles.filter(v =>
-      ALL_DEPOT_LABELS.some(d => matchesDepot(v, d))
+    const services = dedupeVehiclesByIdentity(
+      applyAllowedBranchFilter(
+        filterVehicles(vehicles, "Services", [], now)
+      )
     );
-    const maintenance = filterVehicles(vehicles, "Maintenance", [], now);
+
+    const nightOut = dedupeVehiclesByIdentity(
+      applyAllowedBranchFilter(
+        filterVehicles(vehicles, "Night-Out", [], now)
+      )
+    );
+
+    const depots = dedupeVehiclesByIdentity(
+      vehicles.filter((v) =>
+        ALL_DEPOT_LABELS.some((d) => matchesDepot(v, d))
+      )
+    );
+
+    const maintenance = dedupeVehiclesByIdentity(
+      filterVehicles(vehicles, "Maintenance", [], now)
+    );
 
     // TOTAL = union of pill buckets (deduped)
     const seen = new Set<string>();
-    const keyOf = (v: any) => String(v.assetName ?? "");
-
-    const total = [...services, ...nightOut, ...depots, ...maintenance].filter((v) => {
-      const k = keyOf(v);
-      if (!k) return true;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+    const total = [...services, ...nightOut, ...depots, ...maintenance].filter(
+      (v: any) => {
+        const key = String(v.assetRegistration ?? v.assetName ?? "");
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }
+    );
 
     return {
       counts: {
@@ -163,7 +159,12 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         maintenance: maintenance.length,
       },
       base: total,
-      buckets: { services, nightOut, depot: depots, maintenance },
+      buckets: {
+        services,
+        nightOut,
+        depot: depots,
+        maintenance,
+      },
     };
   }, [vehicles]);
 

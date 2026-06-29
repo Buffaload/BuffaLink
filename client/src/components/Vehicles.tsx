@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { filterVehicles, adjustedMs, useVehiclesWithStatusSince, isEligibleKioskVehicle, isCriticalArrival } from "../utils/vehicleRules";
 import { ALL_DEPOT_LABELS, matchesDepot, getMatchedDepotLabel } from "../utils/depotMatching";
 import { dedupeVehiclesByIdentity } from "../utils/vehicleIdentity";
-import api from "../api/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useVehiclesQuery } from "../hooks/useVehiclesQuery";
 import { 
   Building2,
   Bug,
@@ -81,8 +81,6 @@ const SERVICE_TIMELINE_DAYS_KEY = "buffalink:serviceTimelineDays";
 const MOT_TIMELINE_DAYS_KEY = "buffalink:motTimelineDays";
 const DEFAULT_SERVICE_TIMELINE_DAYS = 42;
 const DEFAULT_MOT_TIMELINE_DAYS = 364;
-const LAST_GOOD_VEHICLES_KEY = "buffalink:lastGoodVehicles";
-const SUSPICIOUS_DROP_RATIO = 0.9; // treat >10% drop as suspicious unless backend explicitly says it's valid
 
 const getServiceTimelineDays = () =>
   Number(localStorage.getItem(SERVICE_TIMELINE_DAYS_KEY)) ||
@@ -91,24 +89,6 @@ const getServiceTimelineDays = () =>
 const getMotTimelineDays = () =>
   Number(localStorage.getItem(MOT_TIMELINE_DAYS_KEY)) ||
   DEFAULT_MOT_TIMELINE_DAYS;
-
-const readLastGoodVehicles = (): Vehicle[] => {
-  try {
-    const raw = localStorage.getItem(LAST_GOOD_VEHICLES_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const writeLastGoodVehicles = (vehicles: Vehicle[]) => {
-  try {
-    localStorage.setItem(LAST_GOOD_VEHICLES_KEY, JSON.stringify(vehicles));
-  } catch {
-    // ignore storage/quota errors
-  }
-};
 
 // ISO week number (Monday–Sunday)
 function getISOWeek(date = new Date()): number {
@@ -1583,90 +1563,98 @@ const Vehicles: React.FC<VehiclesProps> = ({
   }, []);
 
   // Helpers for filtering, searching, and sorting
-  const fetchVehicles = async (): Promise<Vehicle[]> => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("No token found. Please log in.");
-    }
+  // const fetchVehicles = async (): Promise<Vehicle[]> => {
+  //   const token = localStorage.getItem("token");
+  //   if (!token) {
+  //     throw new Error("No token found. Please log in.");
+  //   }
 
-    const response = await api.get("/vehicles", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  //   const response = await api.get("/vehicles", {
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //     },
+  //   });
 
-    if (response.status !== 200) {
-      throw new Error("Failed to fetch vehicles");
-    }
+  //   if (response.status !== 200) {
+  //     throw new Error("Failed to fetch vehicles");
+  //   }
 
-    const data = response.data;
-    const arr =
-      Array.isArray(data)
-        ? data
-        : Array.isArray(data?.vehicles)
-        ? data.vehicles
-        : [];
+  //   const data = response.data;
+  //   const arr =
+  //     Array.isArray(data)
+  //       ? data
+  //       : Array.isArray(data?.vehicles)
+  //       ? data.vehicles
+  //       : [];
 
-    const isPartial = response.headers?.["x-partial-data"] === "1";
-    const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]) ?? [];
-    const persistentLastGood = readLastGoodVehicles();
+  //   const isPartial = response.headers?.["x-partial-data"] === "1";
+  //   const previous = queryClient.getQueryData<Vehicle[]>(["vehicles"]) ?? [];
+  //   const persistentLastGood = readLastGoodVehicles();
 
-    // Explicit partial response from backend
-    if (isPartial) {
-      if (previous.length > 0) return previous;
-      if (persistentLastGood.length > 0) return persistentLastGood;
-      return arr;
-    }
+  //   // Explicit partial response from backend
+  //   if (isPartial) {
+  //     if (previous.length > 0) return previous;
+  //     if (persistentLastGood.length > 0) return persistentLastGood;
+  //     return arr;
+  //   }
 
-    // Empty response - preserve last known good
-    if (arr.length === 0) {
-      if (previous.length > 0) return previous;
-      if (persistentLastGood.length > 0) return persistentLastGood;
-      return [];
-    }
+  //   // Empty response - preserve last known good
+  //   if (arr.length === 0) {
+  //     if (previous.length > 0) return previous;
+  //     if (persistentLastGood.length > 0) return persistentLastGood;
+  //     return [];
+  //   }
 
-    // Suspicious count drop guard
-    const comparisonBaseCount =
-      previous.length > 0 ? previous.length : persistentLastGood.length;
+  //   // Suspicious count drop guard
+  //   const comparisonBaseCount =
+  //     previous.length > 0 ? previous.length : persistentLastGood.length;
 
-    const suspiciousDrop =
-      comparisonBaseCount > 0 &&
-      arr.length < Math.floor(comparisonBaseCount * SUSPICIOUS_DROP_RATIO);
+  //   const suspiciousDrop =
+  //     comparisonBaseCount > 0 &&
+  //     arr.length < Math.floor(comparisonBaseCount * SUSPICIOUS_DROP_RATIO);
 
-    if (suspiciousDrop) {
-      console.warn("[Vehicles] Suspicious vehicle count drop detected; keeping last known good snapshot", {
-        incomingCount: arr.length,
-        comparisonBaseCount,
-        ratio: comparisonBaseCount > 0 ? arr.length / comparisonBaseCount : null,
-      });
+  //   if (suspiciousDrop) {
+  //     console.warn("[Vehicles] Suspicious vehicle count drop detected; keeping last known good snapshot", {
+  //       incomingCount: arr.length,
+  //       comparisonBaseCount,
+  //       ratio: comparisonBaseCount > 0 ? arr.length / comparisonBaseCount : null,
+  //     });
 
-      if (previous.length > 0) return previous;
-      if (persistentLastGood.length > 0) return persistentLastGood;
-    }
+  //     if (previous.length > 0) return previous;
+  //     if (persistentLastGood.length > 0) return persistentLastGood;
+  //   }
 
-    // Fresh good payload - persist it
-    writeLastGoodVehicles(arr);
-    return arr;
-  };
+  //   // Fresh good payload - persist it
+  //   writeLastGoodVehicles(arr);
+  //   return arr;
+  // };
 
-  // useQuery hook for fetching vehicles
+  // // useQuery hook for fetching vehicles
+  // const {
+  //   data: vehicles = [],
+  //   isLoading,
+  //   isFetching,
+  //   isError,
+  //   error,
+  // } = useQuery<Vehicle[]>({
+  //   queryKey: ["vehicles"],
+  //   queryFn: fetchVehicles,
+  //   refetchInterval: 30000,
+  //   staleTime: 60000,
+  //   gcTime: 24 * 60 * 60 * 1000,
+  //   retry: 3,
+  //   retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+  //   placeholderData: (previousData) => previousData,
+  //   refetchOnWindowFocus: false,
+  // });
+
   const {
     data: vehicles = [],
     isLoading,
     isFetching,
     isError,
     error,
-  } = useQuery<Vehicle[]>({
-    queryKey: ["vehicles"],
-    queryFn: fetchVehicles,
-    refetchInterval: 30000,
-    staleTime: 60000,
-    gcTime: 24 * 60 * 60 * 1000,
-    retry: 3,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
-    placeholderData: (previousData) => previousData,
-    refetchOnWindowFocus: false,
-  });
+  } = useVehiclesQuery();
 
   const vehiclesWithSince = useVehiclesWithStatusSince<VehicleWithSince>(vehicles);
 
