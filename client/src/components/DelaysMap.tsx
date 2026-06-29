@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { adjustedMs, filterVehicles } from "../utils/vehicleRules"
+import { adjustedMs, filterVehicles, useVehiclesWithStatusSince } from "../utils/vehicleRules"
 import { ALL_DEPOT_LABELS, matchesDepot, getDisplayLocation } from "../utils/depotMatching";
 import { dedupeVehiclesByIdentity } from "../utils/vehicleIdentity";
 import { applyAllowedBranchFilter } from "../utils/vehicleVisibility";
@@ -82,6 +82,8 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
     error,
   } = useVehiclesQuery();
 
+  const vehiclesWithSince = useVehiclesWithStatusSince(vehicles);
+
   const getPillClass = (pill: KioskPill) =>
     `figure-pill figure-pill--kiosk ${
       activeKioskPill === pill ? "is-active" : "is-inactive"
@@ -92,7 +94,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
 
     const services = dedupeVehiclesByIdentity(
       applyAllowedBranchFilter(
-        filterVehicles(vehicles, "Services", [], now)
+        filterVehicles(vehiclesWithSince, "Services", [], now)
       )
     );
 
@@ -140,7 +142,7 @@ const DelaysMap: React.FC<DelaysMapProps> = ({ filterOption, isKioskMode }) => {
         maintenance,
       },
     };
-  }, [vehicles]);
+  }, [vehiclesWithSince, vehicles]);
 
   // Destructure counts for easy access in the component
   const { counts: kioskCounts } = kioskVehicleBuckets;
