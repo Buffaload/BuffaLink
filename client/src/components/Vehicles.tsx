@@ -329,7 +329,7 @@ const getProgressColorClass = (percentage: number) => {
   return "progress-green";
 };
 
-const FUEL_ONLY_CARD_DASHBOARDS = new Set(["Stopped", "HGVs"]);
+const FUEL_ONLY_CARD_DASHBOARDS = new Set(["Services", "HGVs"]);
 
 const shouldShowFuelOnlyCardHealth = (filterOption: string) =>
   FUEL_ONLY_CARD_DASHBOARDS.has(filterOption);
