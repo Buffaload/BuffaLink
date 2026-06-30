@@ -38,8 +38,7 @@ type VehicleWithStatusFields = {
 };
 
 const isTipper = (v: VehicleLike): boolean =>
-    v.assetGroupName === "TFP Tipper Operation" ||
-    v.driverGroupName === "TFP Tipper Operation";
+    v.assetGroupName === "TFP Tipper Operation";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
