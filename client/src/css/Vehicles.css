@@ -597,6 +597,24 @@
   color: #111827;
 }
 
+.vehicle-reg-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vehicle-manufacturer-logo {
+  height: 1em;
+  width: auto;
+  object-fit: contain;
+  display: inline-block;
+}
+
+.vehicle-reg-text {
+  display: inline-block;
+  line-height: 1;
+}
+
 .vehicle-card__chips {
   display: flex;
   flex-wrap: wrap;

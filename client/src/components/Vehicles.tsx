@@ -23,6 +23,7 @@ interface Vehicle {
   id?: string;
   assetName: string;
   assetRegistration?: string;
+  Manufacturer?: string;
   locationName?: string;
   formattedAddress?: string;
   eventType: string;
@@ -271,6 +272,23 @@ const formatRegForMarkerLabel = (value?: string) => {
   }
 
   return raw;
+};
+
+const getManufacturerLogo = (manufacturer?: string): string | null => {
+  if (!manufacturer) return null;
+
+  const map: Record<string, string> = {
+    "Gray and Adams": "/manufacturers/grayadams.png",
+    "Volvo": "/manufacturers/volvo.png",
+    "Scania": "/manufacturers/scania.png",
+    "DAF": "/manufacturers/daf.svg",
+    "SOR IBERICA": "/manufacturers/sor.png",
+    "KRONE": "/manufacturers/krone.png",
+    "Mercedes": "/manufacturers/mercedes.png",
+    "Montracon": "/manufacturers/montracon.webp",
+  };
+
+  return map[manufacturer] || null;
 };
 
 const getVehicleDisplayLabel = (v: {
@@ -2731,7 +2749,23 @@ const Vehicles: React.FC<VehiclesProps> = ({
                     <header className="vehicle-card__header">
                       <div className="vehicle-card__title">
                         <h2 className="vehicle-reg">
-                          {isTrailer ? displayId : formatRegistration(displayId)}
+                          {(() => {
+                            const logo = getManufacturerLogo(vehicle.Manufacturer);
+                            return (
+                              <span className="vehicle-reg-wrapper">
+                                {logo && (
+                                  <img
+                                    src={logo}
+                                    alt={vehicle.Manufacturer}
+                                    className="vehicle-manufacturer-logo"
+                                  />
+                                )}
+                                <span className="vehicle-reg-text">
+                                  {isTrailer ? displayId : formatRegistration(displayId)}
+                                </span>
+                              </span>
+                            );
+                          })()}
                         </h2>
                       </div>
 
@@ -2917,7 +2951,23 @@ const Vehicles: React.FC<VehiclesProps> = ({
                       const displayId = isTrailer
                         ? (selectedVehicle.assetName ?? selectedVehicle.assetRegistration ?? "")
                         : (selectedVehicle.assetRegistration ?? selectedVehicle.assetName ?? "");
-                      return isTrailer ? displayId : formatRegistration(displayId);
+
+                      const logo = getManufacturerLogo(selectedVehicle.Manufacturer);
+
+                      return (
+                        <span className="vehicle-reg-wrapper">
+                          {logo && (
+                            <img
+                              src={logo}
+                              alt={selectedVehicle.Manufacturer}
+                              className="vehicle-manufacturer-logo"
+                            />
+                          )}
+                          <span className="vehicle-reg-text">
+                            {isTrailer ? displayId : formatRegistration(displayId)}
+                          </span>
+                        </span>
+                      );
                     })()}
                   </h2>
 
