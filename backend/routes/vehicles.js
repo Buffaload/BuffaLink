@@ -1820,6 +1820,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           LiveDefects: maintenance?.LiveDefects ?? false,
           Archived: maintenance?.Archived ?? null,
           Status: maintenance?.Status ?? null,
+          Manufacturer: maintenance?.Manufacturer ?? null,
           branchId,
           isNightOut,
         };
