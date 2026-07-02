@@ -1894,12 +1894,14 @@ router.get("/", auth, diagnostics, async (req, res) => {
     const dedupedVehicles = Array.from(dedupedMap.values());
 
     const visibleVehicles = dedupedVehicles.filter((v) => {
-      const key = normalizeId(v.assetRegistration) || normalizeId(v.assetName);
+      const key =
+        normalizeId(v.assetRegistration) ||
+        normalizeId(v.assetName);
+
       const maintenance = maintenanceByVehicleId.get(key);
 
-      if (maintenance?.Archived === true) return false;
-
-      return true;
+      // Remove archived vehicles from the visible list
+      return !!maintenance;
     });
 
     const michelinComplete =
