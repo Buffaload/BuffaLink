@@ -967,7 +967,7 @@ const filterBlueCrystalRows = (rows) => {
     (m) =>
       typeof m?.VehicleId === "string" &&
       !m.Category?.toLowerCase().includes("equipment") &&
-      m.Archived === false
+      m.Status === "Archived"
   );
 };
 
