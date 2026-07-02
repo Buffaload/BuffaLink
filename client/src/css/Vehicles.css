@@ -610,6 +610,20 @@
   display: inline-block;
 }
 
+.vehicle-manufacturer-logo--modal {
+  height: 1.4em;
+}
+
+/* Fallback manufacturer icon */
+.vehicle-manufacturer-fallback {
+  display: inline-flex;
+  color: rgba(17, 24, 39, 0.5);
+}
+
+.vehicle-manufacturer-fallback--modal {
+  color: rgba(17, 24, 39, 0.6);
+}
+
 .vehicle-reg-text {
   display: inline-block;
   line-height: 1;

@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Image,
   Moon,
+  ShieldHalf,
 } from "lucide-react";
 import L from "leaflet";
 import "../css/Vehicles.css";
@@ -2753,11 +2754,17 @@ const Vehicles: React.FC<VehiclesProps> = ({
                             const logo = getManufacturerLogo(vehicle.Manufacturer);
                             return (
                               <span className="vehicle-reg-wrapper">
-                                {logo && (
+                                {logo ? (
                                   <img
                                     src={logo}
                                     alt={vehicle.Manufacturer}
                                     className="vehicle-manufacturer-logo"
+                                    title={vehicle.Manufacturer}
+                                  />
+                                ) : (
+                                  <ShieldHalf
+                                    className="vehicle-manufacturer-fallback"
+                                    size={16}
                                   />
                                 )}
                                 <span className="vehicle-reg-text">
@@ -2956,13 +2963,20 @@ const Vehicles: React.FC<VehiclesProps> = ({
 
                       return (
                         <span className="vehicle-reg-wrapper">
-                          {logo && (
+                          {logo ? (
                             <img
                               src={logo}
                               alt={selectedVehicle.Manufacturer}
-                              className="vehicle-manufacturer-logo"
+                              className="vehicle-manufacturer-logo vehicle-manufacturer-logo--modal"
+                              title={selectedVehicle.Manufacturer}
+                            />
+                          ) : (
+                            <ShieldHalf
+                              className="vehicle-manufacturer-fallback vehicle-manufacturer-fallback--modal"
+                              size={22}
                             />
                           )}
+
                           <span className="vehicle-reg-text">
                             {isTrailer ? displayId : formatRegistration(displayId)}
                           </span>
