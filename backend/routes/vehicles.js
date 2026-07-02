@@ -1819,6 +1819,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           IsVor: maintenance?.IsVor ?? false,
           LiveDefects: maintenance?.LiveDefects ?? false,
           Archived: maintenance?.Archived ?? null,
+          Status: maintenance?.Status ?? null,
           branchId,
           isNightOut,
         };
