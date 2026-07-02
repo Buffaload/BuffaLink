@@ -1818,6 +1818,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
           NextMaintenanceDueDate: nextMaint.dueDate ?? "N/A",
           IsVor: maintenance?.IsVor ?? false,
           LiveDefects: maintenance?.LiveDefects ?? false,
+          Archived: maintenance?.Archived ?? null,
           branchId,
           isNightOut,
         };
@@ -1892,6 +1893,15 @@ router.get("/", auth, diagnostics, async (req, res) => {
 
     const dedupedVehicles = Array.from(dedupedMap.values());
 
+    const visibleVehicles = dedupedVehicles.filter((v) => {
+      const key = normalizeId(v.assetRegistration) || normalizeId(v.assetName);
+      const maintenance = maintenanceByVehicleId.get(key);
+
+      if (maintenance?.Archived === true) return false;
+
+      return true;
+    });
+
     const michelinComplete =
       !REQUIRE_MICHELIN_COMPLETE || michelinIntegrity.ok;
     const blueCrystalComplete =
@@ -1928,7 +1938,7 @@ router.get("/", auth, diagnostics, async (req, res) => {
         data: dedupedVehicles,
       };
 
-      return res.json(dedupedVehicles);
+      return res.json(visibleVehicles);
     }
 
     // If the current response is incomplete, prefer the last known complete combined cache
@@ -1968,11 +1978,11 @@ router.get("/", auth, diagnostics, async (req, res) => {
         "X-Served-From",
         michelinIntegrity.servedFrom || blueCrystalIntegrity.servedFrom || "partial-live"
       );
-      return res.json(dedupedVehicles);
+      return res.json(visibleVehicles);
     }
 
     // Final successful response
-    return res.json(dedupedVehicles);
+    return res.json(visibleVehicles);
   } catch (err) {
     if (forceDebug) {
       return res.status(500).json({
