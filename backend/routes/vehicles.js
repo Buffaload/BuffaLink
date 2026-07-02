@@ -966,7 +966,8 @@ const filterBlueCrystalRows = (rows) => {
   return (Array.isArray(rows) ? rows : []).filter(
     (m) =>
       typeof m?.VehicleId === "string" &&
-      !m.Category?.toLowerCase().includes("equipment")
+      !m.Category?.toLowerCase().includes("equipment") &&
+      m.Archived === false
   );
 };
 
